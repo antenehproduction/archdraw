@@ -1053,7 +1053,7 @@ async function runPhase_plan(){
     const pd=localFloorPlan(z,S.selectedOption);valPlan(pd,z);
     L.info(`Plan: ${pd.floors.length} floors, ${pd.floors.reduce((a,f)=>a+f.rooms.length,0)} rooms, ${pd.meta.totalSqFt} SF in ${Date.now()-t}ms`);
     phSet('plan','done',`${((Date.now()-t)/1000).toFixed(2)}s`);
-    addFind('plan','📐 Expert Development Program',buildMT(pd)+'<div style="margin-top:6px;font-size:9px;color:var(--txt2)">🏗️ Structural grid: 20'-0" bay spacing · 2×6 @ 16" o.c. · <span style="color:var(--green)">Net-zero energy capable</span></div>');
+    addFind('plan','📐 Expert Development Program',buildMT(pd)+'<div style="margin-top:6px;font-size:9px;color:var(--txt2)">🏗️ Structural grid: 20\'-0" bay spacing · 2×6 @ 16" o.c. · <span style="color:var(--green)">Net-zero energy capable</span></div>');
     buildSheetTabs();
     // MAP-1: assign S.plan BEFORE initMap so drawMapOverlay can draw the footprint
     S.plan=pd;
@@ -1082,7 +1082,7 @@ async function runPhase_chk(){
   const categories=[
     {name:'Site Documents',items:ii([
       {label:'Boundary & Topographic Survey (Licensed PLS)',required:true,note:`${st} wet stamp. 1-ft contours, easements, legal description, utilities`},
-      {label:'Site Plan at 1/8"=1'-0"',required:true,note:'Property lines, setbacks, existing structures, north arrow, APN, dimensions'},
+      {label:'Site Plan at 1/8"=1\'-0"',required:true,note:'Property lines, setbacks, existing structures, north arrow, APN, dimensions'},
       {label:'Grading & Drainage Plan',required:true,note:`Stormwater BMP. ${isCA?'C.3 LID compliance':'Pre/post impervious area, swales, retention'}`},
       {label:'Utility Connection Plan',required:true,note:'Water, sewer, gas, electric service. Utility availability letters'},
       isCA&&{label:'WQMP / LID Report (MS4 NPDES)',required:true,note:'Required for projects ≥1 acre disturbed'},
@@ -1101,12 +1101,12 @@ async function runPhase_chk(){
       {label:`A-0: Cover Sheet — Project Data & Code Summary`,required:true,note:`${db.bc} · ${db.ec} · Seismic SDC ${db.seismic} · Wind ${db.wind} mph`},
       {label:`A-1: Site Plan at 1/8"=1'-0"`,required:true,note:'Property lines, setbacks, footprint, utilities, landscaping, parking, north arrow'},
       {label:`A-2+: Floor Plans — All ${stories} Level${stories>1?'s':''} at 1/4"=1'-0"`,required:true,note:'Room names, dimensions, door/window tags, areas, accessible route, wall types'},
-      {label:'Roof Plan at 1/8"=1'-0"',required:true,note:'Drainage direction, slopes, equipment curbs, parapet, access hatch'},
-      {label:'Exterior Elevations — All 4 Sides at 1/4"=1'-0"',required:true,note:'Heights, materials, fenestration, finish schedule, grade line'},
-      {label:'Building Sections — Min. 2 at 1/4"=1'-0"',required:true,note:'Through stair, through typical unit. Floor-to-floor, ceiling heights, foundation'},
+      {label:'Roof Plan at 1/8"=1\'-0"',required:true,note:'Drainage direction, slopes, equipment curbs, parapet, access hatch'},
+      {label:'Exterior Elevations — All 4 Sides at 1/4"=1\'-0"',required:true,note:'Heights, materials, fenestration, finish schedule, grade line'},
+      {label:'Building Sections — Min. 2 at 1/4"=1\'-0"',required:true,note:'Through stair, through typical unit. Floor-to-floor, ceiling heights, foundation'},
       {label:'Door & Window Schedule',required:true,note:`Size, operation, fire rating, U-factor, SHGC. ${isCA||isWA?'Match energy compliance values':''}`},
       stories>1&&{label:'Stair & Guardrail Details',required:true,note:'IBC: max 7-3/4" rise, min 10" run, 42" guardrail, handrail grip shape'},
-      isLargeMF&&{label:'Enlarged Kitchen & Bath Plans (1/2"=1'-0")',required:true,note:'ADA fixture clearances for 5+ unit projects'},
+      isLargeMF&&{label:'Enlarged Kitchen & Bath Plans (1/2"=1\'-0")',required:true,note:'ADA fixture clearances for 5+ unit projects'},
     ])},
     {name:'Structural Engineering',items:ii([
       {label:'Structural Calculations (PE-stamped)',required:true,note:`Gravity + lateral per ASCE 7, ${db.bc}. Seismic SDC ${db.seismic}`},
@@ -1174,8 +1174,7 @@ function exportChecklistCSV(){
       rows.push([catName,label,req,note,done]);
     });
   });
-  const csv=rows.map(r=>r.map(c=>'"'+(c||'').replace(/"/g,'""')+'"').join(',')).join('
-');
+  const csv=rows.map(r=>r.map(c=>'"'+(c||'').replace(/"/g,'""')+'"').join(',')).join('\n');
   const blob=new Blob([csv],{type:'text/csv'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   a.download=`${(S.addr||'checklist').replace(/[^a-z0-9]/gi,'_').substring(0,25)}_permit_checklist.csv`;
@@ -1293,7 +1292,7 @@ function drawCoverSheet(ctx,W,H){
     ctx.font='500 10px JetBrains Mono,monospace';ctx.fillStyle='rgba(210,225,244,.8)';ctx.textAlign='left';ctx.fillText(r[1],col1+4,ry+i*rowH+rowH/2);
   });
   // Sheet index
-  const sheetX=W*.78;const sheets=['A-0: Cover Sheet & Project Data','A-1: Site Plan (1/8"=1'‑0")','A-2: Floor Plans (1/4"=1'‑0")','A-3: Exterior Elevations','A-4: Building Sections','A-5: Door/Window Schedule'];
+  const sheetX=W*.78;const sheets=['A-0: Cover Sheet & Project Data','A-1: Site Plan (1/8"=1\'‑0")','A-2: Floor Plans (1/4"=1\'‑0")','A-3: Exterior Elevations','A-4: Building Sections','A-5: Door/Window Schedule'];
   ctx.font='500 10px JetBrains Mono,monospace';ctx.fillStyle='rgba(245,200,66,.7)';ctx.textAlign='left';ctx.fillText('SHEET INDEX',sheetX,CY-48-6);
   sheets.forEach((s,i)=>{ctx.font=`${i===0?'500':'400'} 9px JetBrains Mono,monospace`;ctx.fillStyle=`rgba(${i===0?'210,225,244':'122,154,184'},.7)`;ctx.fillText(s,sheetX,CY-48+i*20)});
   // General notes
@@ -1324,7 +1323,7 @@ function drawEnergySchedule(ctx,W,H,TY,z){
     ['Ceiling/Attic',R.ceil,'Blown fiberglass or cellulose','IECC R402.1.2'],
     ['Exterior Wall',R.wall,'R-21 batt + R-5 continuous rigid EPS','IECC R402.1.2'],
     ['Floor over crawl',R.floor,'Unfaced batt between joists','IECC R402.1.2'],
-    ['Slab perimeter',R.slab,'2" XPS to 2'-0" below grade','IECC R402.1.2'],
+    ['Slab perimeter',R.slab,'2" XPS to 2\'-0" below grade','IECC R402.1.2'],
     ['Windows & Doors',R.win,'Triple-pane Fibrex or equal','IECC R402.1.2'],
     ['Air barrier',R.ach,'Continuous membrane + blower door test','IECC R402.4.1.2'],
     ['Mechanical vent','0.35 ACH min','Zehnder ComfoAir 200 ERV or equal','ASHRAE 62.2'],
@@ -1356,7 +1355,7 @@ function drawSitePlanSheet(ctx,W,H){
   const m=S.plan?.meta||{};
   ctx.fillStyle='#0c1420';ctx.fillRect(0,0,W,H);
   ctx.strokeStyle='rgba(61,139,255,.35)';ctx.lineWidth=2;ctx.strokeRect(12,12,W-24,H-24);
-  const TH=70;const TY=H-TH-12;drawTitleBlock(ctx,W,H,TH,'A-1','Site Plan','1/8"=1'‑0"');
+  const TH=70;const TY=H-TH-12;drawTitleBlock(ctx,W,H,TH,'A-1','Site Plan','1/8"=1\'‑0"');
   // Plan area
   const PAD=70;const PA={x:PAD,y:PAD,w:W-PAD-180,h:TY-PAD};
   // Scale: 1/8"=1' — at 72dpi: 1ft=9px; but we need to fit the lot
@@ -1539,7 +1538,7 @@ function drawElevationsSheet(ctx,W,H){
   const m=pd.meta||{};
   ctx.fillStyle='#0c1420';ctx.fillRect(0,0,W,H);
   ctx.strokeStyle='rgba(61,139,255,.35)';ctx.lineWidth=2;ctx.strokeRect(12,12,W-24,H-24);
-  const TH=70;const TY=H-TH-12;drawTitleBlock(ctx,W,H,TH,'A-3','Exterior Elevations','1/4"=1'‑0"');
+  const TH=70;const TY=H-TH-12;drawTitleBlock(ctx,W,H,TH,'A-3','Exterior Elevations','1/4"=1\'‑0"');
   const bW=z.lotWidth-(z.leftSetback||5)-(z.rightSetback||5);
   const bD=z.lotDepth-(z.frontSetback||20)-(z.rearSetback||15);
   const stories=m.stories||2;
@@ -1588,8 +1587,8 @@ function drawElevation(ctx,ex,ey,eW,eH,name,bldW,totalH,stories,floorH,grndH,roo
       const sillY0=flrBase-(3/fhFt)*fhFt*scl;const headY0=flrBase-(7/fhFt)*fhFt*scl;
       ctx.fillStyle='rgba(122,154,184,.55)';ctx.font='5.5px JetBrains Mono,monospace';
       ctx.textAlign='left';ctx.textBaseline='middle';
-      ctx.fillText("3'-0" SILL",wx0+winW+3,sillY0);
-      ctx.fillText("7'-0" HEAD",wx0+winW+3,headY0);
+      ctx.fillText(`3'-0" SILL`,wx0+winW+3,sillY0);
+      ctx.fillText(`7'-0" HEAD`,wx0+winW+3,headY0);
       ctx.fillText(`RO: ${(winW/scl).toFixed(1)}'W×4'-0"H`,wx0+winW+3,(sillY0+headY0)/2);
     }
   }
@@ -1610,7 +1609,7 @@ function drawSectionsSheet(ctx,W,H){
   const z=S._z||{};const pd=S.plan;if(!pd)return;
   ctx.fillStyle='#0c1420';ctx.fillRect(0,0,W,H);
   ctx.strokeStyle='rgba(61,139,255,.35)';ctx.lineWidth=2;ctx.strokeRect(12,12,W-24,H-24);
-  const TH=70;const TY=H-TH-12;drawTitleBlock(ctx,W,H,TH,'A-4','Building Sections','1/4"=1'‑0"');
+  const TH=70;const TY=H-TH-12;drawTitleBlock(ctx,W,H,TH,'A-4','Building Sections','1/4"=1\'‑0"');
   const bW=z.lotWidth-(z.leftSetback||5)-(z.rightSetback||5);
   const bD=z.lotDepth-(z.frontSetback||20)-(z.rearSetback||15);
   const m=pd.meta||{};const stories=m.stories||2;
@@ -1644,7 +1643,8 @@ function drawSection(ctx,ex,ey,eW,eH,name,bldD,stories,dir){
   // Walls
   ctx.strokeStyle='rgba(61,139,255,.5)';ctx.lineWidth=2;ctx.strokeRect(bpx,bpy-totalH*scl,bldD*scl,totalH*scl);
   // Roof line
-  // roof line drawn inline belowconst roofH=totalH*scl;ctx.strokeStyle='rgba(150,100,50,.6)';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(bpx,bpy-roofH);ctx.lineTo(bpx+bldD*scl/2,bpy-roofH-20);ctx.lineTo(bpx+bldD*scl,bpy-roofH);ctx.stroke();
+  // roof line drawn inline below
+  const roofH=totalH*scl;ctx.strokeStyle='rgba(150,100,50,.6)';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(bpx,bpy-roofH);ctx.lineTo(bpx+bldD*scl/2,bpy-roofH-20);ctx.lineTo(bpx+bldD*scl,bpy-roofH);ctx.stroke();
   // Insulation hatching
   ctx.save();ctx.beginPath();ctx.rect(bpx,bpy-totalH*scl,4,totalH*scl);ctx.clip();for(let y=0;y<totalH*scl;y+=6){ctx.strokeStyle='rgba(34,224,138,.3)';ctx.lineWidth=.5;ctx.beginPath();ctx.arc(bpx+2,bpy-y,2,0,Math.PI);ctx.stroke()}ctx.restore();
   // Dimension
@@ -1686,7 +1686,7 @@ function drawSchedulesSheet(ctx,W,H){
   // General notes
   ctx.fillStyle='rgba(61,139,255,.7)';ctx.font='500 9px JetBrains Mono,monospace';ctx.textAlign='left';ctx.fillText('GENERAL NOTES:',20,cy);cy+=16;
   if(S._z)drawEnergySchedule(ctx,W,H,TY,S._z);
-  const notes=['1. All doors and windows to be installed per manufacturer's instructions and local building code.','2. Verify rough opening dimensions with manufacturer prior to framing.',`3. All glazing to meet ANSI Z97.1 safety glazing requirements where required by code.`,`4. All windows and doors to meet energy compliance: U-factor ≤0.30, SHGC ≤0.25 (verify with ${S._z?.jurisdiction||'local'} requirements).`,'5. Hardware: All accessible units to have lever handles (ADA). Deadbolts on all exterior entry doors.','6. Fire-rated doors: Provide UL-listed frames and hardware. Verify rating with local fire marshal.'];
+  const notes=['1. All doors and windows to be installed per manufacturer\'s instructions and local building code.','2. Verify rough opening dimensions with manufacturer prior to framing.',`3. All glazing to meet ANSI Z97.1 safety glazing requirements where required by code.`,`4. All windows and doors to meet energy compliance: U-factor ≤0.30, SHGC ≤0.25 (verify with ${S._z?.jurisdiction||'local'} requirements).`,'5. Hardware: All accessible units to have lever handles (ADA). Deadbolts on all exterior entry doors.','6. Fire-rated doors: Provide UL-listed frames and hardware. Verify rating with local fire marshal.'];
   notes.forEach(n=>{ctx.font='7.5px JetBrains Mono,monospace';ctx.fillStyle='rgba(122,154,184,.65)';ctx.fillText(n,20,cy);cy+=14});
 }
 
