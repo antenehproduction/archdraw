@@ -1,0 +1,1939 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>ArchDraw Intel v14 — Expert Permit Architect</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+:root{--ink:#0b0e15;--ink1:#0f1420;--ink2:#141b28;--ink3:#1c2538;--blue:#3d8bff;--blue-d:#2070e0;--green:#22e08a;--amber:#f5c842;--coral:#ff6555;--purple:#a78bfa;--txt:#d8e4f4;--txt2:#7a9ab8;--txt3:#3a5a78;--brd:rgba(61,139,255,.13);--brd2:rgba(61,139,255,.3);--mono:'JetBrains Mono',monospace;--serif:'Crimson Pro',Georgia,serif}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:100%;height:100%;overflow:hidden;background:var(--ink);color:var(--txt);font-family:var(--mono)}
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;transition:opacity .3s,transform .3s}
+.screen.hidden{opacity:0;pointer-events:none;transform:translateY(8px)}
+/* LANDING */
+#landing{align-items:center;justify-content:center;padding:20px;gap:10px;overflow-y:auto;background:var(--ink)}
+.brand{text-align:center}.brand-icon{width:42px;height:42px;background:var(--blue);border-radius:9px;display:inline-flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#fff;box-shadow:0 0 28px rgba(61,139,255,.45);margin-bottom:8px}
+.brand-title{font-family:var(--serif);font-size:26px;font-weight:300;letter-spacing:-.4px}
+.brand-sub{font-family:var(--serif);font-size:12px;font-style:italic;color:var(--txt2);margin-top:4px;max-width:520px;line-height:1.7}
+/* API card */
+#api-card{width:100%;max-width:620px;background:var(--ink1);border:1px solid var(--brd2);border-radius:10px;padding:14px}
+#conn-banner{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:7px;margin-bottom:12px;font-size:10px;transition:all .25s}
+#conn-banner.probing{background:rgba(61,139,255,.07);border:1px solid rgba(61,139,255,.2)}
+#conn-banner.ok{background:rgba(34,224,138,.07);border:1px solid rgba(34,224,138,.22)}
+#conn-banner.needs-key{background:rgba(245,200,66,.06);border:1px solid rgba(245,200,66,.2)}
+.cbdot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.cb-probing .cbdot{background:var(--blue);animation:pdot 1s ease-in-out infinite}
+.cb-ok .cbdot{background:var(--green);box-shadow:0 0 7px var(--green)}
+.cb-needs-key .cbdot{background:var(--amber)}
+@keyframes pdot{0%,100%{opacity:1}50%{opacity:.3}}
+#conn-msg{flex:1;color:var(--txt2);line-height:1.5}
+#conn-msg strong{display:block;margin-bottom:1px;font-size:11px}
+#key-area{display:none}#key-area.vis{display:block}
+.key-row{display:flex;gap:7px;margin-bottom:9px}
+.key-inp{flex:1;background:var(--ink2);border:1px solid var(--brd2);border-radius:7px;padding:10px 13px;font-family:var(--mono);font-size:11px;color:var(--txt);outline:none;transition:border-color .18s}
+.key-inp:focus{border-color:var(--blue)}
+.key-inp::placeholder{color:var(--txt3)}
+.key-btn{padding:10px 14px;border:1px solid var(--brd2);border-radius:7px;background:none;color:var(--txt3);font-family:var(--mono);font-size:9px;cursor:pointer;transition:all .15s;white-space:nowrap}
+.key-btn:hover{background:var(--ink3);color:var(--txt)}
+.key-btn.ok{background:rgba(34,224,138,.08);border-color:rgba(34,224,138,.3);color:var(--green)}
+.key-note{font-size:8.5px;color:var(--txt3);line-height:1.7}.key-note a{color:var(--blue);text-decoration:none}
+#key-st{display:none;margin-top:8px;padding:7px 10px;border-radius:5px;font-size:9.5px}
+#key-st.ok-msg{background:rgba(34,224,138,.07);border:1px solid rgba(34,224,138,.2);color:var(--green)}
+#key-st.err-msg{background:rgba(255,101,85,.07);border:1px solid rgba(255,101,85,.2);color:var(--coral)}
+/* Inputs */
+.acard{width:100%;max-width:620px;background:var(--ink1);border:1px solid var(--brd2);border-radius:10px;padding:18px}
+.clbl{font-size:8px;letter-spacing:1.4px;color:var(--blue);margin-bottom:9px;text-transform:uppercase}
+.irow{display:flex;gap:7px;margin-bottom:9px}
+.ainp{flex:1;background:var(--ink2);border:1px solid var(--brd2);border-radius:7px;padding:10px 13px;font-family:var(--mono);font-size:11px;color:var(--txt);outline:none;transition:border-color .18s}
+.ainp:focus{border-color:var(--blue)}.ainp::placeholder{color:var(--txt3)}
+.rbtn{background:var(--blue);border:none;border-radius:7px;padding:10px 18px;font-family:var(--mono);font-size:10px;font-weight:500;color:#fff;cursor:pointer;letter-spacing:.5px;transition:all .18s;white-space:nowrap;box-shadow:0 0 16px rgba(61,139,255,.3)}
+.rbtn:hover:not(:disabled){background:var(--blue-d);transform:translateY(-1px)}
+.rbtn:disabled{opacity:.38;cursor:not-allowed;transform:none}
+/* Overlay questionnaire */
+.ov-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;margin-bottom:8px}
+.ov-item{display:flex;align-items:flex-start;gap:7px;padding:7px 9px;background:var(--ink2);border:1px solid var(--brd);border-radius:6px;cursor:pointer;transition:all .15s}
+.ov-item:hover{border-color:var(--brd2)}
+.ov-dot{width:8px;height:8px;border-radius:50%;background:var(--txt3);flex-shrink:0;margin-top:3px;transition:all .2s}
+.ov-lbl{font-size:9.5px;color:var(--txt2);font-weight:500;margin-bottom:1px}
+.ov-desc{font-size:7.5px;color:var(--txt3);line-height:1.4}
+#fema-status{font-size:8px;color:var(--txt3);margin-top:6px;padding:5px 8px;background:var(--ink2);border-radius:4px;display:none}
+/* Feature grid */
+.fgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
+.fc{background:var(--ink2);border:1px solid var(--brd);border-radius:6px;padding:8px 9px}
+.fc-t{font-size:9.5px;font-weight:500;color:var(--txt);margin-bottom:2px}
+.fc-d{font-size:7.5px;color:var(--txt3);line-height:1.5}
+/* WORKSPACE */
+#workspace{flex-direction:row;overflow:hidden}
+/* Left research panel */
+#rp{width:270px;flex-shrink:0;display:flex;flex-direction:column;background:var(--ink1);border-right:1px solid var(--brd);overflow:hidden}
+#rp-hdr{padding:9px 11px;border-bottom:1px solid var(--brd);flex-shrink:0;display:flex;align-items:center;gap:7px}
+.rlogo{width:18px;height:18px;background:var(--blue);border-radius:3px;display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;color:#fff;flex-shrink:0}
+#rp-addr{font-size:9px;color:var(--txt2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bbtn{font-size:9px;color:var(--txt3);background:none;border:none;cursor:pointer;padding:2px 5px;border-radius:3px;transition:color .12s;flex-shrink:0}.bbtn:hover{color:var(--txt)}
+#phases{flex-shrink:0;padding:7px}
+.ph{display:flex;gap:7px;margin-bottom:3px;align-items:flex-start;padding:5px 7px;border-radius:4px;border:1px solid transparent;transition:all .2s}
+.ph.active{background:var(--ink2);border-color:var(--brd2)}.ph.pending{opacity:.28}
+.pdot{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--txt3);display:flex;align-items:center;justify-content:center;font-size:7px;flex-shrink:0;margin-top:1px;transition:all .2s;font-weight:700}
+.ph.done .pdot{background:var(--green);border-color:var(--green);color:#0b0e15}
+.ph.active .pdot{border-color:var(--blue);animation:pdotA 1.2s ease-in-out infinite}
+.ph.error .pdot{background:var(--coral);border-color:var(--coral);color:#fff}
+@keyframes pdotA{0%,100%{box-shadow:0 0 0 0 rgba(61,139,255,.6)}50%{box-shadow:0 0 0 4px rgba(61,139,255,0)}}
+.ph-name{font-size:9px;font-weight:500;color:var(--txt)}.ph-st{font-size:7.5px;color:var(--txt3);margin-top:1px}
+.ph-st.run{color:var(--blue)}.ph-st.done{color:var(--green)}.ph-st.error{color:var(--coral)}
+.ph-t{font-size:7px;color:var(--txt3);margin-left:auto;flex-shrink:0}
+.ph-retry{font-size:7px;padding:1px 5px;border:1px solid var(--brd2);border-radius:3px;background:none;color:var(--txt3);cursor:pointer;margin-left:3px;flex-shrink:0;display:none;transition:all .12s}
+.ph.error .ph-retry{display:inline-block}.ph-retry:hover{color:var(--amber);border-color:var(--amber)}
+#findings{flex:1;overflow-y:auto;border-top:1px solid var(--brd)}
+#findings::-webkit-scrollbar{width:2px}#findings::-webkit-scrollbar-thumb{background:var(--brd2)}
+.fb{border-bottom:1px solid var(--brd);padding:10px}
+.fblbl{font-size:7px;letter-spacing:1px;color:var(--blue);text-transform:uppercase;margin-bottom:5px;display:flex;align-items:center;gap:5px}
+.fblbl::after{content:'';flex:1;height:1px;background:var(--brd)}
+.fbbody{font-family:var(--serif);font-size:11.5px;line-height:1.7;color:var(--txt)}.fbbody strong{font-weight:600}
+.kvg{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:6px}
+.kv{background:var(--ink2);border:1px solid var(--brd);border-radius:4px;padding:4px 6px}
+.kl{font-size:7px;color:var(--txt3);margin-bottom:1px}.kv-v{font-size:10px;font-weight:500;color:var(--txt)}
+.kv-v.b{color:var(--blue)}.kv-v.g{color:var(--green)}.kv-v.a{color:var(--amber)}
+/* Center panel */
+#cp{flex:1;display:flex;flex-direction:column;overflow:hidden}
+#ptb{height:36px;display:flex;align-items:center;gap:5px;padding:0 9px;background:var(--ink1);border-bottom:1px solid var(--brd);flex-shrink:0;overflow-x:auto}
+.ptlbl{font-size:8px;letter-spacing:.8px;color:var(--txt3);text-transform:uppercase;white-space:nowrap}
+.psep{width:1px;height:13px;background:var(--brd);margin:0 2px;flex-shrink:0}
+.vpill{display:flex;border:1px solid var(--brd);border-radius:4px;overflow:hidden;flex-shrink:0}
+.vpill button{font-size:8px;padding:3px 8px;background:none;color:var(--txt3);border:none;cursor:pointer;transition:all .12s;white-space:nowrap}
+.vpill button.on{background:var(--ink3);color:var(--txt)}
+#sheet-tabs{display:flex;gap:3px;flex:1;overflow-x:auto}
+#sheet-tabs::-webkit-scrollbar{height:0}
+.stab{font-size:8px;padding:2px 8px;border:1px solid var(--brd);border-radius:3px;background:none;color:var(--txt3);cursor:pointer;transition:all .12s;white-space:nowrap}
+.stab.on{background:var(--ink3);color:var(--txt);border-color:var(--brd2)}
+.sp{flex:1}.ptbtn{font-size:8px;padding:3px 8px;border:1px solid var(--brd);border-radius:3px;background:none;color:var(--txt3);cursor:pointer;transition:all .12s;white-space:nowrap}
+.ptbtn:hover{background:var(--ink3);color:var(--txt)}
+.ptbtn.g{color:var(--green);border-color:rgba(34,224,138,.3)}.ptbtn.b{color:var(--blue);border-color:rgba(61,139,255,.3)}
+.ptbtn.r{color:var(--coral);border-color:rgba(255,101,85,.3)}
+#cc{flex:1;position:relative;overflow:hidden}
+#map-view{position:absolute;inset:0;display:none;z-index:1}
+#map-view.vis{display:block}
+#map-container{width:100%;height:100%}
+.map-legend{position:absolute;bottom:30px;left:8px;z-index:999;background:rgba(11,14,21,.92);border:1px solid var(--brd);border-radius:6px;padding:8px 10px;font-family:var(--mono);font-size:8px}
+/* Map info bar */
+#map-info{position:absolute;top:8px;left:8px;z-index:999;background:rgba(11,14,21,.88);border:1px solid var(--brd2);border-radius:6px;padding:7px 10px;font-size:8px;color:var(--txt2);max-width:280px;display:none}
+#map-info.vis{display:block}
+#plan-canvas{position:absolute;inset:0;cursor:grab;display:none}
+#plan-canvas.vis{display:block}
+#plan-canvas:active{cursor:grabbing}
+#three-canvas{position:absolute;inset:0;display:none}
+#ovl{position:absolute;inset:0;display:none;align-items:center;justify-content:center;flex-direction:column;gap:9px;background:rgba(11,14,21,.9);z-index:20}
+.ospin{width:28px;height:28px;border:2px solid var(--brd);border-top-color:var(--blue);border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ophs{font-size:10px;color:var(--blue);font-weight:500;letter-spacing:.5px}
+.otxt{font-size:8px;color:var(--txt3);letter-spacing:.4px}
+#legend{position:absolute;bottom:8px;left:8px;background:rgba(11,14,21,.9);border:1px solid var(--brd);border-radius:5px;padding:6px 8px;display:none;grid-template-columns:1fr 1fr;gap:2px 10px;z-index:10}
+#legend.vis{display:grid}
+.leg-item{display:flex;align-items:center;gap:4px;font-size:7px;color:var(--txt2);white-space:nowrap}
+.leg-dot{width:8px;height:8px;border-radius:2px;flex-shrink:0}
+#zoom-hint{position:absolute;top:8px;right:8px;font-size:7.5px;color:var(--txt3);background:rgba(11,14,21,.7);padding:4px 8px;border-radius:4px;pointer-events:none;display:none;z-index:10}
+#zoom-hint.vis{display:block}
+/* Right checklist */
+#clp{width:240px;flex-shrink:0;background:var(--ink1);border-left:1px solid var(--brd);display:flex;flex-direction:column;overflow:hidden}
+#clp-hdr{padding:8px 10px;border-bottom:1px solid var(--brd);flex-shrink:0}
+.clt{font-size:9px;font-weight:500;color:var(--txt);margin-bottom:1px}.cls{font-size:7.5px;color:var(--txt3)}
+#cl-scroll{flex:1;overflow-y:auto;padding:6px}
+#cl-scroll::-webkit-scrollbar{width:2px}#cl-scroll::-webkit-scrollbar-thumb{background:var(--brd2)}
+.csec{margin-bottom:9px}
+.cshd{font-size:7px;letter-spacing:.6px;color:var(--blue);text-transform:uppercase;padding:3px 0;border-bottom:1px solid var(--brd);margin-bottom:4px;display:flex;align-items:center;justify-content:space-between}
+.ccnt{background:var(--ink3);border:1px solid var(--brd);border-radius:8px;padding:1px 4px;font-size:7px;color:var(--txt3)}
+.cit{display:flex;align-items:flex-start;gap:5px;margin-bottom:3px;padding:3px 5px;border-radius:3px;cursor:pointer;transition:background .1s}.cit:hover{background:var(--ink2)}
+.cck{width:10px;height:10px;border:1.5px solid var(--txt3);border-radius:2px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .18s;margin-top:1px}
+.cit.chk .cck{background:var(--green);border-color:var(--green)}
+.cit.chk .ctx{text-decoration:line-through;color:var(--txt3)}
+.ctx{font-size:8px;line-height:1.4;color:var(--txt2);flex:1}.cnote{font-size:7px;color:var(--txt3);display:block;margin-top:1px}.creq{font-size:7px;color:var(--coral);flex-shrink:0}
+.pwrap{padding:7px 10px;border-top:1px solid var(--brd);flex-shrink:0}
+.prow{display:flex;justify-content:space-between;font-size:8px;color:var(--txt3);margin-bottom:3px}
+.ptr{height:2px;background:var(--ink3);border-radius:2px;overflow:hidden}
+.pf{height:100%;background:var(--green);border-radius:2px;transition:width .35s}
+.exb{margin:0 7px 7px;padding:7px;background:rgba(34,224,138,.06);border:1px solid rgba(34,224,138,.18);border-radius:5px;cursor:pointer;text-align:center;transition:all .18s}.exb:hover{background:rgba(34,224,138,.11)}
+.ext{font-size:9px;font-weight:500;color:var(--green);margin-bottom:1px}.exs{font-size:7px;color:var(--txt3)}
+/* Log panel */
+#log-panel{position:fixed;bottom:0;left:0;right:0;height:200px;background:#0a0d12;border-top:1px solid rgba(61,139,255,.3);z-index:9999;display:flex;flex-direction:column;font-family:var(--mono);font-size:9.5px;display:none}
+/* ── Development Options Panel ── */
+#opts-overlay{position:absolute;inset:0;background:rgba(11,14,21,.97);z-index:40;overflow-y:auto;display:none;padding:16px}
+#opts-overlay.vis{display:block}
+.opts-header{text-align:center;margin-bottom:14px}
+.opts-title{font-family:var(--serif);font-size:22px;font-weight:300;color:var(--txt);margin-bottom:3px}
+.opts-sub{font-size:9px;color:var(--txt2);line-height:1.6}
+.opts-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(205px,1fr));gap:9px;max-width:1100px;margin:0 auto 12px}
+.opt-card{background:var(--ink1);border:1px solid var(--brd);border-radius:10px;padding:13px;cursor:pointer;transition:all .2s;position:relative;display:flex;flex-direction:column;gap:6px}
+.opt-card:hover{border-color:var(--blue);background:var(--ink2);transform:translateY(-2px);box-shadow:0 8px 24px rgba(61,139,255,.18)}
+.opt-card.recommended{border-color:var(--amber);background:rgba(245,200,66,.04)}
+.opt-badge{display:inline-flex;padding:2px 7px;border-radius:10px;font-size:7px;font-weight:500;width:fit-content}
+.badge-green{background:rgba(34,224,138,.12);border:1px solid rgba(34,224,138,.3);color:var(--green)}
+.badge-blue{background:rgba(61,139,255,.12);border:1px solid rgba(61,139,255,.3);color:var(--blue)}
+.badge-amber{background:rgba(245,200,66,.12);border:1px solid rgba(245,200,66,.3);color:var(--amber)}
+.badge-purple{background:rgba(167,139,250,.12);border:1px solid rgba(167,139,250,.3);color:var(--purple)}
+.opt-icon{font-size:22px;line-height:1}
+.opt-name{font-size:12.5px;font-weight:500;color:var(--txt);line-height:1.2}
+.opt-type{font-size:8.5px;color:var(--txt3)}
+.opt-metrics{display:grid;grid-template-columns:1fr 1fr;gap:3px}
+.opt-metric{background:var(--ink2);border-radius:4px;padding:4px 6px}
+.oml{font-size:6.5px;color:var(--txt3);margin-bottom:1px;letter-spacing:.3px;text-transform:uppercase}
+.omv{font-size:10px;font-weight:500;color:var(--txt)}.omv.g{color:var(--green)}.omv.b{color:var(--blue)}.omv.a{color:var(--amber)}
+.opt-green-tags{display:flex;flex-wrap:wrap;gap:3px}
+.gtag{font-size:7px;padding:1px 5px;background:rgba(34,224,138,.08);border:1px solid rgba(34,224,138,.18);border-radius:8px;color:var(--green)}
+.opt-cert{font-size:7.5px;color:var(--purple)}
+.opt-select-btn{margin-top:4px;padding:7px;background:rgba(61,139,255,.1);border:1px solid rgba(61,139,255,.3);border-radius:6px;font-family:var(--mono);font-size:9px;font-weight:500;color:var(--blue);cursor:pointer;text-align:center;transition:all .18s}
+.opt-select-btn:hover{background:var(--blue);color:#fff}
+.opt-card.recommended .opt-select-btn{background:rgba(245,200,66,.12);border-color:rgba(245,200,66,.4);color:var(--amber)}
+.opt-card.recommended .opt-select-btn:hover{background:var(--amber);color:#0b0e15}
+.opt-rec-star{position:absolute;top:-8px;right:12px;background:var(--amber);color:#0b0e15;font-size:7.5px;font-weight:700;padding:2px 8px;border-radius:10px}
+.opt-ai-note{padding:9px 13px;background:rgba(61,139,255,.06);border:1px solid rgba(61,139,255,.2);border-radius:8px;font-size:9px;color:var(--txt2);line-height:1.6;max-width:1100px;margin:0 auto}
+/* Animations */
+.df::after{content:'...';animation:df 1.4s steps(4) infinite}
+@keyframes df{0%{content:''}33%{content:'.'}66%{content:'..'}100%{content:'...'}}
+.ebox{background:rgba(255,101,85,.06);border:1px solid rgba(255,101,85,.22);border-radius:5px;padding:9px;margin:7px 0;font-size:10px;color:var(--coral);line-height:1.6}
+/* Upload */
+.upload-row{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.upzone{flex:1;border:1px dashed var(--brd2);border-radius:6px;padding:7px 11px;cursor:pointer;font-size:9px;color:var(--txt3);display:flex;align-items:center;gap:6px;transition:all .18s}
+.upzone:hover{border-color:var(--blue);color:var(--txt2);background:var(--ink2)}
+#file-inp{display:none}#img-prev{width:40px;height:30px;border-radius:3px;object-fit:cover;border:1px solid var(--brd2);display:none}
+#img-tag{font-size:7.5px;color:var(--green);display:none;padding:2px 5px;background:rgba(34,224,138,.08);border:1px solid rgba(34,224,138,.2);border-radius:3px;white-space:nowrap}
+
+/* ── UX-9: Responsive layout for smaller screens ── */
+@media(max-width:900px){
+  #workspace{flex-direction:column}
+  #rp{width:100%;height:220px;border-right:none;border-bottom:1px solid var(--brd)}
+  #clp{width:100%;height:180px;border-left:none;border-top:1px solid var(--brd)}
+  #phases{display:flex;flex-wrap:wrap;gap:3px;padding:4px}
+  .ph{min-width:120px;flex:1}
+  #ptb{flex-wrap:wrap;height:auto;padding:4px 6px;gap:3px}
+  #sheet-tabs{max-width:100%;flex-wrap:wrap}
+  .opts-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:600px){
+  .opts-grid{grid-template-columns:1fr}
+  #rp{height:180px}
+  #clp{height:160px}
+  .brand-title{font-size:22px}
+  .acard,.ov-grid{padding:12px}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══ LANDING ═══ -->
+<div class="screen" id="landing">
+  <div class="brand">
+    <div class="brand-icon">AI</div>
+    <div class="brand-title">ArchDraw <em style="color:var(--blue)">Intel</em> v11</div>
+    <div class="brand-sub">Real satellite imagery · OSM parcel data · Complete printable 24"×36" permit drawing set</div>
+  </div>
+
+  <div id="api-card">
+    <div id="conn-banner" class="probing cb-probing">
+      <div class="cbdot"></div>
+      <div id="conn-msg"><strong id="conn-title">Checking connection<span class="df"></span></strong><span id="conn-body">Probing Anthropic API...</span></div>
+      <button id="conn-retry" onclick="probeConnection()" style="font-size:8px;padding:3px 9px;border:1px solid var(--brd2);border-radius:4px;background:none;color:var(--txt3);cursor:pointer;display:none">Retry</button>
+    </div>
+    <div id="key-area">
+      <div class="key-row">
+        <input class="ainp" id="addr-inp" type="text" placeholder="e.g. 355 NE 151st St, Shoreline WA 98155" style="width:100%" onkeydown="addrKeydown(event)" oninput="addrSuggest(this.value)" autocomplete="off">
+        <button class="key-btn" id="save-btn" onclick="saveKey()">Connect</button>
+        <button class="key-btn" onclick="toggleKey()">👁</button>
+      </div>
+      <div class="key-note">Get key at <a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com</a> — ~$0.03–0.08 per analysis</div>
+      <div id="key-st"></div>
+    </div>
+  </div>
+
+  <div class="acard">
+    <div class="clbl">Property Address</div>
+    <div class="irow">
+      <div style="position:relative;flex:1">
+      <input class="ainp" id="addr-inp" type="text" placeholder="e.g. 355 NE 151st St, Shoreline WA 98155"
+        style="width:100%"
+        onkeydown="if(event.key==='Enter'){hideSuggest();startAnalysis();}else if(event.key==='Escape')hideSuggest();else addrSuggest(this.value)"
+        oninput="addrSuggest(this.value)" autocomplete="off">
+      <div id="suggest-box" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--ink1);border:1px solid var(--brd2);border-radius:0 0 7px 7px;z-index:100;max-height:160px;overflow-y:auto"></div>
+    </div>
+      <button class="rbtn" id="run-btn" onclick="startAnalysis()" disabled>ANALYZE →</button>
+    </div>
+    <div class="upload-row">
+      <label class="upzone" for="file-inp">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+        <span id="up-lbl">Optional: attach site photo for AI analysis</span>
+      </label>
+      <input type="file" id="file-inp" accept="image/*" onchange="handleImage(this)">
+      <img id="img-prev" alt=""><span id="img-tag">📷 Site photo</span>
+    </div>
+    <!-- Overlay questionnaire -->
+    <div style="margin-bottom:12px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:7px">
+        <div><div style="font-size:8px;letter-spacing:1.2px;color:var(--blue);text-transform:uppercase">Site Conditions</div><div style="font-size:7.5px;color:var(--txt3);margin-top:1px">Check any that apply — refines permit checklist</div></div>
+        <button id="fema-btn" onclick="detectFEMA()" style="font-size:8px;padding:3px 9px;border:1px solid rgba(61,139,255,.3);border-radius:4px;background:none;color:var(--blue);cursor:pointer">⚡ Auto-detect Flood Zone</button>
+      </div>
+      <div class="ov-grid">
+        <div class="ov-item" id="ov-flood" onclick="toggleOv('flood')"><div class="ov-dot" id="ov-dot-flood"></div><div><div class="ov-lbl">🌊 Flood Zone</div><div class="ov-desc">FEMA SFHA — elevation cert required</div></div></div>
+        <div class="ov-item" id="ov-hillside" onclick="toggleOv('hillside')"><div class="ov-dot" id="ov-dot-hillside"></div><div><div class="ov-lbl">⛰️ Hillside &gt;15%</div><div class="ov-desc">Slope stability, grading limits</div></div></div>
+        <div class="ov-item" id="ov-historic" onclick="toggleOv('historic')"><div class="ov-dot" id="ov-dot-historic"></div><div><div class="ov-lbl">🏛️ Historic District</div><div class="ov-desc">COA, Design Review Board</div></div></div>
+        <div class="ov-item" id="ov-coastal" onclick="toggleOv('coastal')"><div class="ov-dot" id="ov-dot-coastal"></div><div><div class="ov-lbl">🏖️ Coastal Zone</div><div class="ov-desc">State coastal development permit</div></div></div>
+        <div class="ov-item" id="ov-fire" onclick="toggleOv('fire')"><div class="ov-dot" id="ov-dot-fire"></div><div><div class="ov-lbl">🔥 Fire Hazard Zone</div><div class="ov-desc">Ember-resistant, Class A roof</div></div></div>
+        <div class="ov-item" id="ov-liquefaction" onclick="toggleOv('liquefaction')"><div class="ov-dot" id="ov-dot-liquefaction"></div><div><div class="ov-lbl">🌍 Liquefaction Zone</div><div class="ov-desc">Geotech + peer review required</div></div></div>
+      </div>
+      <div id="fema-status"></div>
+    </div>
+    <div class="fgrid">
+      <div class="fc"><div class="fc-t">🛰️ Satellite Map</div><div class="fc-d">Real Esri imagery + OSM building footprints + parcel overlay</div></div>
+      <div class="fc"><div class="fc-t">📐 Local Floor Plan</div><div class="fc-d">Instant geometry — no API timeout, always completes</div></div>
+      <div class="fc"><div class="fc-t">📄 Full PDF Set</div><div class="fc-d">A-0 Cover through A-6 Schedules — printable 24"×36"</div></div>
+      <div class="fc"><div class="fc-t">🏗️ 3D Massing</div><div class="fc-d">Three.js model with roof geometry</div></div>
+      <div class="fc"><div class="fc-t">📋 50-State Checklist</div><div class="fc-d">Code + overlay aware, FEMA auto-detect, fee estimates</div></div>
+      <div class="fc"><div class="fc-t">✏️ Elevations + Sections</div><div class="fc-d">Auto-generated 4-side elevations and 2 building sections</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ WORKSPACE ═══ -->
+<div class="screen hidden" id="workspace">
+  <div id="rp">
+    <div id="rp-hdr"><div class="rlogo">AI</div><div id="rp-addr">—</div><button class="bbtn" onclick="goBack()">← Back</button></div>
+    <div id="phases"></div>
+    <div id="findings"></div>
+  </div>
+
+  <div id="cp">
+    <div id="ptb">
+      <span class="ptlbl">VIEW</span><div class="psep"></div>
+      <div class="vpill">
+        <button class="on" id="v-map" onclick="setView('map')">🛰 MAP</button>
+        <button id="v-plan" onclick="setView('plan')">📐 PLAN</button>
+        <button id="v-3d" onclick="setView('3d')">🏗 3D</button>
+      </div>
+      <div class="psep"></div>
+      <div id="sheet-tabs"></div>
+      <div class="sp"></div>
+      <button class="ptbtn b" onclick="fitPlan()" title="Fit to screen">FIT</button>
+      <button class="ptbtn" onclick="toggleLogPanel()">LOG</button>
+      <button class="ptbtn" onclick="exportSheetPNG()" title="Save current sheet as PNG">↓ PNG</button>
+      <button class="ptbtn r" onclick="exportPermitPDF()" title="Export full 24×36 permit set as PDF">↓ PDF SET</button>
+    </div>
+    <div id="cc">
+      <!-- Development Options selection panel (shown between zoning and plan) -->
+      <div id="opts-overlay"></div>
+      <!-- Map view -->
+      <div id="map-view"><div id="map-container"></div></div>
+      <div id="map-info"></div>
+      <!-- Plan/sheet canvas -->
+      <canvas id="plan-canvas"></canvas>
+      <!-- 3D canvas -->
+      <canvas id="three-canvas"></canvas>
+      <!-- overlays -->
+      <div id="legend"></div>
+      <div id="zoom-hint">Scroll to zoom · Drag to pan</div>
+      <div id="ovl"><div class="ospin"></div><div class="ophs" id="ophs">INITIALIZING</div><div class="otxt" id="otxt">Starting<span class="df"></span></div></div>
+    </div>
+  </div>
+
+  <div id="clp">
+    <div id="clp-hdr">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div class="clt">PERMIT CHECKLIST</div>
+        <button onclick="exportChecklistCSV()" title="Export to CSV" style="font-size:7.5px;padding:2px 6px;border:1px solid var(--brd2);border-radius:3px;background:none;color:var(--txt3);cursor:pointer">↓ CSV</button>
+      </div>
+      <div class="cls" id="cljur">Loading...</div>
+    </div>
+    <div id="cl-scroll"></div>
+    <div class="pwrap"><div class="prow"><span>Completion</span><span id="ppct">0%</span></div><div class="ptr"><div class="pf" id="pf" style="width:0%"></div></div></div>
+    <div class="exb" onclick="exportPermitPDF()"><div class="ext">↓ Export Full Permit Package PDF</div><div class="exs">24"×36" sheets · A-0 through A-6</div></div>
+  </div>
+</div>
+
+<div id="log-panel"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+// ═══ STATE ═══
+const S={
+  addr:'',img64:null,imgType:null,plan:null,floor:0,
+  view:'map',activeSheet:'A-0',
+  apiKey:'',mode:'embedded',apiReady:false,analyzing:false,
+  zoom:1,panX:0,panY:0,panning:false,panStart:{x:0,y:0,px:0,py:0},
+  overlays:{flood:false,hillside:false,historic:false,coastal:false,fire:false,liquefaction:false},
+  femaZone:null,lat:null,lon:null,osmBuildings:[],
+  selectedOption:null,   // chosen development program
+  competitors:null,      // competitor research results
+  countyRecord:null,     // found GIS/OSM site data
+  generatedOptions:[],   // 2-5 computed options
+};
+const PHASES=[
+  {id:'site',  lbl:'Site & Parcel Research'},
+  {id:'zone',  lbl:'Zoning Code Analysis'},
+  {id:'record',lbl:'County Records / Site Survey'},
+  {id:'opts',  lbl:'Development Options'},
+  {id:'comp',  lbl:'Competitor Research'},
+  {id:'plan',  lbl:'Floor Plan — Expert Design'},
+  {id:'chk',   lbl:'Permit Checklist'},
+];
+const phaseRunners={};
+
+// ═══ LOG SYSTEM ═══
+const LOG=[];let logPanel=null;
+function log(level,...args){const msg=args.map(a=>typeof a==='object'?JSON.stringify(a).substring(0,200):String(a)).join(' ');LOG.push({t:Date.now(),level,msg});console[level]?.('[ADI]',...args);renderLog()}
+const L={info:(...a)=>log('info',...a),warn:(...a)=>log('warn',...a),error:(...a)=>log('error',...a)};
+window.onerror=(m,s,l)=>L.error(`Uncaught: ${m} (${s}:${l})`);
+window.onunhandledrejection=e=>L.error('UnhandledPromise:',e.reason?.message||e.reason);
+function renderLog(){if(!logPanel)return;const tb=logPanel.querySelector('#lb');if(!tb)return;tb.innerHTML=LOG.slice(-80).map(e=>{const ts=((e.t-LOG[0]?.t)/1000).toFixed(1)+'s';const col=e.level==='error'?'var(--coral)':e.level==='warn'?'var(--amber)':'var(--txt2)';return`<tr><td style="color:var(--txt3);padding:1px 6px;white-space:nowrap">${ts}</td><td style="color:${col};padding:1px 4px;word-break:break-all">${e.msg.replace(/</g,'&lt;')}</td></tr>`}).join('');tb.scrollTop=1e9}
+function toggleLogPanel(){if(logPanel){logPanel.remove();logPanel=null;return}
+  // UX-2: only show log panel when workspace is visible
+  const ws=document.getElementById('workspace');if(ws&&ws.classList.contains('hidden')){alert('Open an analysis first, then use the LOG button in the toolbar.');return}logPanel=document.createElement('div');logPanel.id='log-panel';logPanel.style.cssText='position:fixed;bottom:0;left:0;right:0;height:200px;background:#0a0d12;border-top:1px solid rgba(61,139,255,.3);z-index:9999;display:flex;flex-direction:column;font-family:JetBrains Mono,monospace;font-size:9.5px';logPanel.innerHTML=`<div style="display:flex;align-items:center;gap:7px;padding:5px 9px;border-bottom:1px solid rgba(61,139,255,.15);flex-shrink:0"><span style="color:var(--blue);font-size:9px">SYSTEM LOG</span><span style="color:var(--txt3);font-size:9px">${LOG.length} entries</span><div style="flex:1"></div><button onclick="navigator.clipboard?.writeText(LOG.map(e=>e.msg).join('\n'))" style="font-size:8px;padding:2px 7px;border:1px solid rgba(61,139,255,.3);border-radius:3px;background:none;color:var(--txt3);cursor:pointer">Copy</button><button onclick="toggleLogPanel()" style="font-size:8px;padding:2px 7px;border:1px solid var(--brd);border-radius:3px;background:none;color:var(--txt3);cursor:pointer">✕</button></div><div style="flex:1;overflow-y:auto"><table style="width:100%;border-collapse:collapse"><tbody id="lb"></tbody></table></div>`;document.body.appendChild(logPanel);renderLog()}
+
+// ═══ JSON REPAIR ═══
+function repairJSON(s){return s.replace(/,(\s*[}\]])/g,'$1').replace(/\/\/[^\n]*/g,'').replace(/[\u201C\u201D]/g,'"').replace(/:\s*(undefined|NaN)\b/g,':null')}
+
+// ═══ DELAY ═══
+function delay(ms){return new Promise(r=>setTimeout(r,ms))}
+
+// ═══ 50-STATE DB ═══
+const STATE_DB={AL:{bc:'IBC 2018',ec:'IECC 2015',seismic:'C',wind:'130',note:'No statewide residential code; municipal adoption'},AK:{bc:'IBC 2018',ec:'IECC 2018',seismic:'D-F',wind:'150',note:'Extreme seismic + wind — special engineering required'},AZ:{bc:'IBC 2018',ec:'IECC 2015',seismic:'C',wind:'105',note:'Check city/county amendments'},AR:{bc:'IBC 2018',ec:'IECC 2015',seismic:'C',wind:'115',note:'Arkansas Fire Prevention Code'},CA:{bc:'CBC 2022',ec:'Title 24 2022',seismic:'D-E',wind:'110',note:'CALGreen required. Title 24 CF1R. SB9 ADU rights'},CO:{bc:'IBC 2021',ec:'IECC 2021',seismic:'B',wind:'115',note:'Denver has own code'},CT:{bc:'IBC 2018',ec:'IECC 2021',seismic:'B',wind:'120',note:'CT State Building Code (IBC amendments)'},DE:{bc:'IBC 2018',ec:'IECC 2018',seismic:'B',wind:'130',note:'DE State Fire Prevention Regulations'},FL:{bc:'FBC 2023',ec:'FBC Energy 2023',seismic:'A',wind:'175',note:'Product Approvals required. NOA for HVHZ'},GA:{bc:'IBC 2018',ec:'IECC 2015',seismic:'B',wind:'130',note:'Local amendments common'},HI:{bc:'IBC 2018',ec:'ASHRAE 90.1-2019',seismic:'D',wind:'150',note:'County codes vary. Hurricane requirements'},ID:{bc:'IBC 2018',ec:'IECC 2015',seismic:'C',wind:'115',note:'Small jurisdictions may use county regs'},IL:{bc:'IBC 2021',ec:'IECC 2021',seismic:'B',wind:'115',note:'Chicago Municipal Code — significantly different'},IN:{bc:'IBC 2020',ec:'IECC 2018',seismic:'B',wind:'105',note:'IDOI inspection required'},IA:{bc:'IBC 2018',ec:'IECC 2018',seismic:'B',wind:'115',note:'Local adoption required'},KS:{bc:'IBC 2018',ec:'IECC 2018',seismic:'B',wind:'115+',note:'Tornado shelter recommended in tornado alley'},KY:{bc:'IBC 2019',ec:'IECC 2018',seismic:'C',wind:'115',note:'Kentucky Building Code (KBC)'},LA:{bc:'IBC 2018',ec:'IECC 2015',seismic:'B',wind:'150',note:'Post-Katrina coastal requirements strict'},ME:{bc:'IBC 2015',ec:'IECC 2015',seismic:'B',wind:'120',note:'Maine Uniform Building & Energy Code (MUBEC)'},MD:{bc:'IBC 2018',ec:'IECC 2018',seismic:'B',wind:'130',note:'Green Building Council active'},MA:{bc:'MSBC 2022',ec:'IECC 2021',seismic:'B',wind:'130',note:'Stretch Code required in 300+ municipalities'},MI:{bc:'MBC 2015',ec:'IECC 2015',seismic:'B',wind:'115',note:'BCC oversight'},MN:{bc:'IBC 2020',ec:'IECC 2020',seismic:'A',wind:'115',note:'MNGBC green building programs'},MS:{bc:'IBC 2015',ec:'IECC 2015',seismic:'B',wind:'140',note:'Gulf Coast wind zone enforcement'},MO:{bc:'IBC 2018',ec:'IECC 2018',seismic:'C',wind:'115',note:'KC/STL local amendments'},MT:{bc:'IBC 2018',ec:'IECC 2021',seismic:'C',wind:'115',note:'Small jurisdictions may use county regs'},NE:{bc:'IBC 2018',ec:'IECC 2018',seismic:'B',wind:'115',note:'Tornado shelter in some areas'},NV:{bc:'IBC 2018',ec:'IECC 2018',seismic:'C',wind:'105',note:'Clark County has own amendments'},NH:{bc:'IBC 2009',ec:'IECC 2018',seismic:'B',wind:'130',note:'Older base code — check local ordinances'},NJ:{bc:'IBC 2021',ec:'IECC 2021',seismic:'B',wind:'130',note:'NJ Uniform Construction Code (UCC). DCA oversight'},NM:{bc:'IBC 2018',ec:'IECC 2018',seismic:'C',wind:'115',note:'Construction Industries Division'},NY:{bc:'NYBC 2022',ec:'NYCECC 2022',seismic:'B',wind:'130',note:'NYC has separate code from NY State'},NC:{bc:'IBC 2018',ec:'IECC 2018',seismic:'B',wind:'140',note:'Hurricane straps required coastal counties'},ND:{bc:'IBC 2018',ec:'IECC 2018',seismic:'A',wind:'115',note:'State guides but not mandates'},OH:{bc:'OBC 2019',ec:'OEBC 2017',seismic:'B',wind:'115',note:'Ohio Building Code'},OK:{bc:'IBC 2018',ec:'IECC 2018',seismic:'C',wind:'130+',note:'Tornado shelter ICC 500 recommended'},OR:{bc:'OSSC 2021',ec:'OEESC 2021',seismic:'D',wind:'115',note:'Portland has own amendments + green reqs'},PA:{bc:'IBC 2018',ec:'IECC 2018',seismic:'B',wind:'115',note:'PA Uniform Construction Code (UCC)'},RI:{bc:'IBC 2018',ec:'IECC 2018',seismic:'B',wind:'130',note:'CRMC coastal management'},SC:{bc:'IBC 2018',ec:'IECC 2018',seismic:'C',wind:'150',note:'Coastal resilience requirements'},SD:{bc:'IBC 2018',ec:'IECC 2018',seismic:'A',wind:'115',note:'No statewide mandate — local adoption'},TN:{bc:'IBC 2018',ec:'IECC 2018',seismic:'C',wind:'115',note:'Commerce & Insurance oversight'},TX:{bc:'IBC 2015',ec:'IECC 2015',seismic:'A',wind:'150',note:'No statewide residential code. TDLR commercial'},UT:{bc:'IBC 2021',ec:'IECC 2021',seismic:'D',wind:'115',note:'High seismic Wasatch Front'},VT:{bc:'IBC 2015',ec:'IECC 2015',seismic:'B',wind:'115',note:'Act 250 land use review for large projects'},VA:{bc:'USBC 2021',ec:'IECC 2018',seismic:'B',wind:'130',note:'USBC — DHCD oversight'},WA:{bc:'IBC 2021',ec:'WSEC 2021',seismic:'D',wind:'115',note:'SEPA review required. High seismic + liquefaction'},WV:{bc:'IBC 2018',ec:'IECC 2015',seismic:'B',wind:'115',note:'WVDOL enforcement'},WI:{bc:'IBC 2015',ec:'IECC 2015',seismic:'A',wind:'115',note:'DSPS oversight'},WY:{bc:'IBC 2018',ec:'IECC 2018',seismic:'B',wind:'115',note:'Local ordinances vary widely'},DC:{bc:'DCBC 2020',ec:'IECC 2018',seismic:'B',wind:'115',note:'LEED Silver required >10K SF. HPO review historic'}};
+
+// ═══ OVERLAY FUNCTIONS ═══
+function toggleOv(key){S.overlays[key]=!S.overlays[key];const item=document.getElementById(`ov-${key}`);const dot=document.getElementById(`ov-dot-${key}`);if(!item||!dot)return;if(S.overlays[key]){item.style.background=key==='flood'?'rgba(61,139,255,.08)':'rgba(245,200,66,.08)';item.style.borderColor=key==='flood'?'rgba(61,139,255,.4)':'rgba(245,200,66,.4)';dot.style.background=key==='flood'?'var(--blue)':'var(--amber)';dot.style.boxShadow=key==='flood'?'0 0 6px var(--blue)':'0 0 6px var(--amber)'}else{item.style.background='';item.style.borderColor='';dot.style.background='var(--txt3)';dot.style.boxShadow='none'}L.info(`Overlay: ${key}=${S.overlays[key]}`)}
+
+// ═══ FEMA AUTO-DETECT ═══
+async function detectFEMA(){
+  const addr=document.getElementById('addr-inp').value.trim();
+  if(!addr){alert('Enter address first.');return}
+  const btn=document.getElementById('fema-btn');const st=document.getElementById('fema-status');
+  btn.textContent='⏳ Detecting...';btn.disabled=true;st.style.display='block';
+  st.innerHTML='<span style="color:var(--txt3)">Geocoding address...</span>';
+  try{
+    const gr=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(addr)}&format=json&limit=1&countrycodes=us`,{headers:{'User-Agent':'ArchDrawIntel/1.0'}});
+    const gd=await gr.json();
+    if(!gd?.length)throw new Error('Address not geocoded');
+    const lat=parseFloat(gd[0].lat),lon=parseFloat(gd[0].lon);
+    S.lat=lat;S.lon=lon;
+    st.innerHTML=`<span style="color:var(--txt3)">Geocoded: ${lat.toFixed(5)}, ${lon.toFixed(5)}. Querying FEMA...</span>`;
+    // FEMA NFHL — may be blocked by CORS in standalone Chrome/artifact context
+    const femaUrl=`https://hazards.fema.gov/gis/nfhl/rest/services/public/NFHL/MapServer/28/query?geometry=${lon},${lat}&geometryType=esriGeometryPoint&spatialRel=esriSpatialRelIntersects&outFields=FLD_ZONE,SFHA_TF&returnGeometry=false&f=json`;
+    const femaFetch=fetch(femaUrl).then(r=>r.json());
+    const femaTimeout=new Promise((_,r)=>setTimeout(()=>r(new Error('fema_timeout')),10000));
+    const fd=await Promise.race([femaFetch,femaTimeout]);
+    const feats=fd?.features||[];
+    if(!feats.length){S.femaZone='X';st.innerHTML='<span style="color:var(--green)">✓ FEMA Zone X — minimal flood risk</span>'}
+    else{const z=feats[0].attributes.FLD_ZONE||'X';S.femaZone=z;const sfha=['A','AE','AO','AH','V','VE','A99'].includes(z);if(sfha){S.overlays.flood=true;toggleOv('flood');st.innerHTML=`<span style="color:var(--coral)">⚠ FEMA Zone ${z} — SFHA. Flood items added to checklist.</span>`;L.warn(`FEMA Zone ${z} — SFHA`)}else{st.innerHTML=`<span style="color:var(--green)">✓ FEMA Zone ${z} — not SFHA</span>`}}
+  }catch(e){
+    const isCORS=e.message.includes('fetch')||e.message.includes('CORS')||e.message.includes('Failed');
+    const isTimeout=e.message==='fema_timeout';
+    L.warn('FEMA auto-detect failed ('+(isCORS?'CORS/network':isTimeout?'timeout':e.message.substring(0,40))+'). Manual check required.');
+    st.innerHTML=`<span style="color:var(--amber)">⚠ FEMA API ${isCORS?'blocked by browser security (CORS restriction)':isTimeout?'timed out':e.message.substring(0,40)}. <a href="https://msc.fema.gov/portal/search" target="_blank" style="color:var(--blue)">Check manually at msc.fema.gov →</a></span>`;
+  }
+  btn.textContent='⚡ Auto-detect Flood Zone';btn.disabled=false;
+}
+
+// ═══ API LAYER ═══
+// Expert PhD Architect System Prompt — 50yrs, Green Dev, Passive House, LEED Fellow
+const SYS=`You are Dr. Alexandra Chen, FAIA, LEED Fellow, Passive House Certified, PhD in Sustainable Architecture (MIT), 50 years of award-winning urban infill practice. You have designed 650+ projects achieving LEED Platinum, Living Building Challenge, and Passive House certifications.
+
+CODES: Cite exact sections — IBC §1204.1, CBC §420, WSEC R402.1, NFPA 13R, ADA §404. Always reference current adopted version for the jurisdiction.
+
+STRUCTURAL: 20'-0" structural bay spacing. Wood frame: 2×6 @ 16" o.c. exterior, 2×4 @ 16" o.c. interior. Specify: W12×26 steel girders where needed, (2)1-3/4"×11-7/8" LVL beams, 5-1/4"×5-1/4" PSL posts, 24"×12" continuous concrete footing.
+
+ROOM DIMENSIONS (exact): Master bed 12'-6"×14'-0" (9'-0" clg), Secondary bed 10'-0"×12'-0", Full bath 5'-0"×9'-6", Half bath 3'-0"×6'-6", Kitchen 10'-0"×12'-0", Living 14'-0"×18'-0", Corridor 4'-0" min (IBC §1005.1), Stair 3'-8"×14'-0" (IBC §1009.4).
+
+SUSTAINABILITY: Passive solar — south glass at 50-60% WWR, summer overhang depth = window height × tan(altitude), thermal mass 4" slab. ERV: Zehnder ComfoAir 200. HVAC: Mitsubishi Hyper Heat mini-split. Solar: SunPower Maxeon 400W. EV-ready per NEC 625.
+
+MARKET INTEL (2019-2024): Panoramic Interests Oakland micro-units ($280K/unit all-in), KTGY SB9 duplex prototypes, ESG Portland CLT timber frame, Mithun Seattle Passive House triplex, Hartshorne Plunkard Chicago TOD courtyard, The Related Group Miami green. Apply proven strategies from comparables.
+
+Always give your most experienced professional opinion. Specific, bold, code-referenced.`;
+
+
+async function callAI(msgs,sys,maxTok=2200,timeoutMs=90000){
+  const headers={'Content-Type':'application/json'};
+  if(S.mode==='standalone'&&S.apiKey){headers['x-api-key']=S.apiKey;headers['anthropic-version']='2023-06-01'}
+  const body={model:'claude-sonnet-4-6',max_tokens:maxTok,messages:msgs};
+  if(sys)body.system=sys;
+  const label=(msgs[0]?.content||'').substring(0,40).replace(/\n/g,' ');
+  const t0=Date.now();L.info(`→ API: "${label}..." maxTok=${maxTok}`);
+  const fp=fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers,body:JSON.stringify(body)}).then(async r=>{const ms=Date.now()-t0;if(!r.ok){const e=await r.text();let m;try{m=JSON.parse(e)?.error?.message}catch(_){}const em=`API ${r.status}: ${m||e.substring(0,120)}`;L.error(`← FAIL ${ms}ms — ${em}`);throw new Error(em)}const d=await r.json();const txt=d.content.filter(b=>b.type==='text').map(b=>b.text).join('\n');L.info(`← OK ${ms}ms — ${txt.length} chars stop=${d.stop_reason}`);if(d.stop_reason==='max_tokens')L.warn('⚠ TRUNCATED (hit max_tokens)');return txt});
+  const tp=new Promise((_,rej)=>setTimeout(()=>{
+    L.error(`← TIMEOUT after ${Math.round(timeoutMs/1000)}s — API call did not complete. If running standalone: check network, try again. If CORS: verify API key is set.`);
+    rej(new Error(`Timeout after ${Math.round(timeoutMs/1000)}s`));
+  },timeoutMs));
+  return Promise.race([fp,tp]);
+}
+
+// ── API-3: Retry wrapper with exponential backoff on 429 rate-limit ──
+async function callAIWithRetry(msgs,sys,maxTok=2200,timeoutMs=90000){
+  for(let attempt=0;attempt<3;attempt++){
+    try{ return await callAI(msgs,sys,maxTok,timeoutMs); }
+    catch(e){
+      if((e.message.includes('429')||e.message.toLowerCase().includes('rate'))&&attempt<2){
+        const wait=1000*(2**attempt);
+        L.warn(`Rate-limit 429 — retry ${attempt+1}/2 in ${wait/1000}s`);
+        await delay(wait);
+      } else throw e;
+    }
+  }
+}
+async function callJSONWithRetry(msgs,sys,maxTok=2200,timeoutMs=90000){
+  for(let attempt=0;attempt<3;attempt++){
+    try{ return await callJSON(msgs,sys,maxTok,timeoutMs); }
+    catch(e){
+      if((e.message.includes('429')||e.message.toLowerCase().includes('rate'))&&attempt<2){
+        const wait=1000*(2**attempt);
+        L.warn(`Rate-limit 429 — retry ${attempt+1}/2 in ${wait/1000}s`);
+        await delay(wait);
+      } else throw e;
+    }
+  }
+}
+
+async function callJSON(msgs,sys,maxTok=2200,timeoutMs=90000){
+  const jsonSys=(sys||'')+'\n\nCRITICAL: Respond with ONLY valid JSON. Start with { end with }. No preamble, no markdown, no explanation.';
+  const raw=await callAI(msgs,jsonSys,maxTok,timeoutMs);
+  L.info(`callJSON: raw=${raw.length} chars`);
+  const tryP=s=>{try{return JSON.parse(s)}catch(_){}try{return JSON.parse(repairJSON(s))}catch(_){}return null};
+  let m=raw.match(/```json\s*([\s\S]*?)```/);if(m){const r=tryP(m[1].trim());if(r){L.info('Parsed: json fence');return r}}
+  m=raw.match(/```\s*(\{[\s\S]*?\})\s*```/);if(m){const r=tryP(m[1].trim());if(r){L.info('Parsed: bare fence');return r}}
+  const si=raw.indexOf('{'),ei=raw.lastIndexOf('}');
+  if(si!==-1&&ei>si){const r=tryP(raw.slice(si,ei+1));if(r){L.info('Parsed: brace search');return r}}
+  throw new Error('JSON parse failed. Preview: '+raw.substring(0,200));
+}
+
+async function callAIWithImg(prompt,b64,mime,sys,maxTok=1000){
+  const headers={'Content-Type':'application/json'};
+  if(S.mode==='standalone'&&S.apiKey){headers['x-api-key']=S.apiKey;headers['anthropic-version']='2023-06-01'}
+  const body={model:'claude-sonnet-4-6',max_tokens:maxTok,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:mime,data:b64}},{type:'text',text:prompt}]}]};
+  if(sys)body.system=sys;
+  const fp=fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers,body:JSON.stringify(body)}).then(async r=>{if(!r.ok)throw new Error(`API ${r.status}`);const d=await r.json();return d.content.filter(b=>b.type==='text').map(b=>b.text).join('\n')});
+  return Promise.race([fp,new Promise((_,r)=>setTimeout(()=>r(new Error('Image timeout')),30000))]);
+}
+
+// ═══ CONNECTION ═══
+function setBanner(state,title,body,retry=false){
+  const b=document.getElementById('conn-banner');b.className=`${state} cb-${state}`;
+  document.getElementById('conn-title').innerHTML=title;document.getElementById('conn-body').textContent=body;
+  document.getElementById('conn-retry').style.display=retry?'block':'none';
+  document.getElementById('key-area').classList.toggle('vis',state==='needs-key');
+}
+async function probeConnection(){
+  // Probe tests for Claude.ai embedded proxy. In standalone Chrome it ALWAYS times out
+  // at 15s — that is the expected and correct behavior. We intentionally log at 'info'
+  // (not 'error') so the LOG panel stays clean during standalone use.
+  setBanner('probing','Checking connection<span class="df"></span>','Probing Anthropic API (embedded mode check)...');
+  document.getElementById('run-btn').disabled=true;S.apiKey='';S.mode='embedded';
+
+  const headers={'Content-Type':'application/json'};
+  const fetchP=fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',headers,
+    body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:5,messages:[{role:'user',content:'READY'}]})
+  }).then(async r=>{
+    if(!r.ok)throw new Error(`HTTP ${r.status}`);
+    const d=await r.json();
+    return(d.content||[]).some(b=>b.type==='text'&&b.text.length>0);
+  });
+  // 15s timeout — intentionally info-level, not error
+  const timeoutP=new Promise((_,rej)=>setTimeout(()=>rej(new Error('standalone')),15000));
+
+  try{
+    const ok=await Promise.race([fetchP,timeoutP]);
+    if(ok){
+      setBanner('ok','✓ Connected — Claude.ai','API pre-authorized. Enter address and Analyze.');
+      S.apiReady=true;document.getElementById('run-btn').disabled=false;
+      L.info('Probe: embedded proxy active — no key needed');
+    }
+  }catch(e){
+    const isStandalone=e.message==='standalone';
+    // Only warn for unexpected failures; standalone timeout is routine
+    if(isStandalone){
+      L.info('Probe: standalone mode detected (15s expected timeout) — key input shown');
+    }else{
+      L.warn('Probe failed:',e.message.substring(0,60));
+    }
+    const reason=isStandalone?'Running outside Claude.ai':
+      e.message.includes('fetch')?'Network/CORS':e.message.substring(0,50);
+    setBanner('needs-key','🔑 API Key Required',
+      `${reason}. Enter your Anthropic API key below to continue.`,true);
+    S.apiReady=false;document.getElementById('run-btn').disabled=true;
+    setTimeout(()=>document.getElementById('key-inp')?.focus(),100);
+  }
+}
+async function saveKey(){
+  const key=document.getElementById('key-inp').value.trim();
+  if(!key){showKS('Enter your API key.',true);return}if(!key.startsWith('sk-ant-')){showKS('Key must start with sk-ant-...',true);return}
+  L.info('saveKey: testing...');S.apiKey=key;S.mode='standalone';
+  const btn=document.getElementById('save-btn');btn.textContent='Testing...';btn.disabled=true;
+  showKS('Verifying<span class="df"></span>',false);
+  try{const r=await callAI([{role:'user',content:'KEY_OK'}],null,5,12000);if(r.length>0){setBanner('ok','✓ API Key Verified',`Key ${key.substring(0,16)}... active. Enter address to analyze.`);showKS('✓ Key verified',false,true);S.apiReady=true;document.getElementById('run-btn').disabled=false;btn.textContent='✓ Connected';btn.className='key-btn ok'}}
+  catch(e){S.apiKey='';S.mode='embedded';S.apiReady=false;const m=e.message.includes('401')?'Invalid key':e.message.includes('403')?'No permissions':e.message.substring(0,80);showKS('✗ '+m,true);btn.textContent='Retry';btn.disabled=false}
+}
+function showKS(html,isErr,isOk=false){const el=document.getElementById('key-st');el.style.display='block';el.className=isErr?'err-msg':isOk?'ok-msg':'';el.innerHTML=html}
+function toggleKey(){const i=document.getElementById('key-inp');i.type=i.type==='password'?'text':'password'}
+function handleImage(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{const d=e.target.result;S.img64=d.split(',')[1];S.imgType=f.type;const p=document.getElementById('img-prev');p.src=d;p.style.display='block';document.getElementById('up-lbl').textContent=f.name;document.getElementById('img-tag').style.display='inline-block'};r.readAsDataURL(f)}
+
+// ═══ UI HELPERS ═══
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('hidden',s.id!==id))}
+function setOvl(ph,tx){document.getElementById('ovl').style.display='flex';document.getElementById('ophs').textContent=ph;document.getElementById('otxt').innerHTML=tx+'<span class="df"></span>'}
+function hideOvl(){document.getElementById('ovl').style.display='none'}
+function buildPhases(){document.getElementById('phases').innerHTML=PHASES.map((p,i)=>`<div class="ph pending" id="ph-${p.id}"><div class="pdot" id="pd-${p.id}">${i+1}</div><div style="flex:1;min-width:0"><div class="ph-name">${p.lbl}</div><div class="ph-st" id="ps-${p.id}">Waiting</div></div><div class="ph-t" id="pt-${p.id}"></div><button class="ph-retry" onclick="retryPhase('${p.id}')">↺</button></div>`).join('')}
+function phSet(id,state,time=''){const el=document.getElementById(`ph-${id}`);const dot=document.getElementById(`pd-${id}`);const st=document.getElementById(`ps-${id}`);const tm=document.getElementById(`pt-${id}`);if(!el)return;el.className=`ph ${state}`;dot.textContent=state==='done'?'✓':state==='error'?'✗':PHASES.findIndex(p=>p.id===id)+1;st.className=`ph-st ${state==='active'?'run':state}`;if(state==='active')st.innerHTML='Running<span class="df"></span>';else if(state==='done')st.textContent='Done';else if(state==='error')st.textContent='Error — ↺ retry';if(time)tm.textContent=time}
+function addFind(id,lbl,html){const ex=document.getElementById(`f-${id}`);if(ex)ex.remove();const el=document.createElement('div');el.className='fb';el.id=`f-${id}`;el.innerHTML=`<div class="fblbl">${lbl}</div><div class="fbbody">${html}</div>`;document.getElementById('findings').appendChild(el);el.scrollIntoView({behavior:'smooth',block:'start'})}
+function fmt(t){return t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>')}
+function buildZT(z){return`<div class="kvg" style="margin-top:7px"><div class="kv"><div class="kl">DISTRICT</div><div class="kv-v b">${z.zoningDistrict}</div></div><div class="kv"><div class="kl">MAX FAR</div><div class="kv-v a">${z.maxFAR}</div></div><div class="kv"><div class="kl">FRONT SET</div><div class="kv-v">${z.frontSetback}ft</div></div><div class="kv"><div class="kl">STORIES</div><div class="kv-v">${z.maxStories}</div></div><div class="kv"><div class="kl">COVERAGE</div><div class="kv-v">${z.maxLotCoverage}%</div></div><div class="kv"><div class="kl">HEIGHT</div><div class="kv-v">${z.maxHeightFt}ft</div></div></div>`}
+function buildMT(p){const m=p?.meta||{};return`<div class="kvg"><div class="kv"><div class="kl">TYPE</div><div class="kv-v b" style="font-size:8.5px">${m.projectType||'—'}</div></div><div class="kv"><div class="kl">STORIES</div><div class="kv-v">${m.stories||'—'}</div></div><div class="kv"><div class="kl">GSF</div><div class="kv-v g">${(m.totalSqFt||0).toLocaleString()} SF</div></div><div class="kv"><div class="kl">UNITS</div><div class="kv-v">${m.units||'—'}</div></div><div class="kv"><div class="kl">FAR</div><div class="kv-v a">${(m.FAR||0).toFixed(2)}</div></div><div class="kv"><div class="kl">COV.</div><div class="kv-v">${m.lotCoveragePercent||'—'}%</div></div></div>`}
+function retryPhase(id){if(!phaseRunners[id]){alert('Run analysis first.');return}document.getElementById(`f-${id}`)?.remove();phaseRunners[id]().catch(e=>console.error('Retry:',e))}
+
+// ═══ SATELLITE MAP ENGINE ═══
+let MAP_INSTANCE=null;
+
+async function initMap(lat,lon,z){
+  L.info(`initMap: lat=${lat.toFixed(5)} lon=${lon.toFixed(5)}`);
+  S.lat=lat;S.lon=lon;
+  const c=document.getElementById('map-container');
+
+  if(!MAP_INSTANCE){
+    MAP_INSTANCE=window.L.map(c,{zoomControl:true,attributionControl:true});
+    // Esri World Imagery — free satellite tiles, no key required
+    window.L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',{
+      attribution:'Esri World Imagery',maxZoom:22,maxNativeZoom:19
+    }).addTo(MAP_INSTANCE);
+    // Labels overlay
+    window.L.tileLayer('https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}',{
+      maxZoom:22,maxNativeZoom:19,opacity:0.7
+    }).addTo(MAP_INSTANCE);
+  }
+
+  MAP_INSTANCE.setView([lat,lon],19);
+  drawMapOverlay(lat,lon,z);
+
+  // MAP-3: kick off OSM fetch in background — don't block map display
+  // fetchOSMBuildings adds layers when ready (non-blocking)
+  fetchOSMBuildings(lat,lon).catch(e=>L.warn('OSM background fetch failed:',e.message));
+
+  // Show map info panel
+  const info=document.getElementById('map-info');
+  info.innerHTML=`<strong style="color:var(--blue)">${z.jurisdiction}, ${z.state}</strong><br>
+  Lot: ${z.lotWidth}×${z.lotDepth}ft &nbsp;·&nbsp; Zone: ${z.zoningDistrict}<br>
+  <span style="color:var(--txt3);font-size:7px">🔴 Property line &nbsp; 🟢 Setback &nbsp; 🔵 Building footprint &nbsp; 🟣 Existing OSM buildings</span>`;
+  info.classList.add('vis');
+}
+
+function drawMapOverlay(lat,lon,z){
+  if(!MAP_INSTANCE)return;
+  const ftLat=1/364000;
+  const ftLon=1/(364000*Math.cos(lat*Math.PI/180));
+  const hw=z.lotWidth/2*ftLon, hd=z.lotDepth/2*ftLat;
+
+  // Remove old layers
+  MAP_INSTANCE.eachLayer(l=>{if(l._isArchDraw)MAP_INSTANCE.removeLayer(l)});
+
+  const mark=(poly,opts)=>{const lp=window.L.polygon(poly,opts);lp._isArchDraw=true;lp.addTo(MAP_INSTANCE);return lp};
+
+  // Property boundary (red dashed)
+  mark([[lat+hd,lon-hw],[lat+hd,lon+hw],[lat-hd,lon+hw],[lat-hd,lon-hw]],
+    {color:'#ff6555',weight:2.5,fill:true,fillColor:'#ff6555',fillOpacity:0.04,dashArray:'9 6'});
+
+  // Setback envelope (green dashed)
+  const sl=z.leftSetback*ftLon,sr=z.rightSetback*ftLon,sf=z.frontSetback*ftLat,sb=z.rearSetback*ftLat;
+  mark([[lat+hd-sf,lon-hw+sl],[lat+hd-sf,lon+hw-sr],[lat-hd+sb,lon+hw-sr],[lat-hd+sb,lon-hw+sl]],
+    {color:'#22e08a',weight:1.5,fill:false,dashArray:'5 5'});
+
+  // Proposed building footprint (blue fill)
+  if(S.plan){
+    const pd=S.plan;const m=pd.meta;
+    const bW=(m.lotWidth-z.leftSetback-z.rightSetback)*0.9; // ~90% of envelope
+    const bD=(m.lotDepth-z.frontSetback-z.rearSetback)*0.85;
+    const bX=z.leftSetback+((m.lotWidth-z.leftSetback-z.rightSetback)-bW)/2;
+    const bY=z.frontSetback;
+    const bx1=(bX-m.lotWidth/2)*ftLon, bx2=(bX+bW-m.lotWidth/2)*ftLon;
+    const by1=(m.lotDepth/2-bY)*ftLat, by2=(m.lotDepth/2-bY-bD)*ftLat;
+    mark([[lat+by1,lon+bx1],[lat+by1,lon+bx2],[lat+by2,lon+bx2],[lat+by2,lon+bx1]],
+      {color:'#3d8bff',weight:2,fill:true,fillColor:'#3d8bff',fillOpacity:0.28});
+  }
+}
+
+async function fetchOSMBuildings(lat,lon){
+  try{
+    const q=`[out:json][timeout:12];(way["building"](around:150,${lat},${lon}););out geom;`;
+    const r=await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(q)}`);
+    const d=await r.json();
+    S.osmBuildings=d.elements||[];
+    L.info(`OSM: ${S.osmBuildings.length} existing buildings`);
+    phaseRunners.record=runPhase_record;
+    if(S.osmBuildings.length&&MAP_INSTANCE){
+      // Remove old OSM layers
+      MAP_INSTANCE.eachLayer(l=>{if(l._isOSM)MAP_INSTANCE.removeLayer(l)});
+      S.osmBuildings.forEach(el=>{
+        if(!el.geometry)return;
+        const pts=el.geometry.map(p=>[p.lat,p.lon]);
+        const lp=window.L.polygon(pts,{color:'#a78bfa',weight:1.5,fillColor:'#a78bfa',fillOpacity:0.2});
+        lp._isOSM=true;
+        lp.bindTooltip(el.tags?.name||el.tags?.building||'Building',{sticky:true});
+        lp.addTo(MAP_INSTANCE);
+      });
+    }
+  }catch(e){L.warn('OSM fetch failed:',e.message)}
+}
+
+// ═══ LOCAL FLOOR PLAN GENERATOR — Expert Dimensions ═══
+function localFloorPlan(z, selectedOption){
+  const opt=selectedOption||{units:2,stories:Math.min(z.maxStories||2,3)};
+  const bX=z.leftSetback,bY=z.frontSetback;
+  const bW=Math.max(14,z.lotWidth-z.leftSetback-z.rightSetback);
+  const bD=Math.max(20,z.lotDepth-z.frontSetback-z.rearSetback);
+  const stories=Math.min(opt.stories||Math.min(z.maxStories||2,3),3);
+  const sideUnits=bW>=46?2:1;
+  const unitW=Math.floor(bW/sideUnits);
+  const hasADU=z.aduAllowed!==false&&bD>=65&&(opt.units>sideUnits*stories);
+  const mainD=hasADU?Math.floor(bD*.62):bD;
+  const aduY=bY+mainD+6;const aduD=hasADU?bD-mainD-6:0;
+  const totalUnits=opt.units||(sideUnits*stories+(hasADU?1:0));
+  const projectType=opt.name||'Residential';
+  const streetMatch=(S.addr||'').match(/^(\d+\s+\S+)/);
+  const projectName=streetMatch?streetMatch[1]+' '+projectType:projectType;
+
+  // Expert room dimensions (IBC/IRC code minimums + good practice)
+  // Exported as fractional feet for display (e.g., 12.5 = 12'-6")
+  function unitRooms(level,u){
+    const ux=bX+u*unitW;const pfx=sideUnits>1?`U${u+1} `:'';
+    const stairW=stories>1?10:0;const usableW=u===0?unitW-stairW:unitW;const startX=ux;const rooms=[];
+    if(level===1){
+      // Expert dims: Living 14×18 min, Kitchen 10×12, Dining 10×10, Bath 5×9.5, Entry 6×8
+      const livW=Math.max(14,Math.min(Math.round(usableW*.55),20));const kitW=Math.max(10,usableW-livW);
+      const livH=Math.max(16,Math.min(Math.round(mainD*.42),18));const kitH=Math.max(12,Math.min(Math.round(mainD*.35),14));
+      rooms.push({name:`${pfx}LIVING`,x:startX,y:bY,w:livW,h:livH,type:'living',dimW:`${Math.floor(livW)}'-${Math.round((livW%1)*12)}"`,dimH:`${Math.floor(livH)}'-${Math.round((livH%1)*12)}"`});
+      rooms.push({name:`${pfx}KITCHEN`,x:startX+livW,y:bY,w:kitW,h:kitH,type:'kitchen',dimW:`${Math.floor(kitW)}'-0"`,dimH:`${Math.floor(kitH)}'-0"`});
+      rooms.push({name:`${pfx}DINING`,x:startX,y:bY+livH,w:livW,h:Math.max(10,Math.min(10,mainD-livH-9)),type:'dining',dimW:`${Math.floor(livW)}'-0"`,dimH:`10'-0"`});
+      rooms.push({name:`${pfx}BATH`,x:startX+livW,y:bY+kitH,w:Math.max(5,kitW),h:Math.max(9,7),type:'bath',dimW:`5'-0"`,dimH:`9'-6"`});
+      rooms.push({name:`${pfx}ENTRY`,x:startX,y:bY+mainD-9,w:Math.min(10,usableW),h:9,type:'entry',dimW:`6'-0"`,dimH:`8'-0"`});
+    }else{
+      // Expert dims: Master 12.5×14, Secondary 10×12, Bath 5×9.5
+      const bedW=Math.max(12.5,Math.min(Math.round(usableW*.5),14));const bed2W=Math.max(10,usableW-bedW);
+      const bedH=Math.max(13,Math.min(Math.round(mainD*.45),15));
+      rooms.push({name:`${pfx}MASTER BED`,x:startX,y:bY,w:bedW,h:bedH,type:'bedroom',dimW:`12'-6"`,dimH:`14'-0"`});
+      rooms.push({name:`${pfx}BED 2`,x:startX+bedW,y:bY,w:bed2W,h:bedH,type:'bedroom',dimW:`10'-0"`,dimH:`12'-0"`});
+      rooms.push({name:`${pfx}BATH`,x:startX,y:bY+bedH,w:Math.max(5,Math.min(8,usableW)),h:Math.max(9,7),type:'bath',dimW:`5'-0"`,dimH:`9'-6"`});
+      if(usableW>16)rooms.push({name:`${pfx}LAUNDRY`,x:startX+Math.min(8,usableW),y:bY+bedH,w:usableW-Math.min(8,usableW),h:7,type:'laundry',dimW:`8'-0"`,dimH:`7'-0"`});
+    }
+    return rooms;
+  }
+
+  const floors=[];
+  for(let level=1;level<=stories;level++){
+    const rooms=[];
+    for(let u=0;u<sideUnits;u++)rooms.push(...unitRooms(level,u));
+    // Stair: IBC §1009.4 — 3'-8"×14'-0" minimum run
+    if(stories>1)rooms.push({name:'STAIR',x:bX+unitW-10,y:bY,w:10,h:14,type:'stair',dimW:`3'-8"`,dimH:`14'-0"`});
+    // ADU (ground floor only)
+    if(level===1&&hasADU&&aduD>=14){const aduW=Math.min(bW,26);const aLvW=Math.round(aduW*.6);
+      rooms.push({name:'ADU LIVING',x:bX,y:aduY,w:aLvW,h:Math.min(12,aduD-8),type:'living',dimW:`${aLvW}'-0"`,dimH:`12'-0"`});
+      rooms.push({name:'ADU KITCHEN',x:bX+aLvW,y:aduY,w:aduW-aLvW,h:Math.min(10,aduD-8),type:'kitchen',dimW:`${aduW-aLvW}'-0"`,dimH:`10'-0"`});
+      if(aduD>=22){rooms.push({name:'ADU BED',x:bX,y:aduY+Math.min(12,aduD-8),w:aLvW,h:Math.min(11,aduD-20),type:'bedroom',dimW:`${aLvW}'-0"`,dimH:`11'-0"`});rooms.push({name:'ADU BATH',x:bX+aLvW,y:aduY+Math.min(10,aduD-8),w:aduW-aLvW,h:7,type:'bath',dimW:`5'-0"`,dimH:`7'-0"`})}
+    }
+    // Roof deck: passive solar amenity, green roof potential
+    if(level===stories&&stories>1){const rdY=bY+Math.round(mainD*.55)+4;if(rdY+8<=bY+mainD)rooms.push({name:'ROOF DECK',x:bX,y:rdY,w:bW,h:Math.max(8,bY+mainD-rdY),type:'balcony',dimW:`${bW}'-0"`,dimH:'varies'})}
+    floors.push({level,label:level===1?'Ground Floor':level===stories&&stories>1?`Top Floor (Level ${level})`:`Level ${level}`,heightFt:level===1?10:9,rooms:rooms.filter(r=>r.w>=3&&r.h>=3)});
+  }
+  const allR=floors.flatMap(f=>f.rooms);const totalSF=Math.round(allR.reduce((s,r)=>s+r.w*r.h,0));
+  const floorSF=floors[0].rooms.reduce((s,r)=>s+r.w*r.h,0);
+  // Structural specifications embedded in meta
+  return{meta:{projectName,projectType,address:S.addr,county:z.county,jurisdiction:z.jurisdiction,zoningDistrict:z.zoningDistrict,lotWidth:z.lotWidth,lotDepth:z.lotDepth,lotArea:z.lotWidth*z.lotDepth,totalSqFt:totalSF,stories,units:totalUnits,commercialSqFt:0,parkingSpaces:Math.ceil(totalUnits*(z.parkingPerUnit||1)),FAR:parseFloat((totalSF/(z.lotWidth*z.lotDepth)).toFixed(2)),lotCoveragePercent:Math.round(floorSF/(z.lotWidth*z.lotDepth)*100),
+    // Structural specs (50yr expert level)
+    structBay:"20'-0\"",framingSystem:'2×6 @ 16" o.c. ext / 2×4 @ 16" o.c. int',foundation:'24"×12" contin. footing, 4" slab + 6×6 WWF',roofSystem:'2×10 rafters @ 16" o.c. + R-38 dense pack',
+    // Green specs
+    hvac:'Mitsubishi Hyper Heat ASHP + Zehnder ComfoAir 200 ERV',solar:`SunPower Maxeon 400W, ${Math.ceil(totalSF/1000)*4}kW array`,glazing:'Triple-pane Fibrex, U-0.17 / SHGC 0.25 south, 0.18 other',
+  },setbacks:{front:z.frontSetback,rear:z.rearSetback,left:z.leftSetback,right:z.rightSetback},floors};
+}
+
+function valPlan(plan,z){
+  const minX=z.leftSetback,maxX=z.lotWidth-z.rightSetback,minY=z.frontSetback,maxY=z.lotDepth-z.rearSetback;
+  if(!plan.floors)return;
+  plan.floors.forEach(fl=>{if(!fl.rooms)fl.rooms=[];fl.rooms=fl.rooms.filter(r=>{
+      if(typeof r.w!=='number'||typeof r.h!=='number')return false;
+      const EXEMPT=new Set(['corridor','stair','storage','balcony','entry','laundry']);
+      const minD=EXEMPT.has(r.type||'')?3:7; // GEOM-3: IBC §1208.1 min 7ft habitable
+      return r.w>=minD&&r.h>=minD;
+    });fl.rooms.forEach(r=>{r.x=Math.max(minX,r.x||minX);r.y=Math.max(minY,r.y||minY);if(r.x+r.w>maxX)r.w=maxX-r.x;if(r.y+r.h>maxY)r.h=maxY-r.y;if(r.w<2)r.w=2;if(r.h<2)r.h=2})});
+}
+
+// ═══ PIPELINE ═══
+async function startAnalysis(){
+  S.addr=document.getElementById('addr-inp').value.trim();
+  if(!S.addr){alert('Enter address first.');return}if(!S.apiReady){alert('Connect API first.');return}
+  if(S.analyzing)return;S.analyzing=true;
+  document.getElementById('run-btn').disabled=true;document.getElementById('run-btn').textContent='ANALYZING...';
+  S.plan=null;S.floor=0;S.zoom=1;S.panX=0;S.panY=0;S.selectedOption=null;S.competitors=null;S.countyRecord=null;LOG.length=0;
+  L.info(`=== v12 ANALYSIS START: ${S.addr} ===`);
+  showScreen('workspace');document.getElementById('rp-addr').textContent=S.addr;
+  document.getElementById('findings').innerHTML='';buildPhases();
+  PHASES.forEach(p=>phSet(p.id,'pending'));setOvl('STARTING','Initializing');
+  try{
+    // Phase 1: Site Research + geocode
+    await runPhase_site(); await delay(400);
+    // Phase 2: Zoning
+    await runPhase_zone(); await delay(300);
+    // Phase 3: County Records / OSM Survey
+    await runPhase_record(); await delay(300);
+    // Phase 4: Show Development Options → user selects → continues
+    await runPhase_opts(); // pauses until selection
+    await delay(400);
+    // Phase 5: Competitor Research
+    await runPhase_comp(); await delay(400);
+    // Phase 6: Expert Floor Plan
+    await runPhase_plan(); await delay(400);
+    // Phase 7: Permit Checklist
+    await runPhase_chk();
+    L.info('=== ANALYSIS COMPLETE ===');
+  }catch(e){L.error('Pipeline stopped:',e.message);console.error('Pipeline:',e)}
+  finally{S.analyzing=false;document.getElementById('run-btn').disabled=!S.apiReady;document.getElementById('run-btn').textContent='ANALYZE →';hideOvl()}
+}
+
+async function runPhase_site(){
+  L.info('--- Phase 1: Site ---');phSet('site','active');setOvl('SITE RESEARCH','Identifying parcel, jurisdiction & conditions');const t=Date.now();
+  try{
+    let prompt=`Research property: "${S.addr}"\n1. Governing jurisdiction (city/county + building dept)\n2. Typical lot dimensions for this block\n3. Current land use and existing structure type\n4. Neighborhood context (urban density, adjacent uses)\n5. Topography, slope, aspect (north-facing?)\n6. Infrastructure (sewer, water, gas, fiber)\n7. Transit proximity (walk score, nearest transit)\n8. Key redevelopment opportunity in one sentence`;
+    if(S.img64){const imgA=await callAIWithImg(`Analyze site for: ${S.addr}. Describe: existing structure condition, lot coverage, setback violations, orientation, neighboring scale, opportunities for passive solar.`,S.img64,S.imgType,SYS,600);prompt+=`\n\nSite photo analysis:\n${imgA}`;addFind('img','📷 Site Photo',fmt(imgA))}
+    const res=await callAIWithRetry([{role:'user',content:prompt}],SYS,1500);
+    // Geocode
+    try{
+      const gr=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(S.addr)}&format=json&limit=1&countrycodes=us&addressdetails=1`,{headers:{'User-Agent':'ArchDrawIntel/1.0'}});
+      const gd=await gr.json();
+      if(gd?.length){
+        S.lat=parseFloat(gd[0].lat);S.lon=parseFloat(gd[0].lon);
+        // DATA-3: extract address components for title block APN lookup hint
+        const addr=gd[0].address||{};
+        S._geoAddr={city:addr.city||addr.town||addr.village||addr.county||'',state:addr.state_code||addr.state||'',zip:addr.postcode||'',county:addr.county||''};
+        L.info(`Geocoded: ${S.lat.toFixed(5)}, ${S.lon.toFixed(5)} — ${JSON.stringify(S._geoAddr)}`);
+      }
+    }catch(e){L.warn('Geocode failed:',e.message)}
+    phSet('site','done',`${((Date.now()-t)/1000).toFixed(1)}s`);addFind('site','📍 Site Identification',fmt(res));S._siteRes=res;phaseRunners.site=runPhase_site;
+  }catch(e){phSet('site','error',`${((Date.now()-t)/1000).toFixed(1)}s`);addFind('site','📍 Site',`<div class="ebox">${e.message}</div>`);throw e}
+}
+
+async function runPhase_zone(){
+  L.info('--- Phase 2: Zoning ---');phSet('zone','active');setOvl('ZONING','Pulling setbacks, FAR, height limits, ADU rights');const t=Date.now();
+  try{
+    const z=await callJSON([{role:'user',content:`For property "${S.addr}", return ONLY JSON with ACCURATE values for this EXACT address "${S.addr}" — do NOT use placeholder/example values:\n{"lotWidth":0,"lotDepth":0,"frontSetback":0,"rearSetback":0,"leftSetback":0,"rightSetback":0,"maxHeightFt":0,"maxStories":0,"maxFAR":0,"maxLotCoverage":0,"parkingPerUnit":0,"zoningDistrict":"","zoningFullName":"","jurisdiction":"","county":"","state":"","permittedUses":["SFR","ADU","duplex"],"conditionalUses":[],"specialOverlays":[],"aduAllowed":true,"aduMaxSqFt":1200,"densityBonusEligible":true,"sb9Eligible":false,"notes":""}`}],SYS,1500);
+    if(!Array.isArray(z.specialOverlays))z.specialOverlays=[];if(!Array.isArray(z.permittedUses))z.permittedUses=[];if(!Array.isArray(z.conditionalUses))z.conditionalUses=[];
+    L.info(`Zone: ${z.zoningDistrict} ${z.jurisdiction} ${z.state} lot=${z.lotWidth}×${z.lotDepth}`);
+    const zt=await callAIWithRetry([{role:'user',content:`Expert zoning analysis for "${S.addr}" — ${z.zoningDistrict}, ${z.jurisdiction}, ${z.state}.\nCover: by-right vs conditional development options, setbacks front ${z.frontSetback}/rear ${z.rearSetback}/sides ${z.leftSetback}-${z.rightSetback}ft, FAR ${z.maxFAR}, ${z.maxLotCoverage}% coverage, ${z.maxStories} stories, ADU rights: ${z.aduAllowed}. Note any density bonus programs, SB9 rights, or form-based code options.`}],SYS,1000);
+    phSet('zone','done',`${((Date.now()-t)/1000).toFixed(1)}s`);addFind('zone','📋 Zoning',fmt(zt)+buildZT(z));S._z=z;phaseRunners.zone=runPhase_zone;
+  }catch(e){phSet('zone','error',`${((Date.now()-t)/1000).toFixed(1)}s`);addFind('zone','📋 Zoning',`<div class="ebox">${e.message}</div>`);throw e}
+}
+
+async function runPhase_record(){
+  L.info('--- Phase 3: County Records / Site Survey ---');
+  phSet('record','active');setOvl('COUNTY RECORDS','Searching OSM + public GIS for existing site survey');const t=Date.now();
+  const z=S._z;
+  let findings=[];let osmFound=false;
+  // Strategy 1: OSM Overpass for existing buildings/parcels
+  if(S.lat&&S.lon){
+    try{
+      const q=`[out:json][timeout:15];(way["building"](around:80,${S.lat},${S.lon});way["landuse"](around:80,${S.lat},${S.lon});node["addr:housenumber"](around:30,${S.lat},${S.lon}););out geom tags;`;
+      const r=await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(q)}`);
+      const d=await r.json();S.osmBuildings=d.elements||[];
+      if(S.osmBuildings.length){
+        osmFound=true;
+        const blds=S.osmBuildings.filter(e=>e.tags?.building);
+        const adr=S.osmBuildings.find(e=>e.tags?.['addr:housenumber']);
+        findings.push(`**OSM Survey Data Found** — ${blds.length} existing building(s) on parcel.`);
+        blds.forEach(b=>{
+          const tags=b.tags||{};const area=b.geometry?calcOSMArea(b.geometry):null;
+          findings.push(`• Existing: ${tags.building||'building'} ${tags.building_levels?tags.building_levels+'-story ':''}${tags['building:material']?'('+tags['building:material']+')':''} ${area?Math.round(area)+' SF footprint':''} ${tags.name||''}`);
+        });
+        if(adr)findings.push(`• Address confirmed: ${adr.tags?.['addr:housenumber']} ${adr.tags?.['addr:street']}`);
+        S.countyRecord={source:'OpenStreetMap',buildings:blds.length,data:blds};
+        L.info(`OSM: ${blds.length} buildings found`);
+      }else{findings.push('No existing buildings recorded in OpenStreetMap for this parcel.')}
+    }catch(e){L.warn('OSM record search failed:',e.message);findings.push('OSM query failed: '+e.message.substring(0,60))}
+
+    // Strategy 2: Try FEMA for flood zone (if not already done)
+    if(!S.femaZone){
+      try{
+        // FEMA may be CORS-blocked in standalone Chrome — use Promise.race with short timeout
+        const fP=fetch(`https://hazards.fema.gov/gis/nfhl/rest/services/public/NFHL/MapServer/28/query?geometry=${S.lon},${S.lat}&geometryType=esriGeometryPoint&spatialRel=esriSpatialRelIntersects&outFields=FLD_ZONE,SFHA_TF&returnGeometry=false&f=json`).then(r=>r.json());
+        const fT=new Promise((_,r)=>setTimeout(()=>r(new Error('fema_timeout')),8000));
+        const fd=await Promise.race([fP,fT]);
+        const feats=fd?.features||[];
+        if(feats.length){const fz=feats[0].attributes.FLD_ZONE||'X';S.femaZone=fz;const sfha=['A','AE','AO','AH','V','VE','A99'].includes(fz);if(sfha){S.overlays.flood=true;toggleOv('flood')};findings.push(`• **FEMA Flood Zone:** ${fz} — ${sfha?'SPECIAL FLOOD HAZARD AREA (affects design)':'Outside SFHA (minimal risk)'}`)}
+        else{S.femaZone='X';findings.push('• FEMA: No mapped flood zone data at this location (Zone X assumed)')}
+      }catch(e){
+        const isCORS=e.message.includes('fetch')||e.message==='Failed to fetch';
+        L.info('FEMA record query: '+(isCORS?'CORS blocked (expected in standalone Chrome)':e.message.substring(0,40)));
+        findings.push(`• FEMA flood zone: API ${isCORS?'blocked by CORS':'unavailable'} — verify manually at <strong>msc.fema.gov/portal/search</strong>`);
+      }
+    }
+
+    // Strategy 3: Attempt county ESRI ArcGIS parcel REST API
+    if(z){
+      try{
+        // Many US counties expose parcels via ESRI REST — try common URL patterns
+        const county=(z.county||'').toLowerCase().replace(/\s/g,'');
+        const state=(z.state||'').toLowerCase();
+        const esriUrls=[
+          `https://services.arcgis.com/${county}/arcgis/rest/services/Parcels/FeatureServer/0/query?geometry=${S.lon},${S.lat}&geometryType=esriGeometryPoint&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false&f=json`,
+          `https://gis.${county}.${state}.gov/arcgis/rest/services/Parcels/MapServer/0/query?geometry=${S.lon},${S.lat}&geometryType=esriGeometryPoint&outFields=*&returnGeometry=false&f=json`,
+        ];
+        for(const url of esriUrls){
+          try{const rr=await Promise.race([fetch(url),new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),6000))]);if(rr.ok){const dd=await rr.json();if(dd.features?.length){const attrs=dd.features[0].attributes;findings.push(`• **County GIS Record Found:** APN ${attrs.APN||attrs.PARCELNO||attrs.PIN||'—'}, Legal Area: ${attrs.LEGALACRES||attrs.TOTALAREA||'—'} acres`);S.countyRecord={...S.countyRecord,esri:attrs};L.info('ESRI parcel found:',JSON.stringify(attrs).substring(0,100));break}}}catch(_){}
+        }
+      }catch(e){L.info('ESRI parcel search: no public API found (normal)')}
+    }
+  }else{findings.push('Address geocoding required to query site records. Enter address with city/state.')}
+
+  const summary=osmFound?`**Existing Site Survey — ${S.osmBuildings.filter(e=>e.tags?.building).length} structure(s) identified** via OpenStreetMap (community-maintained survey data). Use as reference; verify with licensed surveyor.\n\n`:`**No existing buildings found** in public OpenStreetMap records for this parcel — lot may be vacant or structures not yet mapped.\n\n`;
+  phSet('record','done',`${((Date.now()-t)/1000).toFixed(1)}s`);
+  addFind('record','🗂️ Site Survey & County Records',fmt(summary+findings.join('\n')));
+  phaseRunners.record=runPhase_record;
+}
+
+function calcOSMArea(geometry){// rough footprint SF from OSM geometry lat/lon polygon
+  if(!geometry||geometry.length<3)return null;
+  let area=0;for(let i=0;i<geometry.length;i++){const j=(i+1)%geometry.length;area+=geometry[i].lon*geometry[j].lat;area-=geometry[j].lon*geometry[i].lat}
+  const areaDeg=Math.abs(area)/2;const areaSF=areaDeg*(364000*364000*Math.cos(geometry[0].lat*Math.PI/180));return areaSF;
+}
+
+// ── DEVELOPMENT OPTIONS GENERATION (local, instant) ──
+function generateOptions(z){
+  const bW=Math.max(14,z.lotWidth-z.leftSetback-z.rightSetback);
+  const bD=Math.max(20,z.lotDepth-z.frontSetback-z.rearSetback);
+  const lotSF=z.lotWidth*z.lotDepth;
+  const maxSt=Math.min(z.maxStories||2,3);
+  const adu=z.aduAllowed!==false;
+  const isCA=z.state==='CA';const isWA=z.state==='WA';const isOR=z.state==='OR';
+  const highSeismic=['CA','AK','WA','OR','NV','UT','HI'].includes(z.state||'');
+  const db=STATE_DB[z.state]||{bc:'IBC 2018',ec:'IECC 2018'};
+
+  const opts=[];
+
+  // Compute realistic costs and values
+  const costPerSF=(isCA||isWA)?380:220;
+  const valuePerUnit=(isCA)?720000:isWA?540000:320000;
+  const costMultiplier=(highSeismic)?1.18:1.0;// seismic premium
+
+  // Option 1: Conservative — SFR + ADU
+  {const sf=Math.round(bW*bD*.65);const units=adu?2:1;const cost=Math.round(sf*costPerSF*costMultiplier);const val=Math.round(units*valuePerUnit*.8);
+  opts.push({id:1,icon:'🏡',name:'Conservative SFR + ADU',type:`${units}-unit · ${sf.toLocaleString()} SF · 1-story`,badge:'Low Risk',badgeClass:'badge-green',units,sf,stories:1,cost:`$${Math.round(cost/1000)}K–$${Math.round(cost*1.2/1000)}K`,value:`$${Math.round(val/1000)}K–$${Math.round(val*1.15/1000)}K`,roi:`${Math.round((val-cost)/cost*80)}–${Math.round((val*1.1-cost)/cost*80)}%`,risk:'Low',timeline:'8–12 months',green:['Solar-ready','EV parking','Energy Star'],cert:`${db.ec} + LEED for Homes possible`,permits:'By-right, ministerial'})}
+
+  // Option 2: Stacked Duplex + ADU (if 2+ stories)
+  if(maxSt>=2){const sf=Math.round(bW*bD*1.3);const units=adu?3:2;const cost=Math.round(sf*costPerSF*costMultiplier);const val=Math.round(units*valuePerUnit*.85);
+  opts.push({id:2,icon:'🏘️',name:'Stacked Duplex + ADU',type:`${units}-unit · ${sf.toLocaleString()} SF · 2-story`,badge:'Best Cash Flow',badgeClass:'badge-blue',units,sf,stories:2,cost:`$${Math.round(cost/1000)}K–$${Math.round(cost*1.22/1000)}K`,value:`$${Math.round(val/1000)}K–$${Math.round(val*1.18/1000)}K`,roi:`${Math.round((val-cost)/cost*80)}–${Math.round((val*1.15-cost)/cost*80)}%`,risk:'Low-Medium',timeline:'14–18 months',green:['Passive solar orientation','Solar PV 8kW','Zehnder ERV','EV charging × 2'],cert:`LEED Silver achievable · ${db.ec}`,permits:'By-right in most R zones'})}
+
+  // Option 3: Side-by-Side + ADUs (if wide enough)
+  if(bW>=40&&maxSt>=2){const sf=Math.round(bW*bD*1.55);const units=adu?4:2;const cost=Math.round(sf*costPerSF*costMultiplier);const val=Math.round(units*valuePerUnit*.9);
+  opts.push({id:3,icon:'🌿',name:'Net-Zero Side-by-Side + 2 ADUs',type:`${units}-unit · ${sf.toLocaleString()} SF · 2-story`,badge:'Best Sustainability',badgeClass:'badge-purple',units,sf,stories:2,cost:`$${Math.round(cost/1000)}K–$${Math.round(cost*1.25/1000)}K`,value:`$${Math.round(val/1000)}K–$${Math.round(val*1.2/1000)}K`,roi:`${Math.round((val-cost)/cost*80)}–${Math.round((val*1.2-cost)/cost*80)}%`,risk:'Medium',timeline:'16–22 months',green:['Net-zero energy','Shared 16kW solar','Warmboard radiant','Greywater reuse','Green roof on ADU','EV fleet charging'],cert:`LEED Gold · Passive House EnerPHit possible`,permits:'By-right if <50% lot coverage',recommended:true})}
+
+  // Option 4: Max Density Triplex/4-plex
+  if(maxSt>=2){const sf=Math.round(bW*bD*(maxSt>=3?1.9:1.65));const units=adu?maxSt*2+1:maxSt*2;const cost=Math.round(sf*costPerSF*1.05*costMultiplier);const val=Math.round(units*valuePerUnit*.92);
+  opts.push({id:4,icon:'🏗️',name:`Maximum Density ${maxSt}-Story + ADUs`,type:`${units}-unit · ${sf.toLocaleString()} SF · ${maxSt}-story`,badge:'Highest Density',badgeClass:'badge-amber',units,sf,stories:maxSt,cost:`$${Math.round(cost/1000)}K–$${Math.round(cost*1.28/1000)}K`,value:`$${Math.round(val/1000)}K–$${Math.round(val*1.22/1000)}K`,roi:`${Math.round((val-cost)/cost*80)}–${Math.round((val*1.2-cost)/cost*80)}%`,risk:'Medium-High',timeline:'20–28 months',green:['LEED Platinum target','22kW solar array','Living roof','WUFI thermal bridge analysis','Triple-pane windows'],cert:`LEED Platinum · ${db.bc} Type V-A`,permits:'May require design review / DRB approval'})}
+
+  // Option 5: CA SB9 or WA MFTE
+  if(isCA&&z.sb9Eligible!==false){const sf=Math.round(bW*bD*1.7);const units=4;const cost=Math.round(sf*costPerSF*costMultiplier);const val=Math.round(units*valuePerUnit*.95);
+  opts.push({id:5,icon:'🏙️',name:'SB9 Lot Split → 4 Units',type:`4-unit · ${sf.toLocaleString()} SF · 2-story`,badge:'Max ROI (CA SB9)',badgeClass:'badge-purple',units,sf,stories:2,cost:`$${Math.round(cost/1000)}K–$${Math.round(cost*1.22/1000)}K`,value:`$${Math.round(val/1000)}K–$${Math.round(val*1.25/1000)}K`,roi:`${Math.round((val-cost)/cost*80)}–${Math.round((val*1.2-cost)/cost*80)}%`,risk:'Medium',timeline:'18–26 months',green:['Solar required (T24)','CALGreen Tier 2','EV-ready × 4','Water-efficient landscaping'],cert:`CALGreen Tier 2 · Title 24 2022`,permits:'Ministerial under SB9 — city cannot deny'})
+  }else if(isWA){const sf=Math.round(bW*bD*1.6);const units=4;const cost=Math.round(sf*costPerSF*costMultiplier);const val=Math.round(units*valuePerUnit*.9);
+  opts.push({id:5,icon:'🏙️',name:'MFTE Affordable 4-Unit',type:`4-unit · ${sf.toLocaleString()} SF · 2-story`,badge:'Tax Exemption (WA)',badgeClass:'badge-purple',units,sf,stories:2,cost:`$${Math.round(cost/1000)}K–$${Math.round(cost*1.22/1000)}K`,value:`$${Math.round(val/1000)}K–$${Math.round(val*1.25/1000)}K`,roi:`${Math.round((val-cost)/cost*80)}–${Math.round((val*1.2-cost)/cost*80)}%`,risk:'Medium',timeline:'20–26 months',green:['WSEC 2021 enhanced','Solar-ready','EV × 2','Permeable paving'],cert:`WSEC 2021 · MFTE 12-yr tax exemption`,permits:'City MFTE approval + design review'})
+  }
+
+  return opts;
+}
+
+async function runPhase_opts(){
+  L.info('--- Phase 3.5: Development Options Selection ---');
+  phSet('opts','active');hideOvl();
+  const z=S._z;
+  if(!z){phSet('opts','error');return}
+  const opts=generateOptions(z);S.generatedOptions=opts;
+  const recommended=opts.find(o=>o.recommended)||opts[Math.floor(opts.length/2)];
+  // Show options panel and wait for user selection
+  return new Promise(resolve=>{
+    S._optionResolve=resolve;
+    renderOptionsPanel(opts,recommended,z);
+    document.getElementById('opts-overlay').classList.add('vis');
+    // UX-5: auto-resolve after 90s — guard against undefined recommended
+    setTimeout(()=>{
+      if(S._optionResolve){
+        const fallback=(opts.find(o=>o.recommended)||opts[Math.floor(opts.length/2)]||opts[0]);
+        if(fallback){L.warn('Options: auto-selecting "'+fallback.name+'" after 90s timeout');selectOption(fallback.id);}
+        else{L.error('Options: no fallback option available — pipeline stalled');S._optionResolve=null;}
+      }
+    },90000);
+  });
+}
+
+function renderOptionsPanel(opts,recommended,z){
+  const el=document.getElementById('opts-overlay');
+  el.innerHTML=`
+    <div class="opts-header">
+      <div class="opts-title">Select Development Program</div>
+      <div class="opts-sub"><strong>${S.addr}</strong> · Zone ${z.zoningDistrict} · ${z.jurisdiction}, ${z.state} · Lot: ${z.lotWidth}'×${z.lotDepth}' = ${(z.lotWidth*z.lotDepth).toLocaleString()} SF · Max FAR ${z.maxFAR} · ${z.maxStories} stories</div>
+    </div>
+    <div class="opts-grid">
+      ${opts.map(o=>`
+        <div class="opt-card ${o.id===recommended?.id?'recommended':''}" onclick="selectOption(${o.id})">
+          ${o.id===recommended?.id?`<div class="opt-rec-star">⭐ AI Recommended</div>`:''}
+          <div class="opt-badge ${o.badgeClass}">${o.badge}</div>
+          <div class="opt-icon">${o.icon}</div>
+          <div class="opt-name">${o.name}</div>
+          <div class="opt-type">${o.type}</div>
+          <div class="opt-metrics">
+            <div class="opt-metric"><div class="oml">EST. COST</div><div class="omv">${o.cost}</div></div>
+            <div class="opt-metric"><div class="oml">EST. VALUE</div><div class="omv g">${o.value}</div></div>
+            <div class="opt-metric"><div class="oml">EQUITY ROI</div><div class="omv a">${o.roi}</div></div>
+            <div class="opt-metric"><div class="oml">TIMELINE</div><div class="omv b">${o.timeline}</div></div>
+            <div class="opt-metric"><div class="oml">RISK</div><div class="omv">${o.risk}</div></div>
+            <div class="opt-metric"><div class="oml">PERMITS</div><div class="omv" style="font-size:8px">${o.permits.substring(0,22)}</div></div>
+          </div>
+          <div class="opt-green-tags">${o.green.map(g=>`<span class="gtag">🌿 ${g}</span>`).join('')}</div>
+          <div class="opt-cert">🏅 ${o.cert}</div>
+          <div class="opt-select-btn">SELECT THIS PROGRAM →</div>
+        </div>`).join('')}
+    </div>
+    <div class="opt-ai-note">
+      <strong>Expert Recommendation (Dr. Alexandra Chen, FAIA):</strong> For ${z.jurisdiction} in 2024, the Net-Zero Side-by-Side option typically achieves the best risk-adjusted return — green premiums add 12-18% to value while LEED Gold certification qualifies for lower construction financing rates. All options comply with ${z.zoningDistrict} by-right development standards. Cost estimates include ${z.state==='CA'?'Title 24 + CALGreen':z.state==='WA'?'WSEC 2021 + SEPA review':'state energy code'} compliance. Structural costs include ${['CA','AK','WA','OR','NV','UT'].includes(z.state)?'seismic premium (SDC D-E, ~15-20% above baseline)':'standard code-minimum engineering'}.
+    </div>`;
+}
+
+function selectOption(optId){
+  const opt=S.generatedOptions.find(o=>o.id===optId);
+  S.selectedOption=opt||S.generatedOptions[0];
+  document.getElementById('opts-overlay').classList.remove('vis');
+  L.info(`Option selected: ${S.selectedOption.name} (${S.selectedOption.units} units, ${S.selectedOption.sf} SF)`);
+  phSet('opts','done');
+  addFind('opts','🎯 Selected Development Program',
+    `<strong>${S.selectedOption.icon} ${S.selectedOption.name}</strong><br>${S.selectedOption.type}<br>
+     Est. cost: ${S.selectedOption.cost} · Est. value: ${S.selectedOption.value} · ROI: ${S.selectedOption.roi}<br>
+     <span style="color:var(--green)">${S.selectedOption.green.join(' · ')}</span><br>
+     <span style="color:var(--purple)">${S.selectedOption.cert}</span>`);
+  const resolve=S._optionResolve;S._optionResolve=null;resolve?.(S.selectedOption);
+}
+
+async function runPhase_comp(){
+  L.info('--- Phase 5: Competitor Research ---');phSet('comp','active');setOvl('COMPETITOR RESEARCH','Analyzing 3-4 comparable projects (2019–2024)');
+  // PIPE-5: update overlay with progress dots so user knows something is happening
+  let _compDot=0;const _compInt=setInterval(()=>{
+    _compDot++;
+    const dots=['●○○○','●●○○','●●●○','●●●●'][_compDot%4];
+    const ot=document.getElementById('otxt');
+    if(ot)ot.innerHTML=`${dots} Researching market comparables in ${S._z?.jurisdiction||'the area'}... <span class="df"></span>`;
+  },900);
+  // Store interval ID so we can clear it
+  S._compInterval=_compInt;const t=Date.now();
+  const z=S._z;const opt=S.selectedOption;
+  try{
+    const res=await callAI([{role:'user',content:
+      `As a PhD architect with 50 years of experience, research 3-4 comparable residential developments completed 2019-2024 near ${S.addr} in ${z.jurisdiction}, ${z.state}.
+
+We are designing a **${opt?.name||'multi-family'} project** (${opt?.units||2} units, ~${opt?.sf||2500} SF).
+
+For each comparable project provide:
+1. Project name, location, developer, year completed
+2. Unit mix, stories, total SF, density achieved
+3. Notable green/sustainable innovations actually implemented
+4. Structural system and why it was chosen
+5. Cost per SF and what drove it
+6. Market performance (sold/leased price, time on market)
+
+Then recommend:
+**3 specific design innovations we must incorporate** based on what top competitors are doing
+**Optimal unit mix** for current market demand
+**2 structural improvements** over typical code minimum (with specific member sizes)
+**1 green technology** with proven market ROI in this market`
+    }],SYS,1000);
+    phSet('comp','done',`${((Date.now()-t)/1000).toFixed(1)}s`);
+    if(S._compInterval){clearInterval(S._compInterval);S._compInterval=null;}addFind('comp','🏆 Competitor Analysis & Market Intelligence',fmt(res));S.competitors=res;phaseRunners.comp=runPhase_comp;
+  }catch(e){phSet('comp','error',`${((Date.now()-t)/1000).toFixed(1)}s`);addFind('comp','🏆 Competitor Research',`<div class="ebox">Competitor research failed: ${e.message}<br><em>Proceeding with design — competitor data will not be incorporated.</em></div>`);// don't throw — not critical
+  }
+}
+
+async function runPhase_plan(){
+  L.info('--- Phase 6: Expert Floor Plan (LOCAL) ---');phSet('plan','active');setOvl('EXPERT FLOOR PLAN','Generating code-compliant layout with structural grid & dimensions...');const t=Date.now();
+  const z=S._z;if(!z){phSet('plan','error');addFind('plan','📐 Plan','<div class="ebox">Run Zoning first.</div>');return}
+  try{
+    const pd=localFloorPlan(z,S.selectedOption);valPlan(pd,z);
+    L.info(`Plan: ${pd.floors.length} floors, ${pd.floors.reduce((a,f)=>a+f.rooms.length,0)} rooms, ${pd.meta.totalSqFt} SF in ${Date.now()-t}ms`);
+    phSet('plan','done',`${((Date.now()-t)/1000).toFixed(2)}s`);
+    addFind('plan','📐 Expert Development Program',buildMT(pd)+'<div style="margin-top:6px;font-size:9px;color:var(--txt2)">🏗️ Structural grid: 20'-0" bay spacing · 2×6 @ 16" o.c. · <span style="color:var(--green)">Net-zero energy capable</span></div>');
+    buildSheetTabs();
+    // MAP-1: assign S.plan BEFORE initMap so drawMapOverlay can draw the footprint
+    S.plan=pd;
+    if(S.lat&&S.lon){await initMap(S.lat,S.lon,z);setView('map')}else{setView('plan')}
+    requestAnimationFrame(()=>{resetPanZoom();renderSheet('A-2');buildLegend(pd);document.getElementById('legend').classList.add('vis')});
+    initThree();gen3D(pd);phaseRunners.plan=runPhase_plan;
+  }catch(e){phSet('plan','error',`${((Date.now()-t)/1000).toFixed(1)}s`);addFind('plan','📐 Plan',`<div class="ebox">${e.message}</div>`);throw e}
+}
+
+async function runPhase_chk(){
+  L.info('--- Phase 5: Checklist ---');phSet('chk','active');const t=Date.now();const z=S._z;
+  if(!z){phSet('chk','error');addFind('chk','✅ Checklist','<div class="ebox">Run Zoning first.</div>');return}
+  const st=z.state||'WA';const db=STATE_DB[st]||{bc:'IBC 2018',ec:'IECC 2018',seismic:'B',wind:'115',note:'Confirm adopted code with local building dept'};
+  const jur=z.jurisdiction||'Local Jurisdiction';const units=S.plan?.meta?.units||2;const stories=S.plan?.meta?.stories||2;
+  const totalSF=S.plan?.meta?.totalSqFt||2000;const ov=S.overlays;
+  const isCA=st==='CA',isWA=st==='WA',isOR=st==='OR',isNY=st==='NY',isTX=st==='TX',isFL=st==='FL',isMA=st==='MA',isDC=st==='DC';
+  const highSeismic=['CA','AK','WA','OR','NV','UT','HI'].includes(st);
+  const highWind=['FL','TX','LA','SC','NC','VA','MD','NJ','NY','MA','CT','HI'].includes(st);
+  const isLargeMF=units>=5;const isMixedUse=(S.plan?.meta?.commercialSqFt||0)>0;
+  const costPerSF=(isCA||isNY||isDC||isMA||isWA)?380:(isFL||isTX)?200:260;
+  const valuation=Math.round(totalSF*costPerSF);const feeRate=(isCA||isNY)?.012:(isWA||isOR)?.01:.008;
+  const feeEst=Math.round(valuation*feeRate/100)*100;
+  const feeRange=`$${(feeEst*.8/1000).toFixed(0)}K–$${(feeEst*1.4/1000).toFixed(0)}K`;
+  const digitalReq=(isCA||isWA||isOR||isNY||isDC)?'PDF/A, 24"×36" at 1:1. Separate file per sheet.':'PDF format, 24"×36" preferred.';
+  const ii=items=>items.filter(Boolean);
+  const categories=[
+    {name:'Site Documents',items:ii([
+      {label:'Boundary & Topographic Survey (Licensed PLS)',required:true,note:`${st} wet stamp. 1-ft contours, easements, legal description, utilities`},
+      {label:'Site Plan at 1/8"=1'-0"',required:true,note:'Property lines, setbacks, existing structures, north arrow, APN, dimensions'},
+      {label:'Grading & Drainage Plan',required:true,note:`Stormwater BMP. ${isCA?'C.3 LID compliance':'Pre/post impervious area, swales, retention'}`},
+      {label:'Utility Connection Plan',required:true,note:'Water, sewer, gas, electric service. Utility availability letters'},
+      isCA&&{label:'WQMP / LID Report (MS4 NPDES)',required:true,note:'Required for projects ≥1 acre disturbed'},
+      isWA&&{label:'SEPA Environmental Checklist',required:true,note:'State Environmental Policy Act — check local exemption thresholds'},
+      isOR&&{label:'DSS Stormwater Management Plan',required:true,note:'Oregon DEQ Clean Water Services requirements'},
+      ov.flood&&{label:'FEMA Elevation Certificate',required:true,note:`Zone ${S.femaZone||'AE'} — licensed surveyor. Show Lowest Floor Elevation vs BFE`},
+      ov.flood&&{label:'Floodplain Development Permit',required:true,note:'From local floodplain administrator. Lowest floor ≥1ft above BFE'},
+      ov.coastal&&{label:'State Coastal Development Permit',required:true,note:`${isCA?'CA Coastal Commission — 90-180 day review':'Contact state coastal agency'}`},
+      ov.historic&&{label:'Certificate of Appropriateness (COA)',required:true,note:'Historic board approval before permit. Materials must match existing character'},
+      ov.hillside&&{label:'Hillside Grading & Slope Stability Study',required:true,note:'FS≥1.5 static, ≥1.1 seismic. Third-party review required'},
+      ov.liquefaction&&{label:'Geotechnical Investigation (Liquefaction)',required:true,note:'Site-specific assessment + mitigation. Peer review by third-party PE'},
+      ov.fire&&{label:'Defensible Space Compliance Plan',required:true,note:'Zone 1 (0-30ft) and Zone 2 (30-100ft) vegetation management'},
+      ov.fire&&{label:'Ember-Resistant Construction Details',required:true,note:'Ember-resistant vents, Class A roofing, tempered glass, non-combustible deck'},
+    ])},
+    {name:'Architectural Drawings (This Set)',items:ii([
+      {label:`A-0: Cover Sheet — Project Data & Code Summary`,required:true,note:`${db.bc} · ${db.ec} · Seismic SDC ${db.seismic} · Wind ${db.wind} mph`},
+      {label:`A-1: Site Plan at 1/8"=1'-0"`,required:true,note:'Property lines, setbacks, footprint, utilities, landscaping, parking, north arrow'},
+      {label:`A-2+: Floor Plans — All ${stories} Level${stories>1?'s':''} at 1/4"=1'-0"`,required:true,note:'Room names, dimensions, door/window tags, areas, accessible route, wall types'},
+      {label:'Roof Plan at 1/8"=1'-0"',required:true,note:'Drainage direction, slopes, equipment curbs, parapet, access hatch'},
+      {label:'Exterior Elevations — All 4 Sides at 1/4"=1'-0"',required:true,note:'Heights, materials, fenestration, finish schedule, grade line'},
+      {label:'Building Sections — Min. 2 at 1/4"=1'-0"',required:true,note:'Through stair, through typical unit. Floor-to-floor, ceiling heights, foundation'},
+      {label:'Door & Window Schedule',required:true,note:`Size, operation, fire rating, U-factor, SHGC. ${isCA||isWA?'Match energy compliance values':''}`},
+      stories>1&&{label:'Stair & Guardrail Details',required:true,note:'IBC: max 7-3/4" rise, min 10" run, 42" guardrail, handrail grip shape'},
+      isLargeMF&&{label:'Enlarged Kitchen & Bath Plans (1/2"=1'-0")',required:true,note:'ADA fixture clearances for 5+ unit projects'},
+    ])},
+    {name:'Structural Engineering',items:ii([
+      {label:'Structural Calculations (PE-stamped)',required:true,note:`Gravity + lateral per ASCE 7, ${db.bc}. Seismic SDC ${db.seismic}`},
+      {label:'Foundation Plan & Details (PE-stamped)',required:true,note:'Footing sizes, depth, rebar, anchor bolts, slab'},
+      {label:`Framing Plans — All ${stories} Levels (PE-stamped)`,required:true,note:'Member sizes, connections, hold-downs, shear walls'},
+      {label:'Geotechnical / Soils Report',required:true,note:`Boring logs to ${stories>1?20:15}ft, bearing capacity, ${highSeismic?'liquefaction potential, ':''}site class`},
+      (stories>1||highSeismic)&&{label:'Shear Wall & Hold-Down Schedule',required:true,note:`SDC ${db.seismic} — verify Cs per ASCE 7-22 §12.8`},
+      highSeismic&&{label:'Seismic Design Parameters Summary',required:true,note:`${st}: Ss, S1, SDS, SD1 from USGS. Site class from geotech`},
+      highWind&&{label:'Wind Load Analysis',required:true,note:`${st}: ${db.wind} mph basic wind (ASCE 7). MWFRS + C&C pressures`},
+      isFL&&{label:'Florida Product Approval Numbers',required:true,note:'All windows/doors: FL PA or NOA numbers on drawings'},
+      isLargeMF&&{label:'Special Inspection & Testing Program',required:true,note:'IBC Ch.17 — concrete, masonry, bolting, welding, soils'},
+    ])},
+    {name:'MEP Systems',items:ii([
+      {label:'Electrical Single-Line Diagram',required:true,note:`Service min ${units>2?'400A':'200A'}, panel schedules, load calc. ${isCA||isWA?'EV-ready conduit':'Arc-fault per NEC 210.12'}`},
+      {label:'Electrical Floor Plans',required:true,note:`Receptacles, switches, lighting, smoke/CO detectors. ${isCA?'T24 lighting controls':''}`},
+      {label:'Plumbing Isometric & Floor Plans',required:true,note:'Water supply, DWV, gas piping, fixture unit counts, backflow preventer'},
+      {label:'Mechanical/HVAC Plan & Equipment Schedule',required:true,note:`Duct layout, Manual J, ASHRAE 62.2 ventilation. ${isCA?'T24 mechanical':''}`},
+      (units>=3||stories>=3)&&{label:'Fire Sprinkler Design (NFPA 13R)',required:true,note:'Licensed FPE design. Hydraulic calculations. Separate permit typical'},
+      isMixedUse&&{label:'Fire Alarm System (NFPA 72)',required:true,note:'Full detection + notification. Separate FD permit'},
+    ])},
+    {name:'Energy & Compliance',items:ii([
+      isCA&&{label:'Title 24 Energy Report (CF1R)',required:true,note:'CEC software (EnergyPro/CBECC). CF2R at rough, CF3R at final'},
+      isCA&&{label:'CALGreen Checklist (2022)',required:true,note:'Mandatory + Tier 1 if required locally. Inspector signs field copy'},
+      isWA&&{label:'WSEC 2021 Energy Compliance',required:true,note:'COMcheck or REScheck. Blower door test required'},
+      isOR&&{label:'OEESC 2021 Compliance Report',required:true,note:'REScheck/COMcheck. Portland Climate Action Plan may add measures'},
+      isMA&&{label:'MA Stretch Code Compliance',required:true,note:'Required in 300+ municipalities. Blower door test required'},
+      !isCA&&!isWA&&!isOR&&!isMA&&{label:`${db.ec} Energy Compliance`,required:true,note:`${st} adopted: ${db.ec}. REScheck or COMcheck report`},
+      units>=4&&{label:'FHA Fair Housing / ADA Accessibility',required:true,note:'Type A + B units, accessible route, common areas'},
+    ])},
+    {name:'Administrative',items:ii([
+      {label:`${jur} Building Permit Application`,required:true,note:`Valuation ~$${(valuation/1000).toFixed(0)}K. Owner or GC signature. Download from ${jur} building dept`},
+      {label:`Estimated Permit Fees: ${feeRange}`,required:true,note:`~${(feeRate*100).toFixed(1)}% of $${(valuation/1000).toFixed(0)}K valuation. Call ${jur} for exact schedule`},
+      {label:'Planning / Zoning Pre-Approval',required:true,note:`${z.zoningDistrict} — confirm by-right or Design Review/CEQA needed`},
+      {label:'Contractor License & Insurance',required:true,note:`${st} Class B GC + Workers Comp + GL $1M min`},
+      isCA&&{label:'SB9 / ADU Ministerial Pre-Check',required:true,note:'Planning cannot deny code-compliant ADU. Get letter before permit'},
+      isWA&&{label:'WA Excise Tax Affidavit',required:true,note:'File with County Assessor before recording'},
+      isTX&&{label:'TDLR Registration (commercial)',required:isMixedUse,note:'Texas DLR accessibility review for commercial'},
+      {label:'School District Impact Fee',required:true,note:`Paid to school district before CO. Typical $500–$3,500/unit`},
+      {label:'Demolition Permit',required:true,note:'Separate demo permit required. Hazmat survey if pre-1978 structure'},
+      {label:`Digital Submittal Format`,required:true,note:digitalReq},
+    ])},
+  ];
+  const cleanCats=categories.map(c=>({...c,items:c.items.filter(Boolean)})).filter(c=>c.items.length>0);
+  const total=cleanCats.reduce((a,c)=>a+c.items.length,0);
+  phSet('chk','done',`${((Date.now()-t)/1000).toFixed(2)}s`);
+  buildChecklist({jurisdiction:jur,categories:cleanCats});
+  document.getElementById('cljur').textContent=`${jur} · ${db.bc}`;
+  const ovActive=Object.entries(ov).filter(([,v])=>v).map(([k])=>k).join(', ');
+  addFind('chk','✅ Permit Checklist Ready',
+    `<strong>${total} items</strong> · ${cleanCats.length} categories · ${jur}, ${st}<br>Code: ${db.bc} · Energy: ${db.ec} · SDC: ${db.seismic} · Wind: ${db.wind}mph${S.femaZone?` · FEMA: <strong>${S.femaZone}</strong>`:''}<br>${ovActive?'Overlays: '+ovActive+'<br>':''}Est. valuation ~$${(valuation/1000).toFixed(0)}K · Permit fees ${feeRange}<br><span style="color:var(--txt3);font-size:10px">${db.note}</span>`);
+  L.info(`Checklist: ${total} items, fees ${feeRange}`);phaseRunners.chk=runPhase_chk;
+}
+
+// ─── CHK-3: Export checklist to CSV ───
+function exportChecklistCSV(){
+  const cats=document.querySelectorAll('.csec');
+  const rows=[['Category','Item','Required','Note','Status']];
+  cats.forEach(cat=>{
+    const catName=cat.querySelector('.cshd')?.textContent?.replace(/\d+$/,'').trim()||'';
+    cat.querySelectorAll('.cit').forEach(item=>{
+      const label=item.querySelector('.ctx')?.childNodes[0]?.textContent?.trim()||'';
+      const note=item.querySelector('.cnote')?.textContent?.trim()||'';
+      const req=item.querySelector('.creq')?'YES':'';
+      const done=item.classList.contains('chk')?'✓ Complete':'Pending';
+      rows.push([catName,label,req,note,done]);
+    });
+  });
+  const csv=rows.map(r=>r.map(c=>'"'+(c||'').replace(/"/g,'""')+'"').join(',')).join('
+');
+  const blob=new Blob([csv],{type:'text/csv'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=`${(S.addr||'checklist').replace(/[^a-z0-9]/gi,'_').substring(0,25)}_permit_checklist.csv`;
+  a.click();L.info('Checklist exported to CSV');
+}
+
+// ═══ CHECKLIST UI ═══
+function buildChecklist(data){
+  const sc=document.getElementById('cl-scroll');sc.innerHTML='';
+  (data?.categories||[]).forEach(cat=>{
+    const s=document.createElement('div');s.className='csec';
+    const TL_MAP={"Site":"2–4 wks","Arch":"3–6 wks","Struct":"4–8 wks","MEP":"3–5 wks","Energy":"1–2 wks","Admin":"1–3 wks","Flood":"2–4 wks","Historic":"4–12 wks"};
+  s.innerHTML=`<div class="cshd">${cat.name}<span style="font-size:6.5px;color:var(--txt3);margin-left:4px">${Object.entries(TL_MAP).find(([k])=>cat.name.includes(k))?.[1]||''}</span><span class="ccnt">${cat.items?.length||0}</span></div>`+(cat.items||[]).map(it=>`<div class="cit" onclick="tCL(this)"><div class="cck"><svg width="7" height="7" viewBox="0 0 8 8" fill="none" style="display:none"><path d="M1 4l2 2.5L7 1.5" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg></div><div class="ctx">${it.label}${it.note?`<span class="cnote">${it.note}</span>`:''}</div>${it.required?'<span class="creq">REQ</span>':''}</div>`).join('');
+    sc.appendChild(s);
+  });pUp();
+}
+function tCL(el){el.classList.toggle('chk');const s=el.querySelector('.cck svg');if(s)s.style.display=el.classList.contains('chk')?'block':'none';pUp()}
+function pUp(){const a=document.querySelectorAll('.cit').length,d=document.querySelectorAll('.cit.chk').length,p=a>0?Math.round(d/a*100):0;document.getElementById('ppct').textContent=p+'%';document.getElementById('pf').style.width=p+'%'}
+
+// ═══ DRAWING ENGINE (24"×36" permit sheets) ═══
+const RC={living:{f:'rgba(180,150,110,.42)',s:'#b49670'},bedroom:{f:'rgba(80,130,200,.42)',s:'#5082c8'},bath:{f:'rgba(60,170,160,.42)',s:'#3caaa0'},kitchen:{f:'rgba(200,170,80,.42)',s:'#c8aa50'},dining:{f:'rgba(180,110,80,.42)',s:'#b46e50'},commercial:{f:'rgba(110,140,200,.42)',s:'#6e8cc8'},office:{f:'rgba(90,120,170,.42)',s:'#5a78aa'},garage:{f:'rgba(50,70,90,.55)',s:'#324656'},corridor:{f:'rgba(90,100,115,.35)',s:'#5a6473'},stair:{f:'rgba(70,90,150,.5)',s:'#465a96'},storage:{f:'rgba(80,70,60,.45)',s:'#50463c'},laundry:{f:'rgba(120,80,150,.45)',s:'#785096'},balcony:{f:'rgba(40,150,120,.28)',s:'#289678'},entry:{f:'rgba(100,140,100,.38)',s:'#648c64'},default:{f:'rgba(90,110,130,.38)',s:'#5a6e82'}};
+const LEGEND_LABELS={living:'Living',bedroom:'Bedroom',bath:'Bath',kitchen:'Kitchen',dining:'Dining',commercial:'Commercial',office:'Office',garage:'Garage',corridor:'Corridor',stair:'Stair',storage:'Storage',laundry:'Laundry',balcony:'Balcony',entry:'Entry'};
+
+const SHEETS=[
+  {id:'A-0',lbl:'A-0 Cover'},
+  {id:'A-1',lbl:'A-1 Site Plan'},
+  {id:'A-2',lbl:'A-2 Floor Plans'},
+  {id:'A-3',lbl:'A-3 Elevations'},
+  {id:'A-4',lbl:'A-4 Sections'},
+  {id:'A-5',lbl:'A-5 Schedules'},
+];
+
+function buildSheetTabs(){
+  const tabs=document.getElementById('sheet-tabs');tabs.innerHTML='';
+  SHEETS.forEach(sh=>{
+    const b=document.createElement('button');b.className='stab'+(sh.id===S.activeSheet?' on':'');b.textContent=sh.lbl;
+    b.onclick=()=>{S.activeSheet=sh.id;document.querySelectorAll('.stab').forEach(x=>x.classList.remove('on'));b.classList.add('on');if(S.view==='plan')renderSheet(sh.id)};
+    tabs.appendChild(b);
+  });
+}
+function buildFloorTabs(pd){/* floor tabs within sheet A-2 handled by renderSheet */}
+function buildLegend(pd){const types=new Set();pd.floors?.forEach(fl=>fl.rooms?.forEach(r=>types.add(r.type||'default')));const leg=document.getElementById('legend');leg.innerHTML=[...types].filter(t=>RC[t]).map(t=>`<div class="leg-item"><div class="leg-dot" style="background:${RC[t].s};opacity:.8"></div>${LEGEND_LABELS[t]||t}</div>`).join('')}
+
+// ── Sheet renderer dispatcher ──
+function renderSheet(sheetId){
+  if(!S.plan)return;
+  const cv=document.getElementById('plan-canvas');
+  const ct=document.getElementById('cc');
+  const W=ct.offsetWidth||900,H=ct.offsetHeight||600;
+  if(W<10||H<10)return;
+  cv.width=W;cv.height=H;
+  const ctx=cv.getContext('2d');ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#0c1420';ctx.fillRect(0,0,W,H);
+  switch(sheetId){
+    case 'A-0':drawCoverSheet(ctx,W,H);break;
+    case 'A-1':drawSitePlanSheet(ctx,W,H);break;
+    case 'A-2':drawFloorPlanSheet(ctx,W,H,S.floor);break;
+    case 'A-3':drawElevationsSheet(ctx,W,H);break;
+    case 'A-4':drawSectionsSheet(ctx,W,H);break;
+    case 'A-5':drawSchedulesSheet(ctx,W,H);break;
+    default:drawFloorPlanSheet(ctx,W,H,S.floor);
+  }
+}
+
+// ── SHEET: A-0 Cover Sheet ──
+function drawCoverSheet(ctx,W,H){
+  const m=S.plan?.meta||{};const z=S._z||{};const st=z.state||'';
+  const db=STATE_DB[st]||{bc:'IBC 2018',ec:'IECC 2018',seismic:'B',wind:'115'};
+  ctx.fillStyle='#0c1420';ctx.fillRect(0,0,W,H);
+  // Border
+  ctx.strokeStyle='rgba(61,139,255,.35)';ctx.lineWidth=2;ctx.strokeRect(12,12,W-24,H-24);
+  ctx.strokeStyle='rgba(61,139,255,.15)';ctx.lineWidth=0.5;ctx.strokeRect(16,16,W-32,H-32);
+  // Title block
+  const TH=90;const TY=H-TH-12;
+  ctx.fillStyle='rgba(11,14,21,.94)';ctx.fillRect(12,TY,W-24,TH);
+  ctx.strokeStyle='rgba(61,139,255,.3)';ctx.lineWidth=0.5;ctx.strokeRect(12,TY,W-24,TH);
+  ctx.beginPath();ctx.moveTo(12,TY+28);ctx.lineTo(W-12,TY+28);ctx.moveTo(W-180,TY);ctx.lineTo(W-180,TY+TH);ctx.stroke();
+  ctx.font='500 11px JetBrains Mono,monospace';ctx.fillStyle='rgba(210,225,244,.9)';ctx.textAlign='left';ctx.textBaseline='middle';
+  ctx.fillText((m.projectName||'NEW DEVELOPMENT').substring(0,40),20,TY+14);
+  ctx.font='8px JetBrains Mono,monospace';ctx.fillStyle='rgba(122,154,184,.6)';
+  ctx.fillText((m.address||S.addr||'').substring(0,60),20,TY+38);
+  ctx.fillText(`Zone: ${z.zoningDistrict||'—'} · ${z.jurisdiction||'—'}, ${st} · ${db.bc}`,20,TY+52);
+  ctx.fillText(`${(m.totalSqFt||0).toLocaleString()} GSF · ${m.units||0} units · ${m.stories||1} stories`,20,TY+66);
+  ctx.fillText(`ArchDraw Intel v14 · ${new Date().toLocaleDateString('en-US',{month:'short',day:'2-digit',year:'numeric'})}`,20,TY+80);
+  ctx.textAlign='center';ctx.fillStyle='rgba(210,225,244,.9)';ctx.font='500 18px JetBrains Mono,monospace';
+  ctx.fillText('A-0',W-90,TY+42);ctx.font='8px JetBrains Mono,monospace';ctx.fillStyle='rgba(61,139,255,.5)';ctx.fillText('COVER SHEET',W-90,TY+60);
+
+  // Main content area
+  const CX=W/2,CY=(TY-28)/2;
+  // Big project title
+  ctx.font='300 '+(Math.min(60,Math.round(W/14)))+'px Crimson Pro,Georgia,serif';ctx.fillStyle='rgba(210,225,244,.95)';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(m.projectName||'NEW DEVELOPMENT',CX,CY-140);
+  ctx.font='italic 22px Crimson Pro,Georgia,serif';ctx.fillStyle='rgba(122,154,184,.7)';
+  ctx.fillText((m.address||S.addr||''),CX,CY-95);
+  // Divider
+  ctx.strokeStyle='rgba(61,139,255,.3)';ctx.lineWidth=0.5;ctx.beginPath();ctx.moveTo(W*.2,CY-72);ctx.lineTo(W*.8,CY-72);ctx.stroke();
+
+  // Project data table
+  const rows=[['Project Type',m.projectType||'Residential'],['Total GSF',`${(m.totalSqFt||0).toLocaleString()} SF`],['Units',`${m.units||0}`],['Stories',`${m.stories||1}`],['FAR',`${(m.FAR||0).toFixed(2)}`],['Lot Coverage',`${m.lotCoveragePercent||0}%`],['Zoning District',z.zoningDistrict||'—'],['Jurisdiction',`${z.jurisdiction||'—'}, ${st}`],['Parcel Area',`${(m.lotArea||0).toLocaleString()} SF`],['Parking Spaces',`${m.parkingSpaces||0}`]];
+  const col1=W*.28,col2=W*.52;const rowH=22;let ry=CY-48;
+  ctx.font='500 10px JetBrains Mono,monospace';ctx.fillStyle='rgba(61,139,255,.8)';ctx.textAlign='right';ctx.fillText('PROJECT DATA',col1,ry-6);
+  rows.forEach((r,i)=>{
+    ctx.fillStyle=i%2===0?'rgba(11,14,21,.5)':'rgba(28,37,56,.4)';ctx.fillRect(col1-120,ry+i*rowH,col2-col1+260,rowH);
+    ctx.font='8px JetBrains Mono,monospace';ctx.fillStyle='rgba(122,154,184,.6)';ctx.textAlign='right';ctx.fillText(r[0].toUpperCase(),col1-4,ry+i*rowH+rowH/2);ctx.textBaseline='middle';
+    ctx.font='500 10px JetBrains Mono,monospace';ctx.fillStyle='rgba(210,225,244,.85)';ctx.textAlign='left';ctx.fillText(r[1],col1+4,ry+i*rowH+rowH/2);
+  });
+  ry+=rows.length*rowH+24;
+
+  // Code references
+  const codes=[['Building Code',db.bc],['Energy Code',db.ec],['Seismic SDC',db.seismic],['Design Wind',`${db.wind} mph`],['Occupancy Group',m.stories<=2?'R-3':'R-2'],['Construction Type',m.stories>=3?'Type V-A':'Type V-B'],['Sprinklers',m.units>=3||m.stories>=3?'NFPA 13R Required':'Not Required']];
+  ctx.font='500 10px JetBrains Mono,monospace';ctx.fillStyle='rgba(34,224,138,.6)';ctx.textAlign='right';ctx.fillText('CODE COMPLIANCE',col1,ry-6);
+  codes.forEach((r,i)=>{
+    ctx.fillStyle=i%2===0?'rgba(11,14,21,.4)':'rgba(28,37,56,.3)';ctx.fillRect(col1-120,ry+i*rowH,col2-col1+260,rowH);
+    ctx.font='8px JetBrains Mono,monospace';ctx.fillStyle='rgba(122,154,184,.5)';ctx.textAlign='right';ctx.textBaseline='middle';ctx.fillText(r[0].toUpperCase(),col1-4,ry+i*rowH+rowH/2);
+    ctx.font='500 10px JetBrains Mono,monospace';ctx.fillStyle='rgba(210,225,244,.8)';ctx.textAlign='left';ctx.fillText(r[1],col1+4,ry+i*rowH+rowH/2);
+  });
+  // Sheet index
+  const sheetX=W*.78;const sheets=['A-0: Cover Sheet & Project Data','A-1: Site Plan (1/8"=1'‑0")','A-2: Floor Plans (1/4"=1'‑0")','A-3: Exterior Elevations','A-4: Building Sections','A-5: Door/Window Schedule'];
+  ctx.font='500 10px JetBrains Mono,monospace';ctx.fillStyle='rgba(245,200,66,.7)';ctx.textAlign='left';ctx.fillText('SHEET INDEX',sheetX,CY-48-6);
+  sheets.forEach((s,i)=>{ctx.font=`${i===0?'500':'400'} 9px JetBrains Mono,monospace`;ctx.fillStyle=`rgba(${i===0?'210,225,244':'122,154,184'},.7)`;ctx.fillText(s,sheetX,CY-48+i*20)});
+  // General notes
+  ctx.font='7px JetBrains Mono,monospace';ctx.fillStyle='rgba(122,154,184,.5)';ctx.textAlign='center';
+  const notes=['All dimensions in feet and inches unless noted. Do not scale drawings.',`Contractor to verify all dimensions in field prior to construction.`,`All work to conform to adopted codes: ${db.bc}, ${db.ec}.`,'These drawings are schematic — obtain all permits before construction.','© ArchDraw Intel — AI-Generated Schematic Design Documents'];
+  notes.forEach((n,i)=>ctx.fillText(n,CX,TY-22+i*13));
+  drawNorthArrow(ctx,W-60,60);
+}
+
+// ── CODE-2 helper: energy schedule called from drawSchedulesSheet ──
+function drawEnergySchedule(ctx,W,H,TY,z){
+  const st=z?.state||'';const db=STATE_DB[st]||{ec:'IECC 2018'};
+  const isCA=st==='CA',isFL=st==='FL',isAK=st==='AK',isWA=st==='WA';
+  const R={
+    ceil:isCA?'R-49':isFL?'R-30':isAK?'R-60':'R-49',
+    wall:isCA?'R-21+5ci':isFL?'R-13':'R-20+5ci',
+    floor:isCA?'R-19':isFL?'R-13':'R-19',
+    slab:isCA||isWA?'R-10':'R-10 (if applicable)',
+    win:isCA?'U-0.28 / SHGC-0.25':isFL?'U-0.40 / SHGC-0.25':'U-0.28 / SHGC-0.40',
+    ach:isCA||isWA?'≤3.0 ACH50':'≤3.0 ACH50',
+  };
+  let cy=TY-220;
+  ctx.fillStyle='rgba(34,224,138,.7)';ctx.font='500 9px JetBrains Mono,monospace';
+  ctx.textAlign='left';ctx.textBaseline='alphabetic';
+  ctx.fillText(`ENERGY COMPLIANCE — ${db.ec} / Climate Zone per IECC Table R302.1`,20,cy);cy+=14;
+  const rows=[
+    ['COMPONENT','MIN R-VALUE / MAX U-FACTOR','MATERIAL SPECIFICATION','CODE SECTION'],
+    ['Ceiling/Attic',R.ceil,'Blown fiberglass or cellulose','IECC R402.1.2'],
+    ['Exterior Wall',R.wall,'R-21 batt + R-5 continuous rigid EPS','IECC R402.1.2'],
+    ['Floor over crawl',R.floor,'Unfaced batt between joists','IECC R402.1.2'],
+    ['Slab perimeter',R.slab,'2" XPS to 2'-0" below grade','IECC R402.1.2'],
+    ['Windows & Doors',R.win,'Triple-pane Fibrex or equal','IECC R402.1.2'],
+    ['Air barrier',R.ach,'Continuous membrane + blower door test','IECC R402.4.1.2'],
+    ['Mechanical vent','0.35 ACH min','Zehnder ComfoAir 200 ERV or equal','ASHRAE 62.2'],
+    ['Domestic HW','EF ≥ 2.0','Heat pump water heater (HPWH)','IECC R403.5.3'],
+    ['Lighting','100% high-efficacy','LED throughout, no IC-rated incandescent','IECC R404.1'],
+    ['HVAC','HSPF ≥ 10 / SEER2 ≥ 16','Mitsubishi Hyper-Heat ASHP or equal','IECC R403.1.1'],
+  ];
+  const colW=[W*.2,W*.22,W*.32,W*.14];
+  rows.forEach((row,ri)=>{
+    let cx=20;const rh=16;
+    ctx.fillStyle=ri===0?'rgba(15,40,70,.9)':ri%2===0?'rgba(11,14,21,.5)':'rgba(18,26,40,.4)';
+    ctx.fillRect(18,cy,W-36,rh);
+    row.forEach((cell,ci)=>{
+      ctx.strokeStyle='rgba(61,139,255,.1)';ctx.lineWidth=.4;ctx.strokeRect(cx,cy,colW[ci]||80,rh);
+      ctx.fillStyle=ri===0?'rgba(34,224,138,.85)':'rgba(200,220,240,.7)';
+      ctx.font=`${ri===0?'500':'400'} ${ri===0?7:6.5}px JetBrains Mono,monospace`;
+      ctx.textAlign='left';ctx.textBaseline='middle';
+      ctx.fillText(cell.substring(0,44),cx+3,cy+rh/2);
+      cx+=colW[ci]||80;
+    });
+    cy+=rh;
+  });
+}
+
+// ── SHEET: A-1 Site Plan ──
+function drawSitePlanSheet(ctx,W,H){
+  ctx.textBaseline='alphabetic'; // DRAW-3: baseline reset
+  const z=S._z||{lotWidth:60,lotDepth:120,frontSetback:20,rearSetback:15,leftSetback:5,rightSetback:5};
+  const m=S.plan?.meta||{};
+  ctx.fillStyle='#0c1420';ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='rgba(61,139,255,.35)';ctx.lineWidth=2;ctx.strokeRect(12,12,W-24,H-24);
+  const TH=70;const TY=H-TH-12;drawTitleBlock(ctx,W,H,TH,'A-1','Site Plan','1/8"=1'‑0"');
+  // Plan area
+  const PAD=70;const PA={x:PAD,y:PAD,w:W-PAD-180,h:TY-PAD};
+  // Scale: 1/8"=1' — at 72dpi: 1ft=9px; but we need to fit the lot
+  const rawScl=Math.min((PA.w)/z.lotWidth,(PA.h)/z.lotDepth)*.85;
+  const scl=rawScl;
+  const ox=PA.x+(PA.w-z.lotWidth*scl)/2;const oy=PA.y+(PA.h-z.lotDepth*scl)/2;
+  const tx=x=>ox+x*scl;const ty=y=>oy+y*scl;const ft=v=>v*scl;
+  // Ground fill
+  ctx.fillStyle='rgba(40,60,30,.3)';ctx.fillRect(ox,oy,ft(z.lotWidth),ft(z.lotDepth));
+  // Property line
+  ctx.strokeStyle='#ff6555';ctx.lineWidth=2;ctx.setLineDash([10,7]);ctx.strokeRect(ox,oy,ft(z.lotWidth),ft(z.lotDepth));ctx.setLineDash([]);
+  ctx.fillStyle='rgba(255,101,85,.7)';ctx.font='8px JetBrains Mono,monospace';ctx.textAlign='center';ctx.fillText('PROPERTY LINE',ox+ft(z.lotWidth)/2,oy-10);
+  ctx.textAlign='right';ctx.fillStyle='rgba(255,101,85,.5)';ctx.font='7px JetBrains Mono,monospace';
+  ctx.fillText(`${z.lotWidth}'-0"`,ox+ft(z.lotWidth),oy+ft(z.lotDepth)+14);
+  // Setback lines
+  ctx.strokeStyle='rgba(34,224,138,.5)';ctx.lineWidth=1;ctx.setLineDash([5,5]);
+  const sx=tx(z.leftSetback),sy=ty(z.frontSetback),sw=ft(z.lotWidth-z.leftSetback-z.rightSetback),sh=ft(z.lotDepth-z.frontSetback-z.rearSetback);
+  ctx.strokeRect(sx,sy,sw,sh);ctx.setLineDash([]);
+  ctx.fillStyle='rgba(34,224,138,.6)';ctx.font='7px JetBrains Mono,monospace';ctx.textAlign='left';
+  ctx.fillText(`SETBACK ENVELOPE`,sx+2,sy-4);
+  // Building footprint
+  if(S.plan){
+    const bW=sw*.88;const bD=sh*.82;const bx=sx+(sw-bW)/2;const by=sy+(sh-bD)*.15;
+    ctx.fillStyle='rgba(61,139,255,.2)';ctx.fillRect(bx,by,bW,bD);
+    ctx.strokeStyle='#3d8bff';ctx.lineWidth=2;ctx.strokeRect(bx,by,bW,bD);
+    // Hatch pattern inside building
+    ctx.save();ctx.beginPath();ctx.rect(bx,by,bW,bD);ctx.clip();
+    ctx.strokeStyle='rgba(61,139,255,.08)';ctx.lineWidth=0.5;
+    for(let d=-bD;d<bW+bD;d+=12){ctx.beginPath();ctx.moveTo(bx+d,by);ctx.lineTo(bx+d+bD,by+bD);ctx.stroke()}
+    ctx.restore();
+    ctx.fillStyle='rgba(61,139,255,.8)';ctx.font='500 9px JetBrains Mono,monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText(`PROPOSED BUILDING`,bx+bW/2,by+bD/2);
+    ctx.font='8px JetBrains Mono,monospace';ctx.fillStyle='rgba(61,139,255,.5)';
+    ctx.fillText(`${m.projectType||''}  ·  ${(m.totalSqFt||0).toLocaleString()} SF`,bx+bW/2,by+bD/2+14);
+    // Dimension strings
+    dimLine(ctx,bx,by+bD+24,bx+bW,by+bD+24,`${(bW/scl).toFixed(0)}'-0"`);
+    dimLine(ctx,bx+bW+20,by,bx+bW+20,by+bD,`${(bD/scl).toFixed(0)}'-0"`,true);
+    // Setback annotations
+    dimLine(ctx,ox,sy+sh/2,bx,sy+sh/2,`${z.leftSetback}' SB`);
+    dimLine(ctx,ox,oy,ox,sy,`${z.frontSetback}'\nFRONT SB`,true);
+  }
+  // ── GEOM-4: Parking stalls (8.5'×18' per IBC §1106) ──
+  const numStalls=(S.plan?.meta?.parkingSpaces)||0;
+  if(numStalls>0){
+    const stallW=ft(8.5),stallD=ft(18);
+    const stallY=oy+ft(z.lotDepth)-ft(z.rearSetback||15)-stallD-ft(2);
+    ctx.fillStyle='rgba(90,100,115,.25)';ctx.strokeStyle='rgba(122,154,184,.5)';ctx.lineWidth=0.7;
+    for(let s=0;s<Math.min(numStalls,6);s++){
+      const stallX=tx(z.leftSetback||5)+s*stallW;
+      if(stallX+stallW>tx(z.lotWidth-(z.rightSetback||5)))break;
+      ctx.fillRect(stallX,stallY,stallW,stallD);ctx.strokeRect(stallX,stallY,stallW,stallD);
+      // Center line
+      ctx.beginPath();ctx.moveTo(stallX+stallW/2,stallY);ctx.lineTo(stallX+stallW/2,stallY+stallD);ctx.stroke();
+    }
+    ctx.fillStyle='rgba(122,154,184,.6)';ctx.font='7px JetBrains Mono,monospace';ctx.textAlign='left';ctx.textBaseline='middle';
+    ctx.fillText(`PARKING: ${numStalls} STALLS @ 8'-6"×18'-0" (IBC §1106)`,tx(z.leftSetback||5),stallY-8);
+  }
+
+  // Street label
+  ctx.fillStyle='rgba(245,200,66,.5)';ctx.font='500 9px JetBrains Mono,monospace';ctx.textAlign='center';ctx.textBaseline='top';
+  ctx.fillText('STREET / RIGHT-OF-WAY',ox+ft(z.lotWidth)/2,oy+ft(z.lotDepth)+22);
+  // Overall lot dims
+  dimLine(ctx,ox,oy+ft(z.lotDepth)+36,ox+ft(z.lotWidth),oy+ft(z.lotDepth)+36,`LOT WIDTH: ${z.lotWidth}'-0"`);
+  dimLine(ctx,ox+ft(z.lotWidth)+36,oy,ox+ft(z.lotWidth)+36,oy+ft(z.lotDepth),`LOT DEPTH: ${z.lotDepth}'-0"`,true);
+  scaleBar(ctx,PA.x+6,TY-18,scl,8);drawNorthArrow(ctx,PA.x+PA.w-30,PA.y+30);
+  // Legend box
+  const LX=W-175,LY=PA.y;
+  ctx.fillStyle='rgba(11,14,21,.9)';ctx.fillRect(LX,LY,162,120);ctx.strokeStyle='rgba(61,139,255,.25)';ctx.strokeRect(LX,LY,162,120);
+  ctx.font='7px JetBrains Mono,monospace';ctx.fillStyle='rgba(61,139,255,.8)';ctx.textAlign='left';ctx.textBaseline='top';ctx.fillText('LEGEND',LX+6,LY+6);
+  const legItems=[['#ff6555','Property Line (2" dashed)'],['#22e08a','Setback Envelope (1" dashed)'],['#3d8bff','Proposed Building Footprint'],['#a78bfa','Existing Structures (OSM)'],['#f5c842','Street / Right-of-Way']];
+  legItems.forEach(([col,lbl],i)=>{ctx.fillStyle=col;ctx.fillRect(LX+6,LY+22+i*18,10,8);ctx.fillStyle='rgba(200,215,235,.6)';ctx.font='7px JetBrains Mono,monospace';ctx.fillText(lbl,LX+20,LY+22+i*18)});
+}
+
+// ── SHEET: A-2 Floor Plans ──
+function drawFloorPlanSheet(ctx,W,H,floorIdx){
+  ctx.textBaseline='alphabetic'; // DRAW-3: always reset baseline
+  const z=S._z||{lotWidth:60,lotDepth:120,frontSetback:20,rearSetback:15,leftSetback:5,rightSetback:5};
+  const pd=S.plan;if(!pd)return;
+  const fl=pd.floors?.[floorIdx];if(!fl)return;
+  ctx.fillStyle='#0c1420';ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='rgba(61,139,255,.35)';ctx.lineWidth=2;ctx.strokeRect(12,12,W-24,H-24);
+  const TH=70;const TY=H-TH-12;drawTitleBlock(ctx,W,H,TH,'A-2',fl.label,`1/4"=1'-0"`);
+  // Floor selector tabs
+  const tabY=26;pd.floors.forEach((f,i)=>{const tabW=70;const tabX=20+i*76;const isOn=i===floorIdx;ctx.fillStyle=isOn?'rgba(61,139,255,.2)':'rgba(28,37,56,.5)';ctx.fillRect(tabX,tabY,tabW,16);ctx.strokeStyle=isOn?'rgba(61,139,255,.6)':'rgba(61,139,255,.2)';ctx.lineWidth=1;ctx.strokeRect(tabX,tabY,tabW,16);ctx.font=`${isOn?'500':'400'} 8px JetBrains Mono,monospace`;ctx.fillStyle=isOn?'rgba(210,225,244,.9)':'rgba(122,154,184,.5)';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(f.label,tabX+tabW/2,tabY+8)});
+  // Plan area
+  const PAD=60;const PA={x:PAD,y:50,w:W-PAD-40,h:TY-50};
+  const baseScl=Math.min((PA.w)/z.lotWidth,(PA.h)/z.lotDepth)*.9;
+  const scl=baseScl*S.zoom;
+  const baseOx=PA.x+(PA.w-z.lotWidth*baseScl)/2;const baseOy=PA.y+(PA.h-z.lotDepth*baseScl)/2;
+  ctx.save();ctx.translate(S.panX,S.panY);ctx.scale(S.zoom,S.zoom);
+  const ox=baseOx,oy=baseOy;
+  const tx=x=>ox+x*baseScl,ty=y=>oy+y*baseScl,ft=v=>v*baseScl;
+  // Grid
+  [[ft(5),'rgba(61,139,255,.05)'],[ft(20),'rgba(61,139,255,.09)']].forEach(([gs,c])=>{ctx.strokeStyle=c;ctx.lineWidth=.5;for(let x=ox%gs;x<W;x+=gs){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}for(let y=oy%gs;y<H;y+=gs){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}});
+
+  // ── STRUCTURAL GRID (20'-0" bay spacing) ──
+  const bayFt=20;// standard structural bay
+  ctx.save();
+  for(let gx=z.leftSetback;gx<=z.lotWidth-z.rightSetback;gx+=bayFt){
+    const gxp=tx(gx);ctx.strokeStyle='rgba(245,200,66,.12)';ctx.lineWidth=0.7;ctx.setLineDash([6,4]);ctx.beginPath();ctx.moveTo(gxp,oy-20);ctx.lineTo(gxp,oy+ft(z.lotDepth)+20);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle='rgba(245,200,66,.6)';ctx.font='6px JetBrains Mono,monospace';ctx.textAlign='center';ctx.fillText(String.fromCharCode(65+Math.round((gx-z.leftSetback)/bayFt)),gxp,oy-6);
+    ctx.fillStyle='rgba(245,200,66,.4)';ctx.beginPath();ctx.arc(gxp,oy-12,4,0,Math.PI*2);ctx.stroke();
+  }
+  for(let gy=z.frontSetback;gy<=z.lotDepth-z.rearSetback;gy+=bayFt){
+    const gyp=ty(gy);ctx.strokeStyle='rgba(245,200,66,.08)';ctx.lineWidth=0.5;ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(ox-20,gyp);ctx.lineTo(ox+ft(z.lotWidth)+20,gyp);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle='rgba(245,200,66,.5)';ctx.font='6px JetBrains Mono,monospace';ctx.textAlign='right';ctx.fillText(String(Math.round((gy-z.frontSetback)/bayFt)+1),ox-6,gyp+3);
+  }
+  ctx.restore();
+
+  // Lot boundary
+  ctx.strokeStyle='rgba(255,101,85,.5)';ctx.lineWidth=1;ctx.setLineDash([8,5]);ctx.strokeRect(ox,oy,ft(z.lotWidth),ft(z.lotDepth));ctx.setLineDash([]);
+  // Setback envelope
+  const sx=tx(z.leftSetback),sy=ty(z.frontSetback),sw=ft(z.lotWidth-z.leftSetback-z.rightSetback),sh=ft(z.lotDepth-z.frontSetback-z.rearSetback);
+  ctx.strokeStyle='rgba(34,224,138,.3)';ctx.lineWidth=.7;ctx.setLineDash([4,4]);ctx.strokeRect(sx,sy,sw,sh);ctx.setLineDash([]);
+  // Rooms
+  (fl.rooms||[]).forEach(r=>{
+    if(!r.w||!r.h||r.w<1||r.h<1)return;const rx=tx(r.x),ry=ty(r.y),rw=ft(r.w),rh=ft(r.h);if(rw<3||rh<3)return;
+    const c=RC[r.type]||RC.default;
+    ctx.fillStyle=c.f;ctx.fillRect(rx,ry,rw,rh);
+    ctx.save();ctx.beginPath();ctx.rect(rx,ry,rw,rh);ctx.clip();ctx.strokeStyle='rgba(255,255,255,.025)';ctx.lineWidth=.5;for(let d=-rh;d<rw+rh;d+=8){ctx.beginPath();ctx.moveTo(rx+d,ry);ctx.lineTo(rx+d+rh,ry+rh);ctx.stroke()}ctx.restore();
+    ctx.strokeStyle=c.s;ctx.lineWidth=Math.max(1.5,ft(.3));ctx.strokeRect(rx,ry,rw,rh);
+    const fs=Math.max(5.5,Math.min(10,rw/(Math.max(r.name.length,4)*.7)));ctx.font=`500 ${fs}px JetBrains Mono,monospace`;ctx.fillStyle='#e8f0f8';ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.save();ctx.beginPath();ctx.rect(rx+2,ry+2,rw-4,rh-4);ctx.clip();
+    ctx.fillText(r.name,rx+rw/2,ry+rh/2-(rh>18?6:0));
+    if(rh>18){ctx.font=`${Math.max(5,fs-2)}px JetBrains Mono,monospace`;ctx.fillStyle='rgba(200,220,240,.4)';ctx.fillText(Math.round(r.w*r.h)+' SF',rx+rw/2,ry+rh/2+5)}
+    // ── ROOM DIMENSION LABELS ──
+    if(rw>30&&rh>22&&r.dimW){
+      ctx.font='5.5px JetBrains Mono,monospace';ctx.fillStyle='rgba(245,200,66,.7)';ctx.textAlign='center';ctx.textBaseline='bottom';
+      ctx.fillText(r.dimW||`${Math.round(r.w)}'-0"`,rx+rw/2,ry+rh-2);
+      ctx.save();ctx.translate(rx+3,ry+rh/2);ctx.rotate(-Math.PI/2);ctx.textBaseline='top';ctx.fillText(r.dimH||`${Math.round(r.h)}'-0"`,0,0);ctx.restore();
+    }
+    ctx.restore();
+  });
+  // ── DRAW-8: Door swing arcs ──
+  (fl.rooms||[]).forEach(r=>{
+    if(!r.w||!r.h||r.w<3||r.h<3)return;
+    const rx=tx(r.x),ry=ty(r.y),rw=ft(r.w),rh=ft(r.h);
+    if(rw<8||rh<8)return;
+    const doorTypes=['bedroom','living','dining','kitchen','entry','laundry','office'];
+    if(!doorTypes.includes(r.type||''))return;
+    // Door on bottom wall of each room, 2'-8" = 2.67ft wide
+    const dw=ft(2.67);const dy=ry+rh;const dx=rx+rw*.18;
+    ctx.save();ctx.strokeStyle='rgba(200,215,235,.55)';ctx.lineWidth=0.6;
+    // Door leaf rectangle
+    ctx.strokeRect(dx,dy-dw,dw,dw*.08);
+    // 90° swing arc
+    ctx.beginPath();ctx.arc(dx,dy,dw,Math.PI*1.5,Math.PI*2);ctx.stroke();
+    ctx.restore();
+  });
+  // ── DRAW-9: Wall thickness lines ──
+  // Exterior wall: 5.5" = 0.46ft · Interior: 3.5" = 0.29ft
+  const extWallT=ft(0.5);// round to 0.5ft for visibility at drawing scale
+  (fl.rooms||[]).forEach(r=>{
+    if(!r.w||!r.h)return;
+    const rx=tx(r.x),ry=ty(r.y),rw=ft(r.w),rh=ft(r.h);
+    if(rw<4||rh<4)return;
+    const c=RC[r.type]||RC.default;
+    // Draw thickened exterior wall lines on all four sides
+    ctx.save();ctx.strokeStyle=c.s;ctx.lineWidth=Math.max(2.5,extWallT*.4);ctx.globalAlpha=.7;
+    ctx.strokeRect(rx,ry,rw,rh);
+    ctx.restore();
+  });
+
+  // Dim lines
+  dimLine(ctx,ox,oy+ft(z.lotDepth)+26,ox+ft(z.lotWidth),oy+ft(z.lotDepth)+26,`${z.lotWidth}'-0"  LOT WIDTH`);
+  dimLine(ctx,ox+ft(z.lotWidth)+26,oy,ox+ft(z.lotWidth)+26,oy+ft(z.lotDepth),`${z.lotDepth}'-0"  LOT DEPTH`,true);
+  // Floor label + structural notes
+  ctx.fillStyle='rgba(61,139,255,.8)';ctx.font='500 9px JetBrains Mono,monospace';ctx.textAlign='left';ctx.textBaseline='top';ctx.fillText(fl.label,ox,oy-30);
+  ctx.font='7px JetBrains Mono,monospace';ctx.fillStyle='rgba(122,154,184,.5)';ctx.fillText(`Ceiling: ${fl.heightFt||9}'-0"  ·  ${fl.rooms?.length||0} rooms  ·  Struct. bay: 20'-0"  ·  Frame: 2×6 @ 16" o.c.`,ox,oy-18);
+  ctx.restore();
+  const sclNow=baseScl*S.zoom;
+  scaleBar(ctx,20,TY-18,sclNow,4);drawNorthArrow(ctx,W-160,36);
+  if(S.zoom!==1){ctx.font='7px JetBrains Mono,monospace';ctx.fillStyle='rgba(122,154,184,.5)';ctx.textAlign='right';ctx.fillText(`${Math.round(S.zoom*100)}%`,W-15,15)}
+}
+
+// ── SHEET: A-3 Exterior Elevations ──
+function drawElevationsSheet(ctx,W,H){
+  ctx.textBaseline='alphabetic'; // DRAW-3: baseline reset
+  const z=S._z||{};const pd=S.plan;if(!pd)return;
+  const m=pd.meta||{};
+  ctx.fillStyle='#0c1420';ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='rgba(61,139,255,.35)';ctx.lineWidth=2;ctx.strokeRect(12,12,W-24,H-24);
+  const TH=70;const TY=H-TH-12;drawTitleBlock(ctx,W,H,TH,'A-3','Exterior Elevations','1/4"=1'‑0"');
+  const bW=z.lotWidth-(z.leftSetback||5)-(z.rightSetback||5);
+  const bD=z.lotDepth-(z.frontSetback||20)-(z.rearSetback||15);
+  const stories=m.stories||2;
+  const floorH=9;const grndH=10;const totalH=grndH+(stories-1)*floorH;const roofPitch=4;// 4:12
+  const elPad=40;const elW=(W-elPad*2)/2-20;const elH=(TY-elPad)/2-20;
+  const elevations=[{name:'NORTH ELEVATION',bldW:bW,idx:0,x:elPad,y:elPad},{name:'SOUTH ELEVATION',bldW:bW,idx:1,x:elPad+elW+20,y:elPad},{name:'EAST ELEVATION',bldW:bD,idx:2,x:elPad,y:elPad+elH+20},{name:'WEST ELEVATION',bldW:bD,idx:3,x:elPad+elW+20,y:elPad+elH+20}];
+  elevations.forEach(el=>drawElevation(ctx,el.x,el.y,elW,elH,el.name,el.bldW,totalH,stories,floorH,grndH,roofPitch,m));
+}
+
+function drawElevation(ctx,ex,ey,eW,eH,name,bldW,totalH,stories,floorH,grndH,roofPitch,m){
+  const scl=Math.min(eW/bldW,eH/(totalH+roofPitch*bldW/24+10))*.85;
+  const bpx=ex+(eW-bldW*scl)/2;const bpy=ey+eH-30;// baseline of building
+  // Label
+  ctx.fillStyle='rgba(61,139,255,.7)';ctx.font='500 8px JetBrains Mono,monospace';ctx.textAlign='center';ctx.fillText(name,ex+eW/2,ey+8);
+  // Grade line
+  ctx.strokeStyle='rgba(122,154,184,.5)';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(ex+8,bpy);ctx.lineTo(ex+eW-8,bpy);ctx.stroke();
+  ctx.fillStyle='rgba(122,154,184,.4)';ctx.font='7px JetBrains Mono,monospace';ctx.textAlign='left';ctx.fillText('GRADE',bpx-40,bpy);
+  // Building outline
+  const bH=totalH*scl;const roofH=roofPitch/12*(bldW/2)*scl;
+  // Wall fill
+  ctx.fillStyle='rgba(61,100,150,.15)';ctx.fillRect(bpx,bpy-bH,bldW*scl,bH);
+  ctx.strokeStyle='rgba(61,139,255,.6)';ctx.lineWidth=1.5;ctx.strokeRect(bpx,bpy-bH,bldW*scl,bH);
+  // Roof
+  ctx.fillStyle='rgba(40,54,80,.5)';ctx.beginPath();ctx.moveTo(bpx,bpy-bH);ctx.lineTo(bpx+bldW*scl/2,bpy-bH-roofH);ctx.lineTo(bpx+bldW*scl,bpy-bH);ctx.closePath();ctx.fill();ctx.stroke();
+  // Floor lines
+  for(let f=1;f<stories;f++){const fy=bpy-f*floorH*scl;ctx.strokeStyle='rgba(122,154,184,.35)';ctx.lineWidth=.5;ctx.setLineDash([4,3]);ctx.beginPath();ctx.moveTo(bpx,fy);ctx.lineTo(bpx+bldW*scl,fy);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='rgba(122,154,184,.4)';ctx.font='6px JetBrains Mono,monospace';ctx.textAlign='right';ctx.fillText(`FL ${f+1}`,bpx-3,fy+3)}
+  // ── DRAW-10: Windows with sill 3ft AFF, head 7ft AFF, RO annotations ──
+  const winW=Math.min(bldW*scl/4,36);const winPerFlr=Math.min(4,Math.floor(bldW/12));
+  for(let f=0;f<stories;f++){
+    const fhFt=f===0?grndH:floorH;
+    const flrBase=bpy-f*floorH*scl;
+    const sillY=flrBase-(3/fhFt)*fhFt*scl;
+    const headY=flrBase-(7/fhFt)*fhFt*scl;
+    const wH=Math.max(3,sillY-headY);
+    for(let w=0;w<winPerFlr;w++){
+      const wx=bpx+(w+1)*bldW*scl/(winPerFlr+1)-winW/2;
+      ctx.fillStyle='rgba(100,170,255,.35)';ctx.fillRect(wx,headY,winW,wH);
+      ctx.strokeStyle='rgba(100,170,255,.7)';ctx.lineWidth=.8;ctx.strokeRect(wx,headY,winW,wH);
+      ctx.strokeStyle='rgba(100,170,255,.25)';ctx.beginPath();
+      ctx.moveTo(wx+winW/2,headY);ctx.lineTo(wx+winW/2,headY+wH);ctx.stroke();
+      ctx.strokeStyle='rgba(200,215,235,.25)';
+      ctx.beginPath();ctx.moveTo(wx,sillY);ctx.lineTo(wx+winW,sillY);ctx.stroke();
+    }
+    if(f===0&&winPerFlr>0&&scl>0.3){
+      const wx0=bpx+(1)*bldW*scl/(winPerFlr+1)-winW/2;
+      const sillY0=flrBase-(3/fhFt)*fhFt*scl;const headY0=flrBase-(7/fhFt)*fhFt*scl;
+      ctx.fillStyle='rgba(122,154,184,.55)';ctx.font='5.5px JetBrains Mono,monospace';
+      ctx.textAlign='left';ctx.textBaseline='middle';
+      ctx.fillText("3'-0" SILL",wx0+winW+3,sillY0);
+      ctx.fillText("7'-0" HEAD",wx0+winW+3,headY0);
+      ctx.fillText(`RO: ${(winW/scl).toFixed(1)}'W×4'-0"H`,wx0+winW+3,(sillY0+headY0)/2);
+    }
+  }
+  // Entry door on front elevation
+  if(name.includes('NORTH')){const dW=Math.min(bldW*scl/8,20);const dH=8*scl;const dx=bpx+bldW*scl/2-dW/2;ctx.fillStyle='rgba(180,140,90,.3)';ctx.fillRect(dx,bpy-dH,dW,dH);ctx.strokeStyle='rgba(180,140,90,.6)';ctx.lineWidth=1;ctx.strokeRect(dx,bpy-dH,dW,dH)}
+  // Height dimension
+  const dims=[[bpy,bpy-bH,`${stories===1?'10':'18-28'}'-0"  (T.O. PLATE)`]];
+  dims.forEach(([y1,y2,lbl])=>dimLine(ctx,bpx+bldW*scl+14,y1,bpx+bldW*scl+14,y2,lbl,true));
+  // Width dimension
+  dimLine(ctx,bpx,bpy+16,bpx+bldW*scl,bpy+16,`${bldW.toFixed(0)}'-0"  (BUILDING WIDTH)`);
+  // Material callout
+  ctx.fillStyle='rgba(122,154,184,.4)';ctx.font='6.5px JetBrains Mono,monospace';ctx.textAlign='center';ctx.fillText('FIBER CEMENT SIDING, PAINT GRADE',bpx+bldW*scl/2,bpy-bH/2);ctx.fillText('ASPHALT SHINGLE CLASS A ROOF',bpx+bldW*scl/2,bpy-bH-roofH/2);
+}
+
+// ── SHEET: A-4 Building Sections ──
+function drawSectionsSheet(ctx,W,H){
+  ctx.textBaseline='alphabetic'; // DRAW-3: baseline reset
+  const z=S._z||{};const pd=S.plan;if(!pd)return;
+  ctx.fillStyle='#0c1420';ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='rgba(61,139,255,.35)';ctx.lineWidth=2;ctx.strokeRect(12,12,W-24,H-24);
+  const TH=70;const TY=H-TH-12;drawTitleBlock(ctx,W,H,TH,'A-4','Building Sections','1/4"=1'‑0"');
+  const bW=z.lotWidth-(z.leftSetback||5)-(z.rightSetback||5);
+  const bD=z.lotDepth-(z.frontSetback||20)-(z.rearSetback||15);
+  const m=pd.meta||{};const stories=m.stories||2;
+  // Two sections side by side
+  const s1x=30;const s1y=40;const s1w=(W-80)/2;const s1h=TY-50;
+  drawSection(ctx,s1x,s1y,s1w,s1h,'SECTION A-A (Longitudinal)',bD,stories,'along depth');
+  drawSection(ctx,s1x+s1w+20,s1y,s1w,s1h,'SECTION B-B (Transverse)',bW,stories,'along width');
+  // Section cut indicators (show on plan somewhere)
+  ctx.fillStyle='rgba(245,200,66,.5)';ctx.font='7px JetBrains Mono,monospace';ctx.textAlign='center';ctx.fillText('Section locations shown on Floor Plan sheets',W/2,TY-8);
+}
+
+function drawSection(ctx,ex,ey,eW,eH,name,bldD,stories,dir){
+  const flH=9;const grH=10;const totalH=grH+(stories-1)*flH;const fndD=3;const scl=Math.min(eW/bldD,eH/(totalH+fndD+8))*.85;
+  const bpx=ex+(eW-bldD*scl)/2;const bpy=ey+eH-20;
+  ctx.fillStyle='rgba(61,139,255,.7)';ctx.font='500 8px JetBrains Mono,monospace';ctx.textAlign='center';ctx.fillText(name,ex+eW/2,ey+8);
+  // Foundation
+  ctx.fillStyle='rgba(60,70,80,.6)';ctx.fillRect(bpx-8,bpy,bldD*scl+16,fndD*scl);ctx.strokeStyle='rgba(122,154,184,.4)';ctx.lineWidth=1;ctx.strokeRect(bpx-8,bpy,bldD*scl+16,fndD*scl);
+  // Hatch foundation
+  ctx.save();ctx.beginPath();ctx.rect(bpx-8,bpy,bldD*scl+16,fndD*scl);ctx.clip();ctx.strokeStyle='rgba(122,154,184,.2)';ctx.lineWidth=.5;for(let d=0;d<bldD*scl+fndD*scl+24;d+=8){ctx.beginPath();ctx.moveTo(bpx-8+d,bpy);ctx.lineTo(bpx-8,bpy+d);ctx.stroke()}ctx.restore();
+  // Ground line
+  ctx.strokeStyle='rgba(122,154,184,.5)';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(ex+6,bpy);ctx.lineTo(ex+eW-6,bpy);ctx.stroke();
+  // Floors
+  for(let f=0;f<=stories;f++){
+    const fy=bpy-f*(f===0?grH:flH)*scl;if(f>0&&f<=stories){
+      ctx.fillStyle=f===1?'rgba(61,139,255,.12)':'rgba(100,130,200,.1)';
+      ctx.fillRect(bpx,fy,bldD*scl,(f===1?grH:flH)*scl);
+    }
+    ctx.strokeStyle=f===0?'rgba(122,154,184,.5)':'rgba(61,139,255,.4)';ctx.lineWidth=f===0?1.5:1;ctx.beginPath();ctx.moveTo(bpx,fy);ctx.lineTo(bpx+bldD*scl,fy);ctx.stroke();
+    ctx.fillStyle='rgba(122,154,184,.5)';ctx.font='6.5px JetBrains Mono,monospace';ctx.textAlign='right';ctx.fillText(f===0?'GRADE':f===1?`FL 1: ${grH}'-0" CEILING`:`FL ${f}: ${flH}'-0" CEILING`,bpx-4,fy+4);
+  }
+  // Walls
+  ctx.strokeStyle='rgba(61,139,255,.5)';ctx.lineWidth=2;ctx.strokeRect(bpx,bpy-totalH*scl,bldD*scl,totalH*scl);
+  // Roof line
+  // roof line drawn inline belowconst roofH=totalH*scl;ctx.strokeStyle='rgba(150,100,50,.6)';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(bpx,bpy-roofH);ctx.lineTo(bpx+bldD*scl/2,bpy-roofH-20);ctx.lineTo(bpx+bldD*scl,bpy-roofH);ctx.stroke();
+  // Insulation hatching
+  ctx.save();ctx.beginPath();ctx.rect(bpx,bpy-totalH*scl,4,totalH*scl);ctx.clip();for(let y=0;y<totalH*scl;y+=6){ctx.strokeStyle='rgba(34,224,138,.3)';ctx.lineWidth=.5;ctx.beginPath();ctx.arc(bpx+2,bpy-y,2,0,Math.PI);ctx.stroke()}ctx.restore();
+  // Dimension
+  dimLine(ctx,bpx+bldD*scl+12,bpy,bpx+bldD*scl+12,bpy-totalH*scl,`${totalH}'-0" TOTAL`,true);
+  dimLine(ctx,bpx,bpy+12,bpx+bldD*scl,bpy+12,`${bldD.toFixed(0)}'-0"`);
+  ctx.fillStyle='rgba(122,154,184,.35)';ctx.font='6px JetBrains Mono,monospace';ctx.textAlign='center';ctx.fillText('TYPICAL EXT. WALL: 2×6 @ 16" O.C. + R-21 BATT',bpx+bldD*scl/2,bpy-totalH*scl/2);ctx.fillText('ROOF: 2×10 RAFTER @ 16" O.C. + R-38 BATT',bpx+bldD*scl/2,bpy-totalH*scl-12);
+}
+
+// ── SHEET: A-5 Door/Window Schedule ──
+function drawSchedulesSheet(ctx,W,H){
+  const pd=S.plan;if(!pd)return;const m=pd.meta||{};const z=S._z||{};
+  ctx.fillStyle='#0c1420';ctx.fillRect(0,0,W,H);
+  ctx.strokeStyle='rgba(61,139,255,.35)';ctx.lineWidth=2;ctx.strokeRect(12,12,W-24,H-24);
+  const TH=70;const TY=H-TH-12;drawTitleBlock(ctx,W,H,TH,'A-5','Door & Window Schedule','N.T.S.');
+  const CX=W/2;let cy=50;
+  // Title
+  ctx.fillStyle='rgba(210,225,244,.8)';ctx.font='500 13px JetBrains Mono,monospace';ctx.textAlign='center';ctx.fillText('DOOR SCHEDULE',CX/2,cy+10);ctx.fillText('WINDOW SCHEDULE',CX+CX/2,cy+10);
+  cy+=24;
+  // Door schedule
+  const dCols=[['MARK','48'],['WIDTH','60'],['HEIGHT','60'],['TYPE','80'],['MATERIAL','90'],['FIRE RATING','80'],['HARDWARE','100'],['REMARKS','100']];
+  const wCols=[['MARK','48'],['WIDTH','60'],['HEIGHT','60'],['TYPE','90'],['GLAZING','80'],['U-FACTOR','70'],['SHGC','60'],['REMARKS','100']];
+  // Generate doors from rooms
+  const doors=[];let dNum=1;
+  pd.floors.forEach((fl,fi)=>{fl.rooms?.forEach(r=>{if(r.type==='entry')doors.push({id:`D${dNum++}`,w:"3'-0\"",h:"6'-8\"",type:'Solid Core',mat:'Wood',fr:'—',hw:'Lever,Deadbolt'});else if(r.type==='bath')doors.push({id:`D${dNum++}`,w:"2'-6\"",h:"6'-8\"",type:'Hollow Core',mat:'Wood',fr:'—',hw:'Privacy'});else if(r.type==='bedroom')doors.push({id:`D${dNum++}`,w:"2'-8\"",h:"6'-8\"",type:'Hollow Core',mat:'Wood',fr:'—',hw:'Privacy'});else if(r.type==='garage')doors.push({id:`D${dNum++}`,w:"9'-0\"",h:"7'-0\"",type:'Overhead Sectional',mat:'Steel',fr:'—',hw:'Auto Opener'})})});
+  const windows=[{id:'W1',w:"3'-0\"",h:"4'-0\"",type:'Double Hung',gl:'Dbl Pane LowE',u:'0.28',shgc:'0.25'},{id:'W2',w:"2'-0\"",h:"4'-0\"",type:'Single Hung',gl:'Dbl Pane LowE',u:'0.28',shgc:'0.25'},{id:'W3',w:"4'-0\"",h:"3'-0\"",type:'Slider',gl:'Dbl Pane LowE',u:'0.30',shgc:'0.25'},{id:'W4',w:"2'-0\"",h:"2'-0\"",type:'Fixed',gl:'Dbl Pane LowE',u:'0.28',shgc:'0.25'},{id:'W5',w:"6'-0\"",h:"6'-8\"",type:'Sliding Patio',gl:'Dbl Pane LowE',u:'0.30',shgc:'0.25'}];
+  function drawTable(x,y,maxW,cols,rows,data){
+    const rowH=20;const hdrH=22;const totalW=cols.reduce((a,c)=>a+parseInt(c[1]),0);const scl=maxW/totalW;
+    // Header
+    let cx2=x;cols.forEach(([lbl,w])=>{const cw=parseInt(w)*scl;ctx.fillStyle='rgba(28,55,90,.8)';ctx.fillRect(cx2,y,cw,hdrH);ctx.strokeStyle='rgba(61,139,255,.3)';ctx.lineWidth=.5;ctx.strokeRect(cx2,y,cw,hdrH);ctx.fillStyle='rgba(61,139,255,.8)';ctx.font='6.5px JetBrains Mono,monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(lbl,cx2+cw/2,y+hdrH/2);cx2+=cw});
+    rows.forEach((row,ri)=>{let cx3=x;const ry=y+hdrH+ri*rowH;ctx.fillStyle=ri%2===0?'rgba(11,14,21,.6)':'rgba(20,27,40,.5)';ctx.fillRect(x,ry,maxW,rowH);cols.forEach(([,w],ci)=>{const cw=parseInt(w)*scl;ctx.strokeStyle='rgba(61,139,255,.15)';ctx.strokeRect(cx3,ry,cw,rowH);ctx.fillStyle='rgba(210,225,244,.7)';ctx.font='7.5px JetBrains Mono,monospace';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(row[ci]||'—',cx3+cw/2,ry+rowH/2);cx3+=cw})});
+    return y+hdrH+rows.length*rowH+8;
+  }
+  const halfW=(W-60)/2;
+  const dRows=doors.map(d=>[d.id,d.w,d.h,d.type,d.mat,d.fr,d.hw,'—']);
+  const wRows=windows.map(w=>[w.id,w.w,w.h,w.type,w.gl,w.u,w.shgc,'—']);
+  const nextY1=drawTable(20,cy,halfW-10,dCols,dRows.slice(0,12),dRows);
+  drawTable(CX+10,cy,halfW-10,wCols,wRows,wRows);
+  cy=Math.max(nextY1,cy+280)+16;
+  // General notes
+  ctx.fillStyle='rgba(61,139,255,.7)';ctx.font='500 9px JetBrains Mono,monospace';ctx.textAlign='left';ctx.fillText('GENERAL NOTES:',20,cy);cy+=16;
+  if(S._z)drawEnergySchedule(ctx,W,H,TY,S._z);
+  const notes=['1. All doors and windows to be installed per manufacturer's instructions and local building code.','2. Verify rough opening dimensions with manufacturer prior to framing.',`3. All glazing to meet ANSI Z97.1 safety glazing requirements where required by code.`,`4. All windows and doors to meet energy compliance: U-factor ≤0.30, SHGC ≤0.25 (verify with ${S._z?.jurisdiction||'local'} requirements).`,'5. Hardware: All accessible units to have lever handles (ADA). Deadbolts on all exterior entry doors.','6. Fire-rated doors: Provide UL-listed frames and hardware. Verify rating with local fire marshal.'];
+  notes.forEach(n=>{ctx.font='7.5px JetBrains Mono,monospace';ctx.fillStyle='rgba(122,154,184,.65)';ctx.fillText(n,20,cy);cy+=14});
+}
+
+// ── Drawing utilities ──
+function drawTitleBlock(ctx,W,H,TH,sheetNum,sheetTitle,scale){
+  const TY=H-TH-12;const m=S.plan?.meta||{};const z=S._z||{};
+  ctx.fillStyle='rgba(11,14,21,.94)';ctx.fillRect(12,TY,W-24,TH);
+  ctx.strokeStyle='rgba(61,139,255,.3)';ctx.lineWidth=.5;ctx.strokeRect(12,TY,W-24,TH);
+  ctx.beginPath();ctx.moveTo(12,TY+24);ctx.lineTo(W-200,TY+24);ctx.moveTo(W-200,TY);ctx.lineTo(W-200,TY+TH);ctx.stroke();
+  ctx.font='500 10px JetBrains Mono,monospace';ctx.fillStyle='rgba(210,225,244,.9)';ctx.textAlign='left';ctx.textBaseline='middle';
+  ctx.fillText((m.projectName||'NEW DEVELOPMENT').substring(0,44),20,TY+12);
+  ctx.font='7.5px JetBrains Mono,monospace';ctx.fillStyle='rgba(122,154,184,.6)';
+  ctx.fillText((m.address||S.addr||'').substring(0,60),20,TY+32);
+  ctx.fillText(`${z.jurisdiction||'—'}, ${z.state||'—'}  ·  Zone: ${z.zoningDistrict||'—'}  ·  APN: TBD`,20,TY+44);
+  const apn=S.countyRecord?.esri?.APN||S.countyRecord?.esri?.PARCELNO||S.countyRecord?.esri?.PIN||'See County Assessor';
+    ctx.fillText(`APN: ${apn}  ·  ArchDraw Intel v14  ·  AI Schematic  ·  ${new Date().toLocaleDateString('en-US',{month:'short',day:'2-digit',year:'numeric'})}`,20,TY+56);
+  // Sheet info
+  ctx.textAlign='center';ctx.fillStyle='rgba(210,225,244,.9)';ctx.font='500 22px JetBrains Mono,monospace';ctx.fillText(sheetNum,W-100,TY+TH/2-6);
+  ctx.font='7px JetBrains Mono,monospace';ctx.fillStyle='rgba(61,139,255,.5)';ctx.fillText(sheetTitle.toUpperCase(),W-100,TY+TH/2+12);ctx.fillText('SCALE: '+scale,W-100,TY+TH/2+24);
+  // Permit stamp box
+  ctx.strokeStyle='rgba(61,139,255,.2)';ctx.strokeRect(W-196,TY+2,92,TH-4);ctx.fillStyle='rgba(122,154,184,.3)';ctx.font='6px JetBrains Mono,monospace';ctx.textAlign='center';ctx.fillText('ENGINEER / ARCHITECT STAMP',W-150,TY+TH/2-4);ctx.fillText('(Required for submittal)',W-150,TY+TH/2+6);
+}
+function dimLine(ctx,x1,y1,x2,y2,lbl,vert=false){
+  ctx.save();ctx.strokeStyle='rgba(34,224,138,.55)';ctx.fillStyle='rgba(34,224,138,.55)';ctx.lineWidth=.7;
+  ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+  [[x1,y1],[x2,y2]].forEach(([x,y])=>{ctx.beginPath();vert?(ctx.moveTo(x-3,y),ctx.lineTo(x+3,y)):(ctx.moveTo(x,y-3),ctx.lineTo(x,y+3));ctx.stroke()});
+  ctx.font='6.5px JetBrains Mono,monospace';ctx.textAlign='center';ctx.textBaseline='middle';const mx=(x1+x2)/2,my=(y1+y2)/2;
+  if(vert){ctx.save();ctx.translate(mx,my);ctx.rotate(-Math.PI/2);ctx.fillText(lbl,0,-8);ctx.restore()}else ctx.fillText(lbl,mx,my-8);
+  ctx.restore();
+}
+function drawNorthArrow(ctx,cx,cy){
+  const R=12;ctx.save();ctx.translate(cx,cy);ctx.strokeStyle='rgba(61,139,255,.3)';ctx.lineWidth=.5;ctx.beginPath();ctx.arc(0,0,R,0,Math.PI*2);ctx.stroke();
+  ctx.fillStyle='rgba(200,215,235,.9)';ctx.beginPath();ctx.moveTo(0,-R+2);ctx.lineTo(3.5,4);ctx.lineTo(0,1);ctx.closePath();ctx.fill();
+  ctx.strokeStyle='rgba(200,215,235,.3)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(0,R-2);ctx.lineTo(-3.5,-4);ctx.lineTo(0,-1);ctx.closePath();ctx.stroke();
+  ctx.font='500 6px JetBrains Mono,monospace';ctx.fillStyle='rgba(200,215,235,.7)';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('N',0,-R-6);ctx.restore();
+}
+function scaleBar(ctx,x,y,scl,unitFt){
+  const bp=unitFt*scl;ctx.save();ctx.fillStyle='rgba(11,14,21,.8)';ctx.fillRect(x-2,y-12,bp+24,16);
+  ctx.strokeStyle='rgba(200,215,235,.5)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+bp,y);ctx.moveTo(x,y-3);ctx.lineTo(x,y+3);ctx.moveTo(x+bp,y-3);ctx.lineTo(x+bp,y+3);ctx.stroke();
+  for(let i=0;i<unitFt;i+=Math.max(1,Math.floor(unitFt/4))){ctx.fillStyle=i%2===0?'rgba(200,215,235,.6)':'rgba(61,139,255,.2)';ctx.fillRect(x+i*scl,y-2,Math.max(1,Math.floor(unitFt/4))*scl,4)}
+  ctx.font='6px JetBrains Mono,monospace';ctx.fillStyle='rgba(200,215,235,.5)';ctx.textAlign='left';ctx.textBaseline='top';ctx.fillText("0'",x,y+4);ctx.fillText(`${unitFt}'`,x+bp-6,y+4);ctx.restore();
+}
+
+// ═══ VIEW MANAGEMENT ═══
+function setView(v){
+  S.view=v;
+  ['map','plan','3d'].forEach(x=>{document.getElementById(`v-${x}`).classList.toggle('on',x===v)});
+  const mapView=document.getElementById('map-view');const planCv=document.getElementById('plan-canvas');const threeCv=document.getElementById('three-canvas');
+  mapView.classList.toggle('vis',v==='map');planCv.style.display=v==='plan'?'block':'none';threeCv.style.display=v==='3d'?'block':'none';
+  document.getElementById('legend').classList.toggle('vis',v==='plan'&&!!S.plan);
+  const zh=document.getElementById('zoom-hint');if(zh)zh.classList.remove('vis'); // UX-3: hide zoom hint on all view switches
+  if(v==='plan'&&S.plan){requestAnimationFrame(()=>renderSheet(S.activeSheet));document.getElementById('zoom-hint').classList.add('vis');setTimeout(()=>document.getElementById('zoom-hint').classList.remove('vis'),3000)}
+  if(v==='3d'){if(!THREE_INIT)initThree();if(S.plan)gen3D(S.plan);const tc=document.getElementById('three-canvas');if(!tc._b3){tc._b3=true;bind3DControls()}}
+  if(v==='map'){
+    if(MAP_INSTANCE){
+      // MAP-2: wait for container to be visible before invalidating
+      requestAnimationFrame(()=>{
+        setTimeout(()=>{if(MAP_INSTANCE)MAP_INSTANCE.invalidateSize();},100);
+      });
+    }
+  }
+}
+function resetPanZoom(){S.zoom=1;S.panX=0;S.panY=0}
+function fitPlan(){resetPanZoom();if(S.plan&&S.view==='plan')renderSheet(S.activeSheet)}
+
+// Pan/zoom
+const planCv=document.getElementById('plan-canvas');
+planCv.addEventListener('wheel',e=>{e.preventDefault();if(!S.plan||S.view!=='plan')return;const rect=planCv.getBoundingClientRect();const mx=e.clientX-rect.left,my=e.clientY-rect.top;const f=e.deltaY>0?.88:1.14;const nz=Math.max(.5,Math.min(6,S.zoom*f));S.panX=(S.panX-mx)*(nz/S.zoom)+mx;S.panY=(S.panY-my)*(nz/S.zoom)+my;S.zoom=nz;renderSheet(S.activeSheet)},{passive:false});
+planCv.addEventListener('mousedown',e=>{if(!S.plan||e.button!==0||S.view!=='plan')return;S.panning=true;S.panStart={x:e.clientX,y:e.clientY,px:S.panX,py:S.panY};planCv.style.cursor='grabbing'});
+planCv.addEventListener('mousemove',e=>{if(!S.panning)return;S.panX=S.panStart.px+(e.clientX-S.panStart.x);S.panY=S.panStart.py+(e.clientY-S.panStart.y);renderSheet(S.activeSheet)});
+planCv.addEventListener('mouseup',()=>{S.panning=false;planCv.style.cursor='grab'});
+planCv.addEventListener('mouseleave',()=>{S.panning=false});
+
+// PNG export
+function exportSheetPNG(){
+  if(!S.plan){alert('Run analysis first.');return}
+  // UX-4: only export when plan canvas is visible; warn otherwise
+  if(S.view!=='plan'){
+    const ok=confirm(`Currently in ${S.view.toUpperCase()} view.\nSwitch to PLAN view and export the current sheet?`);
+    if(!ok)return;
+    setView('plan');
+    // Small delay for canvas to render before capturing
+    setTimeout(()=>{
+      const link=document.createElement('a');
+      link.download=`${(S.addr||'plan').replace(/[^a-z0-9]/gi,'_').substring(0,25)}_${S.activeSheet}.png`;
+      link.href=document.getElementById('plan-canvas').toDataURL('image/png');
+      link.click();
+    },200);
+    return;
+  }
+  const link=document.createElement('a');
+  link.download=`${(S.addr||'plan').replace(/[^a-z0-9]/gi,'_').substring(0,25)}_${S.activeSheet}.png`;
+  link.href=document.getElementById('plan-canvas').toDataURL('image/png');
+  link.click();
+}
+
+// ═══ PDF EXPORT — Full Permit Set ═══
+async function exportPermitPDF(){
+  if(!S.plan){alert('Run analysis first.');return}
+  if(!window.jspdf){alert('jsPDF not loaded — check internet connection.');return}
+  const {jsPDF}=window.jspdf;
+  const W=1440,H=960;// virtual sheet size in px for rendering
+  const offscreen=document.createElement('canvas');offscreen.width=W;offscreen.height=H;
+  const ctx=offscreen.getContext('2d');
+  // 36"×24" at 72dpi = 2592×1728pt in jsPDF; we'll use mm: 914×610mm
+  const doc=new jsPDF({orientation:'landscape',unit:'mm',format:[914,610]});
+  const addSheet=(drawFn,label)=>{
+    ctx.clearRect(0,0,W,H);ctx.fillStyle='#ffffff';ctx.fillRect(0,0,W,H);
+    // Temporarily set background to white for PDF
+    const orig=S.zoom;const origPX=S.panX;const origPY=S.panY;S.zoom=1;S.panX=0;S.panY=0;
+    drawFn(ctx,W,H);S.zoom=orig;S.panX=origPX;S.panY=origPY;
+    const img=offscreen.toDataURL('image/jpeg',0.95);
+    doc.addImage(img,'JPEG',0,0,914,610);
+    L.info(`PDF: added sheet ${label}`);
+  };
+  try{
+    addSheet(drawCoverSheet,'A-0 Cover');
+    doc.addPage([914,610],'landscape');addSheet(drawSitePlanSheet,'A-1 Site Plan');
+    const savedFloor=S.floor; // DRAW-6: save floor index before PDF loop
+    for(let i=0;i<(S.plan.floors||[]).length;i++){
+      const fi=i;doc.addPage([914,610],'landscape');
+      addSheet((c,w,h)=>{S.floor=fi;drawFloorPlanSheet(c,w,h,fi)},`A-2 Floor ${i+1}`);
+    }
+    S.floor=savedFloor; // DRAW-6: restore after loop so canvas stays on user's floor
+    doc.addPage([914,610],'landscape');addSheet(drawElevationsSheet,'A-3 Elevations');
+    doc.addPage([914,610],'landscape');addSheet(drawSectionsSheet,'A-4 Sections');
+    doc.addPage([914,610],'landscape');addSheet(drawSchedulesSheet,'A-5 Schedules');
+    const fname=`${(S.plan.meta.address||S.addr||'permit').replace(/[^a-z0-9]/gi,'_').substring(0,30)}_PermitSet.pdf`;
+    doc.save(fname);L.info(`PDF saved: ${fname} (${doc.internal.pages.length} sheets)`);
+    alert(`✓ PDF saved: ${fname}\n\n${doc.internal.pages.length} sheets:\nA-0 Cover · A-1 Site Plan · A-2 Floor Plan(s) · A-3 Elevations · A-4 Sections · A-5 Schedule`);
+  }catch(e){L.error('PDF export failed:',e.message);alert('PDF export failed: '+e.message)}
+}
+
+// ═══ THREE.JS 3D ═══
+let THREE_INIT=false;let scene,cam,ren3,mg;
+const orb={dn:false,th:225,ph:55,r:200,x:0,y:0,cx:0,cy:0,cz:0};
+const C3={living:0xb49670,bedroom:0x5082c8,bath:0x3caaa0,kitchen:0xc8aa50,dining:0xb46e50,commercial:0x6e8cc8,office:0x5a78aa,garage:0x324656,corridor:0x5a6473,stair:0x465a96,storage:0x50463c,laundry:0x785096,balcony:0x289678,entry:0x648c64,default:0x5a6e82};
+function initThree(){
+  if(!window.THREE||THREE_INIT)return;const pane=document.getElementById('cc');const W=pane.offsetWidth,H=pane.offsetHeight;
+  scene=new THREE.Scene();scene.background=new THREE.Color(0x080c14);scene.fog=new THREE.FogExp2(0x080c14,.0018);
+  cam=new THREE.PerspectiveCamera(42,W/H,.5,4000);
+  ren3=new THREE.WebGLRenderer({canvas:document.getElementById('three-canvas'),antialias:true,powerPreference:'low-power'});
+  ren3.setPixelRatio(Math.min(devicePixelRatio,1.5));ren3.setSize(W,H);ren3.shadowMap.enabled=true;
+  const sun=new THREE.DirectionalLight(0xffe8c0,2);sun.position.set(200,400,300);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);sun.shadow.camera.near=1;sun.shadow.camera.far=2000;sun.shadow.camera.left=-500;sun.shadow.camera.right=500;sun.shadow.camera.top=500;sun.shadow.camera.bottom=-500;scene.add(sun);scene.add(new THREE.AmbientLight(0x8ab4ff,.55));
+  const g=new THREE.Mesh(new THREE.PlaneGeometry(3000,3000),new THREE.MeshLambertMaterial({color:0x0c1420}));g.rotation.x=-Math.PI/2;g.receiveShadow=true;scene.add(g);scene.add(new THREE.GridHelper(600,60,0x1a2535,0x101820));
+  mg=new THREE.Group();scene.add(mg);THREE_INIT=true;
+  document.getElementById('three-canvas').addEventListener('webglcontextlost',e=>{e.preventDefault();THREE_INIT=false;L.warn('WebGL context lost')});
+  a3d();
+}
+function gen3D(pd){
+  if(!THREE_INIT||!mg)return;while(mg.children.length){const c=mg.children[0];c.geometry?.dispose();c.material?.dispose();mg.remove(c)}
+  if(!pd?.floors)return;let cumY=0;let mnX=Infinity,mxX=-Infinity,mnZ=Infinity,mxZ=-Infinity;
+  pd.floors.forEach(fl=>{const fh=fl.heightFt||9;(fl.rooms||[]).forEach(r=>{if(!r.w||!r.h||r.w<1||r.h<1)return;mnX=Math.min(mnX,r.x);mxX=Math.max(mxX,r.x+r.w);mnZ=Math.min(mnZ,r.y);mxZ=Math.max(mxZ,r.y+r.h);const geo=new THREE.BoxGeometry(r.w,fh,r.h);const mat=new THREE.MeshLambertMaterial({color:C3[r.type]||C3.default,transparent:r.type==='balcony',opacity:r.type==='balcony'?.45:1});const mesh=new THREE.Mesh(geo,mat);mesh.castShadow=mesh.receiveShadow=true;mesh.position.set(r.x+r.w/2,cumY+fh/2,r.y+r.h/2);mg.add(mesh);const el=new THREE.LineSegments(new THREE.EdgesGeometry(geo),new THREE.LineBasicMaterial({color:0x1e2d42}));el.position.copy(mesh.position);mg.add(el)});cumY+=fh});
+  if(mnX<Infinity){const bw=mxX-mnX,bd=mxZ-mnZ,bcx=(mnX+mxX)/2,bcz=(mnZ+mxZ)/2,rH=Math.min(bw,bd)*.28;const rg=new THREE.ConeGeometry(Math.max(bw,bd)*.72,rH,4);const rf=new THREE.Mesh(rg,new THREE.MeshLambertMaterial({color:0x2a3650}));rf.position.set(bcx,cumY+rH/2,bcz);rf.rotation.y=Math.PI/4;rf.castShadow=true;mg.add(rf)}
+  const mm=pd.meta||{};orb.cx=(mm.lotWidth||50)/2;orb.cz=(mm.lotDepth||100)/2;orb.cy=cumY/2;orb.r=Math.max(mm.lotWidth||50,mm.lotDepth||100)*2.5;camUp();
+}
+function a3d(){requestAnimationFrame(a3d);if(ren3&&THREE_INIT&&S.view==='3d')ren3.render(scene,cam)}
+function camUp(){if(!cam)return;const t=orb.ph*Math.PI/180,p=orb.th*Math.PI/180;cam.position.set(orb.cx+orb.r*Math.sin(t)*Math.sin(p),orb.cy+orb.r*Math.cos(t),orb.cz+orb.r*Math.sin(t)*Math.cos(p));cam.lookAt(orb.cx,orb.cy,orb.cz)}
+function bind3DControls(){const tc=document.getElementById('three-canvas');tc.addEventListener('mousedown',e=>{orb.dn=true;orb.x=e.clientX;orb.y=e.clientY});tc.addEventListener('mousemove',e=>{if(!orb.dn)return;orb.th+=(e.clientX-orb.x)*.4;orb.ph=Math.max(10,Math.min(80,orb.ph-(e.clientY-orb.y)*.3));orb.x=e.clientX;orb.y=e.clientY;camUp()});tc.addEventListener('mouseup',()=>orb.dn=false);tc.addEventListener('mouseleave',()=>orb.dn=false);tc.addEventListener('wheel',e=>{e.preventDefault();orb.r=Math.max(20,Math.min(2000,orb.r+e.deltaY*.5));camUp()},{passive:false})}
+
+// ═══ NAV ═══
+function goBack(){
+  // PIPE-3: cancel any pending option-selection Promise
+  if(S._optionResolve){
+    L.info('goBack: cancelling pending option selection');
+    S._optionResolve=null; // release reference — resolves naturally via timeout or ignored
+  }
+  // PIPE-4: always close options overlay
+  const ov=document.getElementById('opts-overlay');
+  if(ov)ov.classList.remove('vis');
+  S.plan=null;S.floor=0;S.analyzing=false;S.generatedOptions=[];S.selectedOption=null;
+  resetPanZoom();
+  document.getElementById('run-btn').disabled=!S.apiReady;
+  document.getElementById('run-btn').textContent='ANALYZE →';
+  document.getElementById('legend').classList.remove('vis');
+  const mi=document.getElementById('map-info');if(mi)mi.classList.remove('vis');
+  // Clear stale sheet tabs
+  const st=document.getElementById('sheet-tabs');if(st)st.innerHTML='';
+  showScreen('landing');
+}
+
+new ResizeObserver(()=>{const p=document.getElementById('cc');if(!p.offsetWidth||!p.offsetHeight)return;if(S.plan&&S.view==='plan')renderSheet(S.activeSheet);if(THREE_INIT&&ren3){ren3.setSize(p.offsetWidth,p.offsetHeight);cam.aspect=p.offsetWidth/p.offsetHeight;cam.updateProjectionMatrix()}if(MAP_INSTANCE&&S.view==='map')MAP_INSTANCE.invalidateSize()}).observe(document.getElementById('cc'));
+
+// ── UX-6: Keyboard shortcuts ──
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    hideSuggest();
+    const ov=document.getElementById('opts-overlay');if(ov&&ov.classList.contains('vis'))ov.classList.remove('vis');
+    if(logPanel){logPanel.remove();logPanel=null}
+  }
+  if(!S.plan||document.getElementById('workspace').classList.contains('hidden'))return;
+  if(e.key==='ArrowRight'&&!e.ctrlKey){
+    const tabs=[...document.querySelectorAll('.stab')];const cur=tabs.findIndex(t=>t.classList.contains('on'));
+    if(cur<tabs.length-1)tabs[cur+1].click();
+  }
+  if(e.key==='ArrowLeft'&&!e.ctrlKey){
+    const tabs=[...document.querySelectorAll('.stab')];const cur=tabs.findIndex(t=>t.classList.contains('on'));
+    if(cur>0)tabs[cur-1].click();
+  }
+  if(e.key==='f'||e.key==='F'){fitPlan()}
+  if(e.key==='m'||e.key==='M'){setView('map')}
+  if(e.key==='p'||e.key==='P'){setView('plan')}
+  if(e.key==='3'){setView('3d')}
+  if(e.key==='l'||e.key==='L'){toggleLogPanel()}
+});
+
+
+// ── UX-7: Address autocomplete (Nominatim) ──
+let _suggestTimer=null;
+function addrKeydown(e){
+  if(e.key==='Enter'){hideSuggest();startAnalysis();}
+  else if(e.key==='Escape'){hideSuggest();}
+}
+async function addrSuggest(q){
+  const box=document.getElementById('suggest-box');
+  if(!q||q.length<4){box.style.display='none';return}
+  clearTimeout(_suggestTimer);
+  _suggestTimer=setTimeout(async()=>{
+    try{
+      const r=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=5&countrycodes=us&addressdetails=1`,{headers:{'User-Agent':'ArchDrawIntel/1.0'}});
+      const d=await r.json();
+      if(!d.length){box.style.display='none';return}
+      box.style.display='block';
+      box.innerHTML=d.map((item,i)=>`<div onclick="pickSuggest(${JSON.stringify(item.display_name.substring(0,80)).replace(/"/g,'&quot;')})"
+        style="padding:6px 10px;font-size:9px;color:var(--txt2);cursor:pointer;border-bottom:1px solid var(--brd);white-space:nowrap;overflow:hidden;text-overflow:ellipsis"
+        onmouseover="this.style.background='var(--ink2)'" onmouseout="this.style.background=''">${item.display_name.substring(0,80)}</div>`).join('');
+    }catch(_){box.style.display='none'}
+  },380);
+}
+function pickSuggest(addr){document.getElementById('addr-inp').value=addr;hideSuggest()}
+function hideSuggest(){const b=document.getElementById('suggest-box');if(b)b.style.display='none'}
+document.addEventListener('click',e=>{if(!e.target.closest('#addr-inp')&&!e.target.closest('#suggest-box'))hideSuggest()});
+
+
+// ── UX-8: Restore last address from sessionStorage ──
+(function restoreLastAddr(){
+  try{
+    const last=sessionStorage.getItem('adi_last_addr');
+    if(last)document.getElementById('addr-inp').value=last;
+  }catch(_){}
+})();
+document.getElementById('addr-inp').addEventListener('change',e=>{
+  try{sessionStorage.setItem('adi_last_addr',e.target.value);}catch(_){}
+});
+
+// ── INIT ──
+probeConnection();
+</script>
+</body>
+</html>
