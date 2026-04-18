@@ -622,6 +622,8 @@ async function initMap(lat,lon,z){
     }).addTo(MAP_INSTANCE);
   }
 
+  // Remove any stale overlay (ArchDraw + OSM) from a previous address before redrawing
+  MAP_INSTANCE.eachLayer(l=>{if(l._isArchDraw||l._isOSM)MAP_INSTANCE.removeLayer(l)});
   MAP_INSTANCE.setView([lat,lon],19);
   drawMapOverlay(lat,lon,z);
 
@@ -781,7 +783,11 @@ async function startAnalysis(){
   if(!S.addr){alert('Enter address first.');return}if(!S.apiReady){alert('Connect API first.');return}
   if(S.analyzing)return;S.analyzing=true;
   document.getElementById('run-btn').disabled=true;document.getElementById('run-btn').textContent='ANALYZING...';
-  S.plan=null;S.floor=0;S.zoom=1;S.panX=0;S.panY=0;S.selectedOption=null;S.competitors=null;S.countyRecord=null;LOG.length=0;
+  // Clean slate — never reuse geocoded coords, OSM buildings, or map overlays from a previous run
+  S.plan=null;S.floor=0;S.zoom=1;S.panX=0;S.panY=0;S.selectedOption=null;S.competitors=null;S.countyRecord=null;
+  S.lat=null;S.lon=null;S.osmBuildings=null;S.femaZone=null;S._geoAddr=null;S._z=null;S._advisor=null;
+  if(MAP_INSTANCE){MAP_INSTANCE.eachLayer(l=>{if(l._isArchDraw||l._isOSM)MAP_INSTANCE.removeLayer(l)})}
+  LOG.length=0;
   L.info(`=== v12 ANALYSIS START: ${S.addr} ===`);
   showScreen('workspace');document.getElementById('rp-addr').textContent=S.addr;
   document.getElementById('findings').innerHTML='';buildPhases();
