@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>ArchDraw Intel v11 — Permit Architect</title>
+<title>ArchDraw Intel v13 — Permit Architect</title>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <style>
@@ -205,7 +205,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--ink);color:var
 <div class="screen" id="landing">
   <div class="brand">
     <div class="brand-icon">AI</div>
-    <div class="brand-title">ArchDraw <em style="color:var(--blue)">Intel</em> v11</div>
+    <div class="brand-title">ArchDraw <em style="color:var(--blue)">Intel</em> v13</div>
     <div class="brand-sub">Real satellite imagery · OSM parcel data · Complete printable 24"×36" permit drawing set</div>
   </div>
 
@@ -1142,7 +1142,7 @@ function drawCoverSheet(ctx,W,H){
   ctx.fillText((m.address||S.addr||'').substring(0,60),20,TY+38);
   ctx.fillText(`Zone: ${z.zoningDistrict||'—'} · ${z.jurisdiction||'—'}, ${st} · ${db.bc}`,20,TY+52);
   ctx.fillText(`${(m.totalSqFt||0).toLocaleString()} GSF · ${m.units||0} units · ${m.stories||1} stories`,20,TY+66);
-  ctx.fillText(`ArchDraw Intel v11 · ${new Date().toLocaleDateString('en-US',{month:'short',day:'2-digit',year:'numeric'})}`,20,TY+80);
+  ctx.fillText(`ArchDraw Intel v13 · ${new Date().toLocaleDateString('en-US',{month:'short',day:'2-digit',year:'numeric'})}`,20,TY+80);
   ctx.textAlign='center';ctx.fillStyle='rgba(210,225,244,.9)';ctx.font='500 18px JetBrains Mono,monospace';
   ctx.fillText('A-0',W-90,TY+42);ctx.font='8px JetBrains Mono,monospace';ctx.fillStyle='rgba(61,139,255,.5)';ctx.fillText('COVER SHEET',W-90,TY+60);
 
@@ -1462,7 +1462,7 @@ function drawTitleBlock(ctx,W,H,TH,sheetNum,sheetTitle,scale){
   ctx.font='7.5px JetBrains Mono,monospace';ctx.fillStyle='rgba(122,154,184,.6)';
   ctx.fillText((m.address||S.addr||'').substring(0,60),20,TY+32);
   ctx.fillText(`${z.jurisdiction||'—'}, ${z.state||'—'}  ·  Zone: ${z.zoningDistrict||'—'}  ·  APN: TBD`,20,TY+44);
-  ctx.fillText(`ArchDraw Intel v11  ·  AI-Generated Schematic  ·  ${new Date().toLocaleDateString('en-US',{month:'short',day:'2-digit',year:'numeric'})}`,20,TY+56);
+  ctx.fillText(`ArchDraw Intel v13  ·  AI-Generated Schematic  ·  ${new Date().toLocaleDateString('en-US',{month:'short',day:'2-digit',year:'numeric'})}`,20,TY+56);
   // Sheet info
   ctx.textAlign='center';ctx.fillStyle='rgba(210,225,244,.9)';ctx.font='500 22px JetBrains Mono,monospace';ctx.fillText(sheetNum,W-100,TY+TH/2-6);
   ctx.font='7px JetBrains Mono,monospace';ctx.fillStyle='rgba(61,139,255,.5)';ctx.fillText(sheetTitle.toUpperCase(),W-100,TY+TH/2+12);ctx.fillText('SCALE: '+scale,W-100,TY+TH/2+24);
