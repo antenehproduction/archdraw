@@ -316,6 +316,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--ink);color:var
       <button class="ptbtn" onclick="exportSheetPNG()" title="Save current sheet as PNG">↓ PNG</button>
       <button class="ptbtn r" onclick="exportPermitPDF()" title="Export full 24×36 permit set as PDF">↓ PDF SET</button>
     </div>
+    <!-- architect-advisor RDP banner (populated when project triggers RDP requirement) -->
+    <div id="adv-banner" style="display:none;gap:10px;align-items:center;padding:5px 10px;background:rgba(255,101,85,.08);border-bottom:1px solid rgba(255,101,85,.4);font-size:9.5px;font-family:var(--mono);color:var(--txt2);min-height:20px"></div>
     <div id="cc">
       <!-- Development Options selection panel (shown between zoning and plan) -->
       <div id="opts-overlay"></div>
@@ -1158,6 +1160,13 @@ async function runPhase_chk(){
   addFind('chk','✅ Permit Checklist Ready',
     `<strong>${total} items</strong> · ${cleanCats.length} categories · ${jur}, ${st}<br>Code: ${db.bc} · Energy: ${db.ec} · SDC: ${db.seismic} · Wind: ${db.wind}mph${S.femaZone?` · FEMA: <strong>${S.femaZone}</strong>`:''}<br>${ovActive?'Overlays: '+ovActive+'<br>':''}Est. valuation ~$${(valuation/1000).toFixed(0)}K · Permit fees ${feeRange}<br><span style="color:var(--txt3);font-size:10px">${db.note}</span>`);
   L.info(`Checklist: ${total} items, fees ${feeRange}`);phaseRunners.chk=runPhase_chk;
+  // architect-advisor: compute RDP verdict + surface banner
+  const adv=runArchitectAdvisor();S._advisor=adv;
+  L.info(`Advisor: rdpRequired=${adv.rdpRequired} seals=[${adv.sealsRequired.join(',')}] triggers=[${adv.triggeredBy.join('; ')}]`);
+  renderAdvisorBanner(adv);
+  if(adv.rdpRequired){addFind('advisor','\u26A0 Professional Review Required',`<strong>A Registered Design Professional must review and seal drawings</strong> before permit submittal.<br>Triggers: ${adv.triggeredBy.join(' \u00B7 ')}<br>Required seals: <strong>${adv.sealsRequired.join(', ')}</strong><br><span style="color:var(--txt3);font-size:10px">${adv.statuteCitation}${adv.jurisdictionNote?' \u00B7 '+adv.jurisdictionNote:''}</span>`)}
+  // Re-render the current sheet so disclosure + footer appear immediately
+  if(S.view==='plan'&&S.activeSheet)renderSheet(S.activeSheet);
 }
 
 // ─── CHK-3: Export checklist to CSV ───
@@ -1239,6 +1248,70 @@ function renderSheet(sheetId){
   }
 }
 
+// ═══ ARCHITECT-ADVISOR — CRITICAL PROFESSIONAL DISCLOSURE + RDP verdict ═══
+// Mirrors .claude/agents/architect-advisor.md. DO NOT PARAPHRASE THE DISCLOSURE.
+const ADVISOR_DISCLOSURE='THIS IS A PRELIMINARY AI-GENERATED SCHEMATIC. NOT FOR CONSTRUCTION. NOT A STAMPED / SEALED ARCHITECTURAL DRAWING. NOT A SUBSTITUTE FOR SERVICES OF A REGISTERED DESIGN PROFESSIONAL. Before permit submittal, a licensed architect and/or structural, MEP, and civil engineers of record must review, revise, and seal drawings per IBC \u00A7106.1 and the jurisdiction\'s registration statute. Dimensions, structural members, and code compliance shown are unverified and MUST be independently calculated, surveyed, and signed by a Registered Design Professional (RDP).';
+const ADVISOR_SHORT='NOT FOR CONSTRUCTION \u2014 AI PRELIMINARY SCHEMATIC \u2014 RDP REVIEW REQUIRED';
+
+// Rule-based RDP verdict — fast, deterministic, local. No AI call.
+// A future upgrade can wrap this with a per-state statute lookup via callAIWithRetry.
+function runArchitectAdvisor(){
+  const z=S._z||{};const plan=S.plan||{};const m=plan.meta||{};
+  const state=z.state||'';const stories=m.stories||1;const units=m.units||0;const gsf=m.totalSqFt||0;
+  const overlays={historic:!!S._historic,coastal:S._coastal||'none',hillside:!!S._hillside,wildfire:S._wildfire||'none'};
+  const flood=S._flood||{};
+  const triggeredBy=[];let rdpRequired=false;
+  if(stories>2){rdpRequired=true;triggeredBy.push(`>2 stories (${stories})`)}
+  if(gsf>4000){rdpRequired=true;triggeredBy.push(`>4,000 GSF (${gsf.toLocaleString()})`)}
+  if(units>4){rdpRequired=true;triggeredBy.push(`Multi-family >4 units (${units})`)}
+  if(overlays.hillside){rdpRequired=true;triggeredBy.push('Hillside overlay')}
+  if(overlays.coastal&&overlays.coastal!=='none'){rdpRequired=true;triggeredBy.push(`Coastal overlay (${overlays.coastal})`)}
+  if(overlays.wildfire&&overlays.wildfire!=='none'){rdpRequired=true;triggeredBy.push(`Wildfire/WUI (${overlays.wildfire})`)}
+  if(overlays.historic){rdpRequired=true;triggeredBy.push('Historic register')}
+  if(flood.zone&&['AE','VE','AO','A','V'].includes(flood.zone)){rdpRequired=true;triggeredBy.push(`Flood zone ${flood.zone}`)}
+  const sealsRequired=[];
+  if(rdpRequired)sealsRequired.push('Architect (RA)');
+  if(stories>2||units>4||overlays.hillside||(flood.zone&&flood.zone!=='X'))sealsRequired.push('Structural PE');
+  if(units>4)sealsRequired.push('MEP PE');
+  if(overlays.hillside||(overlays.coastal&&overlays.coastal!=='none')||units>4)sealsRequired.push('Civil PE');
+  return{
+    disclosure:ADVISOR_DISCLOSURE,shortDisclosure:ADVISOR_SHORT,
+    rdpRequired,triggeredBy,sealsRequired:[...new Set(sealsRequired)],
+    statuteCitation:state?`Verify with state licensing board (NCARB jurisdiction table — ${state}).`:'Unknown state — user must verify with jurisdiction.',
+    jurisdictionNote:z.jurisdiction?`Check ${z.jurisdiction} local amendments for additional requirements.`:'',
+    exportBlocked:false,
+  };
+}
+
+function renderAdvisorBanner(adv){
+  const b=document.getElementById('adv-banner');if(!b)return;
+  if(adv.rdpRequired){
+    b.style.display='flex';
+    const trigs=adv.triggeredBy.slice(0,3).join(' \u00B7 ');
+    b.innerHTML=`<span style="color:#ff6555;font-weight:500;white-space:nowrap">\u26A0 RDP REQUIRED</span><span style="opacity:.8;overflow:hidden;text-overflow:ellipsis">${trigs}</span><span style="opacity:.6;white-space:nowrap">Seals: ${adv.sealsRequired.join(', ')}</span>`;
+  }else{b.style.display='none';b.innerHTML=''}
+}
+
+function drawDisclosureBlock(ctx,W,H,x,y,width){
+  // Word-wrapped disclosure block for the A-0 cover sheet.
+  ctx.save();
+  const pad=10;const boxH=72;
+  ctx.fillStyle='rgba(255,101,85,.08)';ctx.fillRect(x,y,width,boxH);
+  ctx.strokeStyle='rgba(255,101,85,.5)';ctx.lineWidth=1;ctx.strokeRect(x,y,width,boxH);
+  ctx.fillStyle='rgba(255,101,85,.95)';ctx.font='500 8.5px JetBrains Mono,monospace';ctx.textAlign='left';ctx.textBaseline='top';
+  ctx.fillText('\u26A0  CRITICAL PROFESSIONAL DISCLOSURE',x+pad,y+pad);
+  ctx.fillStyle='rgba(235,220,200,.85)';ctx.font='7px JetBrains Mono,monospace';
+  const words=ADVISOR_DISCLOSURE.split(' ');const maxW=width-pad*2;const lh=9;
+  let line='';let ly=y+pad+14;
+  for(const w of words){
+    const test=line?line+' '+w:w;
+    if(ctx.measureText(test).width>maxW){ctx.fillText(line,x+pad,ly);line=w;ly+=lh;if(ly>y+boxH-lh)break}
+    else line=test;
+  }
+  if(line&&ly<=y+boxH-lh)ctx.fillText(line,x+pad,ly);
+  ctx.restore();
+}
+
 // ── SHEET: A-0 Cover Sheet ──
 function drawCoverSheet(ctx,W,H){
   const m=S.plan?.meta||{};const z=S._z||{};const st=z.state||'';
@@ -1295,10 +1368,20 @@ function drawCoverSheet(ctx,W,H){
   const sheetX=W*.78;const sheets=['A-0: Cover Sheet & Project Data','A-1: Site Plan (1/8"=1\'‑0")','A-2: Floor Plans (1/4"=1\'‑0")','A-3: Exterior Elevations','A-4: Building Sections','A-5: Door/Window Schedule'];
   ctx.font='500 10px JetBrains Mono,monospace';ctx.fillStyle='rgba(245,200,66,.7)';ctx.textAlign='left';ctx.fillText('SHEET INDEX',sheetX,CY-48-6);
   sheets.forEach((s,i)=>{ctx.font=`${i===0?'500':'400'} 9px JetBrains Mono,monospace`;ctx.fillStyle=`rgba(${i===0?'210,225,244':'122,154,184'},.7)`;ctx.fillText(s,sheetX,CY-48+i*20)});
-  // General notes
-  ctx.font='7px JetBrains Mono,monospace';ctx.fillStyle='rgba(122,154,184,.5)';ctx.textAlign='center';
-  const notes=['All dimensions in feet and inches unless noted. Do not scale drawings.',`Contractor to verify all dimensions in field prior to construction.`,`All work to conform to adopted codes: ${db.bc}, ${db.ec}.`,'These drawings are schematic — obtain all permits before construction.','© ArchDraw Intel — AI-Generated Schematic Design Documents'];
-  notes.forEach((n,i)=>ctx.fillText(n,CX,TY-22+i*13));
+  // ── CRITICAL PROFESSIONAL DISCLOSURE — architect-advisor ──
+  const discW=W*.7;const discX=CX-discW/2;const discY=TY-86;
+  drawDisclosureBlock(ctx,W,H,discX,discY,discW);
+  // RDP requirement banner (only shown when applicable)
+  const adv=S._advisor||runArchitectAdvisor();
+  if(adv.rdpRequired){
+    ctx.fillStyle='rgba(255,101,85,.15)';ctx.fillRect(discX,discY-22,discW,18);
+    ctx.strokeStyle='rgba(255,101,85,.6)';ctx.lineWidth=.7;ctx.strokeRect(discX,discY-22,discW,18);
+    ctx.fillStyle='rgba(255,101,85,.95)';ctx.font='500 8px JetBrains Mono,monospace';ctx.textAlign='left';ctx.textBaseline='middle';
+    ctx.fillText(`\u26A0 RDP REQUIRED \u00B7 Seals: ${adv.sealsRequired.join(', ')} \u00B7 Triggers: ${adv.triggeredBy.slice(0,2).join('; ')}`.substring(0,140),discX+8,discY-13);
+  }
+  // Single copyright line
+  ctx.font='6.5px JetBrains Mono,monospace';ctx.fillStyle='rgba(122,154,184,.4)';ctx.textAlign='center';ctx.textBaseline='alphabetic';
+  ctx.fillText(`\u00A9 ArchDraw Intel \u00B7 AI-Generated Schematic \u00B7 Codes: ${db.bc}, ${db.ec}`,CX,TY-6);
   drawNorthArrow(ctx,W-60,60);
 }
 
@@ -1708,6 +1791,9 @@ function drawTitleBlock(ctx,W,H,TH,sheetNum,sheetTitle,scale){
   ctx.font='7px JetBrains Mono,monospace';ctx.fillStyle='rgba(61,139,255,.5)';ctx.fillText(sheetTitle.toUpperCase(),W-100,TY+TH/2+12);ctx.fillText('SCALE: '+scale,W-100,TY+TH/2+24);
   // Permit stamp box
   ctx.strokeStyle='rgba(61,139,255,.2)';ctx.strokeRect(W-196,TY+2,92,TH-4);ctx.fillStyle='rgba(122,154,184,.3)';ctx.font='6px JetBrains Mono,monospace';ctx.textAlign='center';ctx.fillText('ENGINEER / ARCHITECT STAMP',W-150,TY+TH/2-4);ctx.fillText('(Required for submittal)',W-150,TY+TH/2+6);
+  // Short-form professional disclosure footer — architect-advisor
+  ctx.fillStyle='rgba(255,101,85,.75)';ctx.font='500 6.5px JetBrains Mono,monospace';ctx.textAlign='center';ctx.textBaseline='top';
+  ctx.fillText(ADVISOR_SHORT,W/2,H-10);
 }
 function dimLine(ctx,x1,y1,x2,y2,lbl,vert=false){
   ctx.save();ctx.strokeStyle='rgba(34,224,138,.55)';ctx.fillStyle='rgba(34,224,138,.55)';ctx.lineWidth=.7;
@@ -1763,6 +1849,9 @@ planCv.addEventListener('mouseleave',()=>{S.panning=false});
 // PNG export
 function exportSheetPNG(){
   if(!S.plan){alert('Run analysis first.');return}
+  const adv=S._advisor||runArchitectAdvisor();S._advisor=adv;
+  if(adv.exportBlocked){L.error('Export blocked by architect-advisor:',adv.triggeredBy.join(', '));alert('Export blocked — professional disclosure missing. Check LOG.');return}
+  L.info(`PNG export \u2192 advisor: rdpRequired=${adv.rdpRequired} seals=[${adv.sealsRequired.join(',')}]`);
   // UX-4: only export when plan canvas is visible; warn otherwise
   if(S.view!=='plan'){
     const ok=confirm(`Currently in ${S.view.toUpperCase()} view.\nSwitch to PLAN view and export the current sheet?`);
@@ -1787,6 +1876,9 @@ function exportSheetPNG(){
 async function exportPermitPDF(){
   if(!S.plan){alert('Run analysis first.');return}
   if(!window.jspdf){alert('jsPDF not loaded — check internet connection.');return}
+  const adv=S._advisor||runArchitectAdvisor();S._advisor=adv;
+  if(adv.exportBlocked){L.error('PDF export blocked by architect-advisor:',adv.triggeredBy.join(', '));alert('Export blocked — professional disclosure missing. Check LOG.');return}
+  L.info(`PDF export \u2192 advisor: rdpRequired=${adv.rdpRequired} seals=[${adv.sealsRequired.join(',')}] triggers=[${adv.triggeredBy.join('; ')}]`);
   const {jsPDF}=window.jspdf;
   const W=1440,H=960;// virtual sheet size in px for rendering
   const offscreen=document.createElement('canvas');offscreen.width=W;offscreen.height=H;
@@ -1857,7 +1949,8 @@ function goBack(){
   // PIPE-4: always close options overlay
   const ov=document.getElementById('opts-overlay');
   if(ov)ov.classList.remove('vis');
-  S.plan=null;S.floor=0;S.analyzing=false;S.generatedOptions=[];S.selectedOption=null;
+  S.plan=null;S.floor=0;S.analyzing=false;S.generatedOptions=[];S.selectedOption=null;S._advisor=null;
+  const advB=document.getElementById('adv-banner');if(advB){advB.style.display='none';advB.innerHTML=''}
   resetPanZoom();
   document.getElementById('run-btn').disabled=!S.apiReady;
   document.getElementById('run-btn').textContent='ANALYZE →';
