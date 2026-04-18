@@ -1092,6 +1092,13 @@ async function runPhase_plan(){
     L.info(`Plan: ${pd.floors.length} floors, ${pd.floors.reduce((a,f)=>a+f.rooms.length,0)} rooms, ${pd.meta.totalSqFt} SF in ${Date.now()-t}ms`);
     phSet('plan','done',`${((Date.now()-t)/1000).toFixed(2)}s`);
     addFind('plan','📐 Expert Development Program',buildMT(pd)+'<div style="margin-top:6px;font-size:9px;color:var(--txt2)">🏗️ Structural grid: 20\'-0" bay spacing · 2×6 @ 16" o.c. · <span style="color:var(--green)">Net-zero energy capable</span></div>');
+    // Comparable analysis — surface as its own finding card so user sees the influences
+    const ins=getComparableInsights(z);
+    if(ins.patterns.length||ins.competitorHint){
+      const body=(ins.patterns.length?'<strong>Neighborhood footprints</strong><br>'+ins.patterns.map(p=>'\u2022 '+p).join('<br>'):'')
+        +(ins.competitorHint?`<div style="margin-top:6px;padding-top:6px;border-top:1px solid var(--brd)"><strong>Market comparable pattern</strong><br><span style="color:var(--txt2);font-style:italic">${ins.competitorHint}</span></div>`:'');
+      addFind('comps','\uD83D\uDCCA Local Comparables Analysis',body+'<div style="margin-top:6px;font-size:9px;color:var(--txt3)">Plan proportions and room programming informed by neighborhood character (OSM) and recent development comps (2019-2024).</div>');
+    }
     buildSheetTabs();
     // MAP-1: assign S.plan BEFORE initMap so drawMapOverlay can draw the footprint
     S.plan=pd;
@@ -1263,6 +1270,298 @@ function pUp(){const a=document.querySelectorAll('.cit').length,d=document.query
 // ═══ DRAWING ENGINE (24"×36" permit sheets) ═══
 const RC={living:{f:'rgba(180,150,110,.42)',s:'#b49670'},bedroom:{f:'rgba(80,130,200,.42)',s:'#5082c8'},bath:{f:'rgba(60,170,160,.42)',s:'#3caaa0'},kitchen:{f:'rgba(200,170,80,.42)',s:'#c8aa50'},dining:{f:'rgba(180,110,80,.42)',s:'#b46e50'},commercial:{f:'rgba(110,140,200,.42)',s:'#6e8cc8'},office:{f:'rgba(90,120,170,.42)',s:'#5a78aa'},garage:{f:'rgba(50,70,90,.55)',s:'#324656'},corridor:{f:'rgba(90,100,115,.35)',s:'#5a6473'},stair:{f:'rgba(70,90,150,.5)',s:'#465a96'},storage:{f:'rgba(80,70,60,.45)',s:'#50463c'},laundry:{f:'rgba(120,80,150,.45)',s:'#785096'},balcony:{f:'rgba(40,150,120,.28)',s:'#289678'},entry:{f:'rgba(100,140,100,.38)',s:'#648c64'},default:{f:'rgba(90,110,130,.38)',s:'#5a6e82'}};
 const LEGEND_LABELS={living:'Living',bedroom:'Bedroom',bath:'Bath',kitchen:'Kitchen',dining:'Dining',commercial:'Commercial',office:'Office',garage:'Garage',corridor:'Corridor',stair:'Stair',storage:'Storage',laundry:'Laundry',balcony:'Balcony',entry:'Entry'};
+
+// ═══ ARCH_STANDARDS — codified draftsman knowledge (IBC / IRC referenced) ═══
+// All dimensions in feet. Used by localFloorPlan + drawRoomFixtures + dim chains.
+const ARCH_STANDARDS={
+  walls:{extT:0.5,intT:0.33,partition:0.25},  // 6", 4", 3"
+  doors:{
+    interior:{w:2.67,h:6.67},     // 2'-8" × 6'-8"
+    exterior:{w:3,h:6.67},        // 3'-0" × 6'-8"
+    bathroom:{w:2.5,h:6.67},      // 2'-6"
+    bedroom:{w:2.67,h:6.67},
+    closet:{w:2,h:6.67},
+    entry:{w:3,h:6.67},
+  },
+  windows:{
+    standard:{w:3,h:4,sill:3,head:7},   // 3'-0" × 4'-0", sill 3' AFF, head 7' AFF
+    egress:{w:4,h:3.5,sill:3},          // IBC §1030 — 5.7 SF min openable
+    kitchen:{w:4,h:3,sill:3.67},        // above counter
+    bathroom:{w:2,h:2,sill:5},          // privacy-height
+    powder:{w:1.5,h:2,sill:5},
+  },
+  fixtures:{
+    toilet:{w:1.5,d:2.5,clearFront:1.5},      // 18"×30", 18" clear to front
+    lavatory:{w:2,d:1.67},                     // 24"×20"
+    tub:{w:5,d:2.5},                           // 60"×30" — standard alcove
+    shower:{w:3,d:3},                          // 36"×36" minimum (IBC 36"×36" per §1109)
+    kitchenSink:{w:2.5,d:2},                   // 30"×24" double basin
+    range:{w:2.5,d:2},                         // 30" freestanding
+    fridge:{w:3,d:2.67},                       // 36"×32" counter-depth
+    dishwasher:{w:2,d:2},                      // 24"
+    pantry:{w:2,d:2},
+    washer:{w:2.25,d:2.5},
+    dryer:{w:2.25,d:2.5},
+    waterHeater:{w:1.67,d:1.67,round:true},
+    furnace:{w:2,d:2},
+  },
+  rooms:{
+    bedroom:{minDim:9,minArea:70,preferredArea:144,egressReq:true},
+    bathroom:{minDim:5,minArea:30,preferredArea:50},
+    powder:{minDim:4,minArea:18},
+    kitchen:{minArea:60,preferredArea:120,counterMinRun:12},
+    living:{minArea:120,preferredArea:220},
+    dining:{minArea:80,preferredArea:120},
+    laundry:{minArea:24},
+    closet:{minDim:2,minArea:6,walkInArea:20},
+    stair:{minWidth:3,landing:3},
+  },
+  stair:{
+    riserHeight:7.75/12,   // 7-3/4" max per IBC §1011.5
+    tread:10/12,           // 10" min per IBC §1011.5
+    width:3,               // 36" min per IBC §1011.2
+    risersFor9ftFloor:14,  // 14 × 7.75" = 108.5" ~ 9'-0.5"
+    handrailHt:3,          // 34–38" above tread
+  },
+  lineWeights:{
+    wallExt:2.5,wallInt:1.5,partition:0.8,
+    fixture:0.7,fixtureHeavy:1.0,
+    doorOpening:0.9,windowFrame:0.7,
+    dimension:0.5,gridLine:0.4,
+    annotation:0.5,leader:0.4,
+  },
+  typography:{
+    roomLabel:'500 9px JetBrains Mono,monospace',
+    roomArea:'7.5px JetBrains Mono,monospace',
+    dimension:'6.5px JetBrains Mono,monospace',
+    fixture:'5.5px JetBrains Mono,monospace',
+    callout:'500 7px JetBrains Mono,monospace',
+  },
+  symbols:{
+    fixtureStroke:'rgba(200,215,235,.55)',
+    fixtureFill:'rgba(80,120,170,.18)',
+    kitchenAppliance:'rgba(245,200,66,.55)',
+    waterFixture:'rgba(100,170,255,.55)',
+    doorOpening:'rgba(210,225,244,.9)',
+    windowGlazing:'rgba(100,170,255,.6)',
+    stairTread:'rgba(210,225,244,.45)',
+    annotation:'rgba(210,225,244,.7)',
+    dimensionChain:'rgba(34,224,138,.55)',
+  },
+};
+
+// ═══ FIXTURE PRIMITIVES — each takes (ctx, cx, cy, ft, orient?) ═══
+// cx,cy are the center of the fixture footprint in canvas pixel space
+// ft(value_in_feet) converts to pixels at the current sheet scale
+// orient is 0/90/180/270 degrees rotation (default 0 = plumbing on south wall)
+function drawToilet(ctx,cx,cy,ft,orient=0){
+  const t=ARCH_STANDARDS.fixtures.toilet;const w=ft(t.w),d=ft(t.d);
+  ctx.save();ctx.translate(cx,cy);ctx.rotate(orient*Math.PI/180);
+  ctx.fillStyle=ARCH_STANDARDS.symbols.waterFixture;ctx.strokeStyle=ARCH_STANDARDS.symbols.fixtureStroke;ctx.lineWidth=ARCH_STANDARDS.lineWeights.fixture;
+  // Tank
+  ctx.fillRect(-w/2,-d/2,w,d*.35);ctx.strokeRect(-w/2,-d/2,w,d*.35);
+  // Bowl (oval)
+  ctx.beginPath();ctx.ellipse(0,d*.18,w*.48,d*.32,0,0,Math.PI*2);ctx.fill();ctx.stroke();
+  ctx.restore();
+}
+function drawLavatory(ctx,cx,cy,ft,orient=0){
+  const t=ARCH_STANDARDS.fixtures.lavatory;const w=ft(t.w),d=ft(t.d);
+  ctx.save();ctx.translate(cx,cy);ctx.rotate(orient*Math.PI/180);
+  ctx.fillStyle=ARCH_STANDARDS.symbols.waterFixture;ctx.strokeStyle=ARCH_STANDARDS.symbols.fixtureStroke;ctx.lineWidth=ARCH_STANDARDS.lineWeights.fixture;
+  ctx.strokeRect(-w/2,-d/2,w,d);
+  // Basin
+  ctx.beginPath();ctx.ellipse(0,d*.05,w*.38,d*.32,0,0,Math.PI*2);ctx.fill();ctx.stroke();
+  // Faucet
+  ctx.beginPath();ctx.arc(0,-d*.32,w*.06,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+}
+function drawTub(ctx,cx,cy,ft,orient=0){
+  const t=ARCH_STANDARDS.fixtures.tub;const w=ft(t.w),d=ft(t.d);
+  ctx.save();ctx.translate(cx,cy);ctx.rotate(orient*Math.PI/180);
+  ctx.fillStyle=ARCH_STANDARDS.symbols.fixtureFill;ctx.strokeStyle=ARCH_STANDARDS.symbols.fixtureStroke;ctx.lineWidth=ARCH_STANDARDS.lineWeights.fixtureHeavy;
+  // Outer tub
+  const r=d*.22;
+  ctx.beginPath();ctx.moveTo(-w/2+r,-d/2);ctx.lineTo(w/2-r,-d/2);ctx.arcTo(w/2,-d/2,w/2,-d/2+r,r);ctx.lineTo(w/2,d/2-r);ctx.arcTo(w/2,d/2,w/2-r,d/2,r);ctx.lineTo(-w/2+r,d/2);ctx.arcTo(-w/2,d/2,-w/2,d/2-r,r);ctx.lineTo(-w/2,-d/2+r);ctx.arcTo(-w/2,-d/2,-w/2+r,-d/2,r);ctx.closePath();ctx.fill();ctx.stroke();
+  // Inner basin
+  ctx.beginPath();ctx.rect(-w/2+w*.1,-d/2+d*.1,w*.8,d*.8);ctx.stroke();
+  // Drain (left end)
+  ctx.beginPath();ctx.arc(-w*.38,0,d*.04,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+}
+function drawShower(ctx,cx,cy,ft){
+  const t=ARCH_STANDARDS.fixtures.shower;const w=ft(t.w),d=ft(t.d);
+  ctx.save();ctx.translate(cx,cy);
+  ctx.fillStyle=ARCH_STANDARDS.symbols.fixtureFill;ctx.strokeStyle=ARCH_STANDARDS.symbols.fixtureStroke;ctx.lineWidth=ARCH_STANDARDS.lineWeights.fixtureHeavy;
+  ctx.fillRect(-w/2,-d/2,w,d);ctx.strokeRect(-w/2,-d/2,w,d);
+  // Diagonals indicating shower floor pan
+  ctx.strokeStyle='rgba(100,170,255,.25)';ctx.lineWidth=.5;
+  ctx.beginPath();ctx.moveTo(-w/2,-d/2);ctx.lineTo(w/2,d/2);ctx.moveTo(w/2,-d/2);ctx.lineTo(-w/2,d/2);ctx.stroke();
+  // Drain center
+  ctx.fillStyle=ARCH_STANDARDS.symbols.fixtureStroke;ctx.beginPath();ctx.arc(0,0,w*.05,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+}
+function drawKitchenSink(ctx,cx,cy,ft){
+  const t=ARCH_STANDARDS.fixtures.kitchenSink;const w=ft(t.w),d=ft(t.d);
+  ctx.save();ctx.translate(cx,cy);
+  ctx.fillStyle=ARCH_STANDARDS.symbols.waterFixture;ctx.strokeStyle=ARCH_STANDARDS.symbols.fixtureStroke;ctx.lineWidth=ARCH_STANDARDS.lineWeights.fixture;
+  ctx.strokeRect(-w/2,-d/2,w,d);
+  // Double basin
+  ctx.fillRect(-w*.45,-d*.35,w*.4,d*.7);ctx.strokeRect(-w*.45,-d*.35,w*.4,d*.7);
+  ctx.fillRect(w*.05,-d*.35,w*.4,d*.7);ctx.strokeRect(w*.05,-d*.35,w*.4,d*.7);
+  ctx.restore();
+}
+function drawRange(ctx,cx,cy,ft){
+  const t=ARCH_STANDARDS.fixtures.range;const w=ft(t.w),d=ft(t.d);
+  ctx.save();ctx.translate(cx,cy);
+  ctx.fillStyle='rgba(245,200,66,.25)';ctx.strokeStyle=ARCH_STANDARDS.symbols.kitchenAppliance;ctx.lineWidth=ARCH_STANDARDS.lineWeights.fixture;
+  ctx.fillRect(-w/2,-d/2,w,d);ctx.strokeRect(-w/2,-d/2,w,d);
+  // 4 burners
+  const br=Math.min(w,d)*.14;const dx=w*.22,dy=d*.22;
+  [[-dx,-dy],[dx,-dy],[-dx,dy],[dx,dy]].forEach(([bx,by])=>{ctx.beginPath();ctx.arc(bx,by,br,0,Math.PI*2);ctx.stroke()});
+  ctx.restore();
+}
+function drawFridge(ctx,cx,cy,ft){
+  const t=ARCH_STANDARDS.fixtures.fridge;const w=ft(t.w),d=ft(t.d);
+  ctx.save();ctx.translate(cx,cy);
+  ctx.fillStyle='rgba(180,200,230,.15)';ctx.strokeStyle=ARCH_STANDARDS.symbols.kitchenAppliance;ctx.lineWidth=ARCH_STANDARDS.lineWeights.fixtureHeavy;
+  ctx.fillRect(-w/2,-d/2,w,d);ctx.strokeRect(-w/2,-d/2,w,d);
+  // Split door
+  ctx.beginPath();ctx.moveTo(0,-d/2);ctx.lineTo(0,d/2);ctx.stroke();
+  // Label
+  ctx.fillStyle='rgba(245,200,66,.75)';ctx.font=ARCH_STANDARDS.typography.fixture;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('REF',0,0);
+  ctx.restore();
+}
+function drawDishwasher(ctx,cx,cy,ft){
+  const t=ARCH_STANDARDS.fixtures.dishwasher;const w=ft(t.w),d=ft(t.d);
+  ctx.save();ctx.translate(cx,cy);
+  ctx.strokeStyle=ARCH_STANDARDS.symbols.fixtureStroke;ctx.lineWidth=ARCH_STANDARDS.lineWeights.fixture;ctx.setLineDash([2,2]);
+  ctx.strokeRect(-w/2,-d/2,w,d);ctx.setLineDash([]);
+  ctx.fillStyle='rgba(200,215,235,.55)';ctx.font=ARCH_STANDARDS.typography.fixture;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('DW',0,0);
+  ctx.restore();
+}
+function drawStairRun(ctx,x,y,w,d,ft,dir='up'){
+  // x,y,w,d in pixel space; dir='up' means the UP arrow points from bottom to top
+  ctx.save();
+  const risers=ARCH_STANDARDS.stair.risersFor9ftFloor;
+  const treadD=d/risers;
+  ctx.strokeStyle=ARCH_STANDARDS.symbols.stairTread;ctx.lineWidth=0.5;
+  // Tread lines (horizontal, perpendicular to direction of travel)
+  for(let i=1;i<risers;i++){ctx.beginPath();ctx.moveTo(x,y+i*treadD);ctx.lineTo(x+w,y+i*treadD);ctx.stroke()}
+  // Outline
+  ctx.strokeStyle=ARCH_STANDARDS.symbols.fixtureStroke;ctx.lineWidth=ARCH_STANDARDS.lineWeights.fixtureHeavy;
+  ctx.strokeRect(x,y,w,d);
+  // Direction arrow (centered)
+  ctx.strokeStyle='rgba(245,200,66,.8)';ctx.fillStyle='rgba(245,200,66,.8)';ctx.lineWidth=1.2;
+  const ax=x+w/2;const ay1=y+d*.2,ay2=y+d*.8;
+  ctx.beginPath();ctx.moveTo(ax,ay2);ctx.lineTo(ax,ay1);ctx.stroke();
+  // Arrowhead
+  ctx.beginPath();ctx.moveTo(ax,ay1);ctx.lineTo(ax-w*.15,ay1+d*.08);ctx.lineTo(ax+w*.15,ay1+d*.08);ctx.closePath();ctx.fill();
+  // Label
+  ctx.fillStyle='rgba(245,200,66,.9)';ctx.font=ARCH_STANDARDS.typography.fixture;ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(`UP ${risers}R`,ax,ay2+treadD);
+  ctx.restore();
+}
+function drawClosetInset(ctx,x,y,w,d,label='CL'){
+  ctx.save();
+  ctx.fillStyle='rgba(80,70,60,.3)';ctx.strokeStyle=ARCH_STANDARDS.symbols.fixtureStroke;ctx.lineWidth=ARCH_STANDARDS.lineWeights.fixture;
+  ctx.fillRect(x,y,w,d);ctx.strokeRect(x,y,w,d);
+  // Diagonal to indicate storage (common drafting convention)
+  ctx.strokeStyle='rgba(200,215,235,.25)';ctx.lineWidth=0.4;
+  ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+w,y+d);ctx.stroke();
+  ctx.fillStyle=ARCH_STANDARDS.symbols.annotation;ctx.font=ARCH_STANDARDS.typography.fixture;ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(label,x+w/2,y+d/2);
+  ctx.restore();
+}
+function drawWasherDryer(ctx,cx,cy,ft){
+  const w=ARCH_STANDARDS.fixtures.washer.w;
+  const d=ARCH_STANDARDS.fixtures.washer.d;
+  ctx.save();ctx.translate(cx,cy);
+  ctx.fillStyle='rgba(180,200,230,.18)';ctx.strokeStyle=ARCH_STANDARDS.symbols.fixtureStroke;ctx.lineWidth=ARCH_STANDARDS.lineWeights.fixture;
+  // Two side-by-side units
+  const totalW=ft(w*2);const dd=ft(d);
+  ctx.fillRect(-totalW/2,-dd/2,totalW,dd);ctx.strokeRect(-totalW/2,-dd/2,totalW,dd);
+  ctx.beginPath();ctx.moveTo(0,-dd/2);ctx.lineTo(0,dd/2);ctx.stroke();
+  // Drum circles
+  const r=Math.min(ft(w),dd)*.3;
+  ctx.beginPath();ctx.arc(-ft(w)/2,0,r,0,Math.PI*2);ctx.stroke();
+  ctx.beginPath();ctx.arc(ft(w)/2,0,r,0,Math.PI*2);ctx.stroke();
+  // Labels
+  ctx.fillStyle=ARCH_STANDARDS.symbols.annotation;ctx.font=ARCH_STANDARDS.typography.fixture;ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('W',-ft(w)/2,r+8);ctx.fillText('D',ft(w)/2,r+8);
+  ctx.restore();
+}
+
+// ═══ ROOM-FIXTURE DISPATCHER ═══
+// Called for each room. Reads room.type, places appropriate fixtures.
+// tx(feet_x), ty(feet_y), ft(feet) are the current sheet transform helpers.
+// room has {x,y,w,h,type} in feet
+function drawRoomFixtures(ctx,room,tx,ty,ft){
+  const rx=tx(room.x),ry=ty(room.y),rw=ft(room.w),rh=ft(room.h);
+  if(rw<ft(3)||rh<ft(3))return;
+  const cx=rx+rw/2,cy=ry+rh/2;
+  const t=room.type;
+  if(t==='bath'){
+    // 3-piece bath: toilet (back wall), lav (adjacent), tub/shower (long wall)
+    if(room.w*room.h<40){
+      // 3/4 bath with shower
+      drawShower(ctx,rx+ft(1.5),ry+ft(1.5),ft);
+      drawToilet(ctx,rx+rw-ft(1),ry+ft(1.3),ft,180);
+      drawLavatory(ctx,rx+rw-ft(1),ry+rh-ft(1),ft,180);
+    }else{
+      // Full bath with tub
+      drawTub(ctx,rx+rw-ft(2.5),ry+ft(1.25),ft,0);
+      drawToilet(ctx,rx+ft(0.75),ry+ft(1.3),ft,0);
+      drawLavatory(ctx,rx+ft(1),ry+rh-ft(1),ft,0);
+    }
+  }else if(t==='kitchen'){
+    // Galley along back wall: fridge | counter | range | counter | sink
+    const backY=ry+ft(1.25);
+    let px=rx+ft(1.5);
+    drawFridge(ctx,px,backY,ft);px+=ft(3.5);
+    drawRange(ctx,px,backY,ft);px+=ft(2.7);
+    drawKitchenSink(ctx,px,backY,ft);px+=ft(2.7);
+    if(px<rx+rw-ft(2))drawDishwasher(ctx,px,backY,ft);
+    // Counter run (continuous line along back wall)
+    ctx.save();ctx.strokeStyle='rgba(245,200,66,.35)';ctx.lineWidth=0.8;ctx.setLineDash([1,2]);
+    ctx.beginPath();ctx.moveTo(rx+ft(0.5),backY+ft(1));ctx.lineTo(rx+rw-ft(0.5),backY+ft(1));ctx.stroke();ctx.setLineDash([]);ctx.restore();
+  }else if(t==='bedroom'){
+    // Reach-in closet (2ft deep) along one wall
+    if(room.w>=10&&room.h>=9){
+      const cw=ft(Math.min(room.w*.5,6)),cd=ft(2);
+      drawClosetInset(ctx,rx+ft(0.5),ry+rh-cd-ft(0.5),cw,cd,room.name?.includes('MASTER')?'WIC':'CL');
+    }
+  }else if(t==='stair'){
+    drawStairRun(ctx,rx+ft(0.3),ry+ft(0.3),rw-ft(0.6),rh-ft(0.6),ft);
+  }else if(t==='laundry'){
+    drawWasherDryer(ctx,cx,cy,ft);
+  }else if(t==='entry'){
+    // Closet near door
+    if(rw>ft(6)){drawClosetInset(ctx,rx+rw-ft(2.5),ry+ft(0.5),ft(2),ft(1.67),'CL')}
+  }
+}
+
+// ═══ COMPARABLE ANALYSIS — reads OSM buildings + competitor research ═══
+function getComparableInsights(z){
+  const out={footprint:null,neighbors:[],competitorHint:'',patterns:[]};
+  // OSM-derived neighbor analysis
+  if(S.osmBuildings?.length){
+    const blds=S.osmBuildings.filter(b=>b.tags?.building&&b.geometry);
+    const areas=blds.map(b=>({a:calcOSMArea(b.geometry),t:b.tags?.building})).filter(x=>x.a>200&&x.a<15000);
+    if(areas.length){
+      const avg=Math.round(areas.reduce((s,x)=>s+x.a,0)/areas.length);
+      const types=[...new Set(areas.map(x=>x.t).filter(Boolean))];
+      out.footprint={avg,count:areas.length,types};
+      out.patterns.push(`${areas.length} neighbor(s) averaging ${avg.toLocaleString()} SF footprint`);
+      if(types.length)out.patterns.push(`Prevalent types: ${types.slice(0,3).join(', ')}`);
+    }
+  }
+  // Competitor AI research — pull first pattern match
+  if(S.competitors){
+    const m=S.competitors.match(/\b(?:duplex|triplex|fourplex|courtyard|stacked|row|town\s*home|live-work|cottage cluster|split-level|ADU|JADU)\b[^.]{0,120}\./gi);
+    if(m?.length){out.competitorHint=m[0].substring(0,160)}
+  }
+  return out;
+}
 
 const SHEETS=[
   {id:'A-0',lbl:'A-0 Cover'},
@@ -1753,45 +2052,132 @@ function drawFloorPlanSheet(ctx,W,H,floorIdx){
     }
     ctx.restore();
   });
-  // ── DRAW-8: Door swing arcs ──
+  // ── Door openings + swings (cuts gap in wall, then arcs the leaf) ──
   (fl.rooms||[]).forEach(r=>{
     if(!r.w||!r.h||r.w<3||r.h<3)return;
     const rx=tx(r.x),ry=ty(r.y),rw=ft(r.w),rh=ft(r.h);
-    if(rw<8||rh<8)return;
-    const doorTypes=['bedroom','living','dining','kitchen','entry','laundry','office'];
+    if(rw<ft(4)||rh<ft(4))return;
+    const doorTypes=['bedroom','living','dining','kitchen','entry','laundry','office','bath'];
     if(!doorTypes.includes(r.type||''))return;
-    // Door on bottom wall of each room, 2'-8" = 2.67ft wide
-    const dw=ft(2.67);const dy=ry+rh;const dx=rx+rw*.18;
-    ctx.save();ctx.strokeStyle='rgba(200,215,235,.55)';ctx.lineWidth=0.6;
-    // Door leaf rectangle
-    ctx.strokeRect(dx,dy-dw,dw,dw*.08);
+    const doorSpec=ARCH_STANDARDS.doors[r.type]||ARCH_STANDARDS.doors.interior;
+    const dw=ft(doorSpec.w);const dy=ry+rh;const dx=rx+rw*.2;
+    ctx.save();
+    // Wall gap (white-out over the existing wall line)
+    ctx.strokeStyle='#0c1420';ctx.lineWidth=Math.max(2.8,ft(0.5)*.45);
+    ctx.beginPath();ctx.moveTo(dx,dy);ctx.lineTo(dx+dw,dy);ctx.stroke();
+    // Door leaf (thin rectangle perpendicular to wall)
+    ctx.strokeStyle=ARCH_STANDARDS.symbols.doorOpening;ctx.fillStyle='rgba(210,225,244,.12)';ctx.lineWidth=ARCH_STANDARDS.lineWeights.doorOpening;
+    ctx.fillRect(dx,dy-dw,dw*.08,dw);ctx.strokeRect(dx,dy-dw,dw*.08,dw);
     // 90° swing arc
-    ctx.beginPath();ctx.arc(dx,dy,dw,Math.PI*1.5,Math.PI*2);ctx.stroke();
+    ctx.strokeStyle='rgba(200,215,235,.35)';ctx.lineWidth=0.5;ctx.setLineDash([2,3]);
+    ctx.beginPath();ctx.arc(dx,dy,dw,Math.PI*1.5,Math.PI*2);ctx.stroke();ctx.setLineDash([]);
     ctx.restore();
   });
-  // ── DRAW-9: Wall thickness lines ──
-  // Exterior wall: 5.5" = 0.46ft · Interior: 3.5" = 0.29ft
-  const extWallT=ft(0.5);// round to 0.5ft for visibility at drawing scale
+
+  // ── Window openings on exterior walls (cut wall + draw glazing line) ──
+  const extL=z.leftSetback,extR=z.lotWidth-z.rightSetback,extF=z.frontSetback,extB=z.lotDepth-z.rearSetback;
+  (fl.rooms||[]).forEach(r=>{
+    if(!r.w||!r.h)return;
+    const habitable=['living','dining','kitchen','bedroom','office'].includes(r.type||'');
+    if(!habitable)return;
+    const spec=r.type==='kitchen'?ARCH_STANDARDS.windows.kitchen:r.type==='bedroom'?ARCH_STANDARDS.windows.egress:ARCH_STANDARDS.windows.standard;
+    const ww=ft(spec.w);
+    // Each exterior wall (left / right / front / back) that this room touches gets one window
+    const walls=[];
+    if(Math.abs(r.x-extL)<0.5)walls.push('left');
+    if(Math.abs(r.x+r.w-extR)<0.5)walls.push('right');
+    if(Math.abs(r.y-extF)<0.5)walls.push('front');
+    if(Math.abs(r.y+r.h-extB)<0.5)walls.push('back');
+    walls.forEach(w=>{
+      const rx=tx(r.x),ry=ty(r.y),rw=ft(r.w),rh=ft(r.h);
+      ctx.save();
+      ctx.strokeStyle='#0c1420';ctx.lineWidth=Math.max(2.5,ft(0.5)*.4);
+      if(w==='front'){const cx=rx+rw/2;ctx.beginPath();ctx.moveTo(cx-ww/2,ry);ctx.lineTo(cx+ww/2,ry);ctx.stroke();
+        ctx.strokeStyle=ARCH_STANDARDS.symbols.windowGlazing;ctx.lineWidth=ARCH_STANDARDS.lineWeights.windowFrame;
+        ctx.beginPath();ctx.moveTo(cx-ww/2,ry-1);ctx.lineTo(cx+ww/2,ry-1);ctx.moveTo(cx-ww/2,ry+1);ctx.lineTo(cx+ww/2,ry+1);ctx.stroke();
+      }else if(w==='back'){const cx=rx+rw/2;ctx.beginPath();ctx.moveTo(cx-ww/2,ry+rh);ctx.lineTo(cx+ww/2,ry+rh);ctx.stroke();
+        ctx.strokeStyle=ARCH_STANDARDS.symbols.windowGlazing;ctx.lineWidth=ARCH_STANDARDS.lineWeights.windowFrame;
+        ctx.beginPath();ctx.moveTo(cx-ww/2,ry+rh-1);ctx.lineTo(cx+ww/2,ry+rh-1);ctx.moveTo(cx-ww/2,ry+rh+1);ctx.lineTo(cx+ww/2,ry+rh+1);ctx.stroke();
+      }else if(w==='left'){const cy=ry+rh/2;ctx.beginPath();ctx.moveTo(rx,cy-ww/2);ctx.lineTo(rx,cy+ww/2);ctx.stroke();
+        ctx.strokeStyle=ARCH_STANDARDS.symbols.windowGlazing;ctx.lineWidth=ARCH_STANDARDS.lineWeights.windowFrame;
+        ctx.beginPath();ctx.moveTo(rx-1,cy-ww/2);ctx.lineTo(rx-1,cy+ww/2);ctx.moveTo(rx+1,cy-ww/2);ctx.lineTo(rx+1,cy+ww/2);ctx.stroke();
+      }else if(w==='right'){const cy=ry+rh/2;ctx.beginPath();ctx.moveTo(rx+rw,cy-ww/2);ctx.lineTo(rx+rw,cy+ww/2);ctx.stroke();
+        ctx.strokeStyle=ARCH_STANDARDS.symbols.windowGlazing;ctx.lineWidth=ARCH_STANDARDS.lineWeights.windowFrame;
+        ctx.beginPath();ctx.moveTo(rx+rw-1,cy-ww/2);ctx.lineTo(rx+rw-1,cy+ww/2);ctx.moveTo(rx+rw+1,cy-ww/2);ctx.lineTo(rx+rw+1,cy+ww/2);ctx.stroke();
+      }
+      ctx.restore();
+    });
+  });
+
+  // ── Wall thickness lines (behind fixtures but above room fills) ──
+  const extWallT=ft(0.5);
   (fl.rooms||[]).forEach(r=>{
     if(!r.w||!r.h)return;
     const rx=tx(r.x),ry=ty(r.y),rw=ft(r.w),rh=ft(r.h);
-    if(rw<4||rh<4)return;
+    if(rw<ft(4)||rh<ft(4))return;
     const c=RC[r.type]||RC.default;
-    // Draw thickened exterior wall lines on all four sides
     ctx.save();ctx.strokeStyle=c.s;ctx.lineWidth=Math.max(2.5,extWallT*.4);ctx.globalAlpha=.7;
     ctx.strokeRect(rx,ry,rw,rh);
     ctx.restore();
   });
 
-  // Dim lines
+  // ── Room fixtures (toilets, sinks, stairs, appliances, closets) ──
+  (fl.rooms||[]).forEach(r=>{drawRoomFixtures(ctx,r,tx,ty,ft)});
+
+  // ── Lot dimension lines ──
   dimLine(ctx,ox,oy+ft(z.lotDepth)+26,ox+ft(z.lotWidth),oy+ft(z.lotDepth)+26,`${z.lotWidth}'-0"  LOT WIDTH`);
   dimLine(ctx,ox+ft(z.lotWidth)+26,oy,ox+ft(z.lotWidth)+26,oy+ft(z.lotDepth),`${z.lotDepth}'-0"  LOT DEPTH`,true);
+
+  // ── Exterior dimension chain (along building face, ticks at room boundaries) ──
+  const roomsByRow=(fl.rooms||[]).filter(r=>Math.abs(r.y-z.frontSetback)<0.5).sort((a,b)=>a.x-b.x);
+  if(roomsByRow.length){
+    const chainY=oy+ft(z.frontSetback)-14;
+    ctx.save();ctx.strokeStyle=ARCH_STANDARDS.symbols.dimensionChain;ctx.fillStyle=ARCH_STANDARDS.symbols.dimensionChain;ctx.lineWidth=ARCH_STANDARDS.lineWeights.dimension;
+    const xStart=tx(roomsByRow[0].x),xEnd=tx(roomsByRow[roomsByRow.length-1].x+roomsByRow[roomsByRow.length-1].w);
+    ctx.beginPath();ctx.moveTo(xStart,chainY);ctx.lineTo(xEnd,chainY);ctx.stroke();
+    // Ticks + labels
+    ctx.font=ARCH_STANDARDS.typography.dimension;ctx.textAlign='center';ctx.textBaseline='bottom';
+    roomsByRow.forEach((r,i)=>{
+      const xa=tx(r.x),xb=tx(r.x+r.w);
+      ctx.beginPath();ctx.moveTo(xa,chainY-3);ctx.lineTo(xa,chainY+3);ctx.stroke();
+      if(i===roomsByRow.length-1){ctx.beginPath();ctx.moveTo(xb,chainY-3);ctx.lineTo(xb,chainY+3);ctx.stroke()}
+      ctx.fillText(r.dimW||`${Math.round(r.w)}'-0"`,(xa+xb)/2,chainY-4);
+    });
+    ctx.restore();
+  }
   // Floor label + structural notes
   ctx.fillStyle='rgba(61,139,255,.8)';ctx.font='500 9px JetBrains Mono,monospace';ctx.textAlign='left';ctx.textBaseline='top';ctx.fillText(fl.label,ox,oy-30);
   ctx.font='7px JetBrains Mono,monospace';ctx.fillStyle='rgba(122,154,184,.5)';ctx.fillText(`Ceiling: ${fl.heightFt||9}'-0"  ·  ${fl.rooms?.length||0} rooms  ·  Struct. bay: 20'-0"  ·  Frame: 2×6 @ 16" o.c.`,ox,oy-18);
   ctx.restore();
   const sclNow=baseScl*S.zoom;
   scaleBar(ctx,20,TY-18,sclNow,4);drawNorthArrow(ctx,W-160,36);
+  // ── Local Comparables annotation (upper-right of sheet) ──
+  if(floorIdx===0){
+    const ins=getComparableInsights(z);
+    if(ins.patterns.length||ins.competitorHint){
+      const bx=W-310,by=50,bw=268,bh=ins.competitorHint?78:56;
+      ctx.save();
+      ctx.fillStyle='rgba(11,14,21,.88)';ctx.fillRect(bx,by,bw,bh);
+      ctx.strokeStyle='rgba(61,139,255,.35)';ctx.lineWidth=.6;ctx.strokeRect(bx,by,bw,bh);
+      ctx.fillStyle='rgba(167,139,250,.9)';ctx.font=ARCH_STANDARDS.typography.callout;ctx.textAlign='left';ctx.textBaseline='top';
+      ctx.fillText('\uD83D\uDCCA LOCAL COMPARABLES',bx+8,by+6);
+      ctx.fillStyle='rgba(200,215,235,.75)';ctx.font='7px JetBrains Mono,monospace';
+      let ly=by+20;
+      ins.patterns.forEach(p=>{ctx.fillText('\u2022 '+p.substring(0,46),bx+8,ly);ly+=10});
+      if(ins.competitorHint){
+        ctx.fillStyle='rgba(122,154,184,.65)';
+        // word-wrap competitor hint
+        const words=ins.competitorHint.split(' ');let line='';
+        for(const w of words){
+          const test=line?line+' '+w:w;
+          if(ctx.measureText(test).width>bw-16){ctx.fillText(line,bx+8,ly);line=w;ly+=9;if(ly>by+bh-8)break}
+          else line=test;
+        }
+        if(line&&ly<by+bh-4)ctx.fillText(line,bx+8,ly);
+      }
+      ctx.restore();
+    }
+  }
   if(S.zoom!==1){ctx.font='7px JetBrains Mono,monospace';ctx.fillStyle='rgba(122,154,184,.5)';ctx.textAlign='right';ctx.fillText(`${Math.round(S.zoom*100)}%`,W-15,15)}
 }
 
