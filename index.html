@@ -318,6 +318,22 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--ink);color:var
     </div>
     <!-- architect-advisor RDP banner (populated when project triggers RDP requirement) -->
     <div id="adv-banner" style="display:none;gap:10px;align-items:center;padding:5px 10px;background:rgba(255,101,85,.08);border-bottom:1px solid rgba(255,101,85,.4);font-size:9.5px;font-family:var(--mono);color:var(--txt2);min-height:20px"></div>
+    <!-- use-case-advisor Q&A modal (Mode B intake, 8 questions) -->
+    <div id="qa-modal" style="display:none;position:absolute;inset:0;background:rgba(11,14,21,.94);z-index:500;align-items:center;justify-content:center;padding:20px">
+      <div style="width:100%;max-width:560px;background:var(--ink1);border:1px solid var(--brd2);border-radius:10px;padding:18px 22px;color:var(--txt);font-family:var(--mono)">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <div><div style="font-size:13px;font-weight:500;color:var(--blue)">Project Intake</div><div id="qa-step-label" style="font-size:9.5px;color:var(--txt3);margin-top:3px">Question 1 of 8</div></div>
+          <button onclick="closeQA()" style="background:none;border:1px solid var(--brd);border-radius:4px;color:var(--txt3);padding:3px 9px;font-size:9px;cursor:pointer;font-family:var(--mono)">✕ Close</button>
+        </div>
+        <div id="qa-question" style="font-size:12px;margin-bottom:12px;line-height:1.4"></div>
+        <div id="qa-options" style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px"></div>
+        <div id="qa-corroboration" style="font-size:8.5px;color:var(--txt3);margin-bottom:12px;min-height:12px"></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button id="qa-back" onclick="qaBack()" style="background:none;border:1px solid var(--brd);border-radius:4px;color:var(--txt2);padding:6px 14px;font-size:10px;cursor:pointer;font-family:var(--mono)">← Back</button>
+          <button id="qa-next" onclick="qaNext()" style="background:var(--blue);border:none;border-radius:4px;color:white;padding:6px 18px;font-size:10px;cursor:pointer;font-family:var(--mono);font-weight:500">Next →</button>
+        </div>
+      </div>
+    </div>
     <div id="cc">
       <!-- Development Options selection panel (shown between zoning and plan) -->
       <div id="opts-overlay"></div>
@@ -885,8 +901,16 @@ async function runPhase_record(){
   }else{findings.push('Address geocoding required to query site records. Enter address with city/state.')}
 
   const summary=osmFound?`**Existing Site Survey — ${S.osmBuildings.filter(e=>e.tags?.building).length} structure(s) identified** via OpenStreetMap (community-maintained survey data). Use as reference; verify with licensed surveyor.\n\n`:`**No existing buildings found** in public OpenStreetMap records for this parcel — lot may be vacant or structures not yet mapped.\n\n`;
+  // site-intel: record provenance trail for auditability
+  S._sitePackProvenance={
+    nominatim:S.lat?`lat=${S.lat.toFixed(5)} lon=${S.lon.toFixed(5)}`:'MISSING',
+    osm:osmFound?`${S.osmBuildings.filter(e=>e.tags?.building).length} building(s) via overpass-api.de`:'NO_MATCH',
+    fema:S.femaZone?`zone=${S.femaZone} (FEMA NFHL)`:'BLOCKED_CORS_OR_NO_DATA',
+    esri:S.countyRecord?.esri?`APN=${S.countyRecord.esri.APN||S.countyRecord.esri.PARCELNO||S.countyRecord.esri.PIN||'found'} via county ArcGIS REST`:'NO_PUBLIC_ENDPOINT',
+  };
+  L.info(`site-intel provenance: ${Object.entries(S._sitePackProvenance).map(([k,v])=>`${k}=${v}`).join(' | ')}`);
   phSet('record','done',`${((Date.now()-t)/1000).toFixed(1)}s`);
-  addFind('record','🗂️ Site Survey & County Records',fmt(summary+findings.join('\n')));
+  addFind('record','🗂️ Site Survey & County Records',fmt(summary+findings.join('\n'))+`<div style="margin-top:8px;padding:6px 9px;border:1px dashed var(--brd);border-radius:4px;font-size:8.5px;color:var(--txt3);line-height:1.5">📎 <strong>Record provenance</strong><br>${Object.entries(S._sitePackProvenance).map(([k,v])=>`<span style="color:${v.includes('MISSING')||v.includes('BLOCKED')||v.includes('NO_')?'var(--coral)':'var(--green)'}">${k}</span>: ${v}`).join(' · ')}</div>`);
   phaseRunners.record=runPhase_record;
 }
 
@@ -967,8 +991,14 @@ function renderOptionsPanel(opts,recommended,z){
   const el=document.getElementById('opts-overlay');
   el.innerHTML=`
     <div class="opts-header">
-      <div class="opts-title">Select Development Program</div>
-      <div class="opts-sub"><strong>${S.addr}</strong> · Zone ${z.zoningDistrict} · ${z.jurisdiction}, ${z.state} · Lot: ${z.lotWidth}'×${z.lotDepth}' = ${(z.lotWidth*z.lotDepth).toLocaleString()} SF · Max FAR ${z.maxFAR} · ${z.maxStories} stories</div>
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:14px">
+        <div style="flex:1;min-width:0">
+          <div class="opts-title">Select Development Program</div>
+          <div class="opts-sub"><strong>${S.addr}</strong> · Zone ${z.zoningDistrict} · ${z.jurisdiction}, ${z.state} · Lot: ${z.lotWidth}'×${z.lotDepth}' = ${(z.lotWidth*z.lotDepth).toLocaleString()} SF · Max FAR ${z.maxFAR} · ${z.maxStories} stories</div>
+          ${S._useCaseBrief?`<div style="margin-top:6px;font-size:9px;color:var(--green)">\u2713 Intake complete — options filtered for ${S._useCaseBrief.summary||'your profile'}</div>`:''}
+        </div>
+        <button onclick="openQA()" style="background:rgba(61,139,255,.1);border:1px solid var(--brd2);border-radius:6px;color:var(--blue);padding:8px 14px;font-size:10px;cursor:pointer;font-family:var(--mono);white-space:nowrap">🧠 ${S._useCaseBrief?'Change answers':'Ask me questions'}</button>
+      </div>
     </div>
     <div class="opts-grid">
       ${opts.map(o=>`
@@ -1068,6 +1098,11 @@ async function runPhase_plan(){
 async function runPhase_chk(){
   L.info('--- Phase 5: Checklist ---');phSet('chk','active');const t=Date.now();const z=S._z;
   if(!z){phSet('chk','error');addFind('chk','✅ Checklist','<div class="ebox">Run Zoning first.</div>');return}
+  // checklist-auto helper: attach a source citation when a field is known
+  const src=(field,val)=>val?`${field}=${val}`:null;
+  const haveSheet=S.plan?.meta?`drawing-engine.A-${{cover:0,site:1,plans:2,elev:3,sect:4,sched:5}}.generated`:null;
+  const havePlan=S.plan?`drawing-engine.localFloorPlan()`:null;
+  const apn=S.countyRecord?.esri?.APN||S.countyRecord?.esri?.PARCELNO||S.countyRecord?.esri?.PIN||null;
   const st=z.state||'WA';const db=STATE_DB[st]||{bc:'IBC 2018',ec:'IECC 2018',seismic:'B',wind:'115',note:'Confirm adopted code with local building dept'};
   const jur=z.jurisdiction||'Local Jurisdiction';const units=S.plan?.meta?.units||2;const stories=S.plan?.meta?.stories||2;
   const totalSF=S.plan?.meta?.totalSqFt||2000;const ov=S.overlays;
@@ -1100,13 +1135,13 @@ async function runPhase_chk(){
       ov.fire&&{label:'Ember-Resistant Construction Details',required:true,note:'Ember-resistant vents, Class A roofing, tempered glass, non-combustible deck'},
     ])},
     {name:'Architectural Drawings (This Set)',items:ii([
-      {label:`A-0: Cover Sheet — Project Data & Code Summary`,required:true,note:`${db.bc} · ${db.ec} · Seismic SDC ${db.seismic} · Wind ${db.wind} mph`},
-      {label:`A-1: Site Plan at 1/8"=1'-0"`,required:true,note:'Property lines, setbacks, footprint, utilities, landscaping, parking, north arrow'},
-      {label:`A-2+: Floor Plans — All ${stories} Level${stories>1?'s':''} at 1/4"=1'-0"`,required:true,note:'Room names, dimensions, door/window tags, areas, accessible route, wall types'},
+      {label:`A-0: Cover Sheet — Project Data & Code Summary`,required:true,note:`${db.bc} · ${db.ec} · Seismic SDC ${db.seismic} · Wind ${db.wind} mph`,source:haveSheet&&'drawing-engine.A-0.generated (includes CRITICAL PROFESSIONAL DISCLOSURE)',autoCheck:!!haveSheet},
+      {label:`A-1: Site Plan at 1/8"=1'-0"`,required:true,note:'Property lines, setbacks, footprint, utilities, landscaping, parking, north arrow',source:haveSheet&&'drawing-engine.A-1.generated',autoCheck:!!haveSheet},
+      {label:`A-2+: Floor Plans — All ${stories} Level${stories>1?'s':''} at 1/4"=1'-0"`,required:true,note:'Room names, dimensions, door/window tags, areas, accessible route, wall types',source:haveSheet&&'drawing-engine.A-2.generated',autoCheck:!!haveSheet},
       {label:'Roof Plan at 1/8"=1\'-0"',required:true,note:'Drainage direction, slopes, equipment curbs, parapet, access hatch'},
-      {label:'Exterior Elevations — All 4 Sides at 1/4"=1\'-0"',required:true,note:'Heights, materials, fenestration, finish schedule, grade line'},
-      {label:'Building Sections — Min. 2 at 1/4"=1\'-0"',required:true,note:'Through stair, through typical unit. Floor-to-floor, ceiling heights, foundation'},
-      {label:'Door & Window Schedule',required:true,note:`Size, operation, fire rating, U-factor, SHGC. ${isCA||isWA?'Match energy compliance values':''}`},
+      {label:'Exterior Elevations — All 4 Sides at 1/4"=1\'-0"',required:true,note:'Heights, materials, fenestration, finish schedule, grade line',source:haveSheet&&'drawing-engine.A-3.generated',autoCheck:!!haveSheet},
+      {label:'Building Sections — Min. 2 at 1/4"=1\'-0"',required:true,note:'Through stair, through typical unit. Floor-to-floor, ceiling heights, foundation',source:haveSheet&&'drawing-engine.A-4.generated',autoCheck:!!haveSheet},
+      {label:'Door & Window Schedule',required:true,note:`Size, operation, fire rating, U-factor, SHGC. ${isCA||isWA?'Match energy compliance values':''}`,source:haveSheet&&'drawing-engine.A-5.generated',autoCheck:!!haveSheet},
       stories>1&&{label:'Stair & Guardrail Details',required:true,note:'IBC: max 7-3/4" rise, min 10" run, 42" guardrail, handrail grip shape'},
       isLargeMF&&{label:'Enlarged Kitchen & Bath Plans (1/2"=1\'-0")',required:true,note:'ADA fixture clearances for 5+ unit projects'},
     ])},
@@ -1139,9 +1174,9 @@ async function runPhase_chk(){
       units>=4&&{label:'FHA Fair Housing / ADA Accessibility',required:true,note:'Type A + B units, accessible route, common areas'},
     ])},
     {name:'Administrative',items:ii([
-      {label:`${jur} Building Permit Application`,required:true,note:`Valuation ~$${(valuation/1000).toFixed(0)}K. Owner or GC signature. Download from ${jur} building dept`},
-      {label:`Estimated Permit Fees: ${feeRange}`,required:true,note:`~${(feeRate*100).toFixed(1)}% of $${(valuation/1000).toFixed(0)}K valuation. Call ${jur} for exact schedule`},
-      {label:'Planning / Zoning Pre-Approval',required:true,note:`${z.zoningDistrict} — confirm by-right or Design Review/CEQA needed`},
+      {label:`${jur} Building Permit Application`,required:true,note:`Valuation ~$${(valuation/1000).toFixed(0)}K. Owner or GC signature. Download from ${jur} building dept`,source:`zoning-legal.jurisdiction=${jur}`,autoCheck:false},
+      {label:`Estimated Permit Fees: ${feeRange}`,required:true,note:`~${(feeRate*100).toFixed(1)}% of $${(valuation/1000).toFixed(0)}K valuation. Call ${jur} for exact schedule`,source:`checklist-auto.feeEstimate (${jur} rate table)`,autoCheck:false},
+      {label:'Planning / Zoning Pre-Approval',required:true,note:`${z.zoningDistrict} — confirm by-right or Design Review/CEQA needed`,source:`zoning-legal.district=${z.zoningDistrict}`,autoCheck:false},
       {label:'Contractor License & Insurance',required:true,note:`${st} Class B GC + Workers Comp + GL $1M min`},
       isCA&&{label:'SB9 / ADU Ministerial Pre-Check',required:true,note:'Planning cannot deny code-compliant ADU. Get letter before permit'},
       isWA&&{label:'WA Excise Tax Affidavit',required:true,note:'File with County Assessor before recording'},
@@ -1151,17 +1186,27 @@ async function runPhase_chk(){
       {label:`Digital Submittal Format`,required:true,note:digitalReq},
     ])},
   ];
+  // checklist-auto: append RDP-required seals as their own category (unchecked)
+  const adv=runArchitectAdvisor();S._advisor=adv;
+  if(adv.rdpRequired){
+    categories.push({name:'Professional Seals (RDP)',items:adv.sealsRequired.map(s=>({
+      label:`${s} — Wet Stamp Required`,required:true,
+      note:`Triggered by: ${adv.triggeredBy.join(' · ')}`,
+      source:`architect-advisor.sealsRequired (${adv.statuteCitation})`,autoCheck:false,
+    }))});
+  }
   const cleanCats=categories.map(c=>({...c,items:c.items.filter(Boolean)})).filter(c=>c.items.length>0);
   const total=cleanCats.reduce((a,c)=>a+c.items.length,0);
+  const autoChecked=cleanCats.reduce((a,c)=>a+c.items.filter(it=>it.autoCheck).length,0);
   phSet('chk','done',`${((Date.now()-t)/1000).toFixed(2)}s`);
   buildChecklist({jurisdiction:jur,categories:cleanCats});
+  L.info(`Checklist: auto-checked ${autoChecked}/${total} items with source citations`);
   document.getElementById('cljur').textContent=`${jur} · ${db.bc}`;
   const ovActive=Object.entries(ov).filter(([,v])=>v).map(([k])=>k).join(', ');
   addFind('chk','✅ Permit Checklist Ready',
     `<strong>${total} items</strong> · ${cleanCats.length} categories · ${jur}, ${st}<br>Code: ${db.bc} · Energy: ${db.ec} · SDC: ${db.seismic} · Wind: ${db.wind}mph${S.femaZone?` · FEMA: <strong>${S.femaZone}</strong>`:''}<br>${ovActive?'Overlays: '+ovActive+'<br>':''}Est. valuation ~$${(valuation/1000).toFixed(0)}K · Permit fees ${feeRange}<br><span style="color:var(--txt3);font-size:10px">${db.note}</span>`);
   L.info(`Checklist: ${total} items, fees ${feeRange}`);phaseRunners.chk=runPhase_chk;
-  // architect-advisor: compute RDP verdict + surface banner
-  const adv=runArchitectAdvisor();S._advisor=adv;
+  // architect-advisor: surface the verdict in UI (already computed above)
   L.info(`Advisor: rdpRequired=${adv.rdpRequired} seals=[${adv.sealsRequired.join(',')}] triggers=[${adv.triggeredBy.join('; ')}]`);
   renderAdvisorBanner(adv);
   if(adv.rdpRequired){addFind('advisor','\u26A0 Professional Review Required',`<strong>A Registered Design Professional must review and seal drawings</strong> before permit submittal.<br>Triggers: ${adv.triggeredBy.join(' \u00B7 ')}<br>Required seals: <strong>${adv.sealsRequired.join(', ')}</strong><br><span style="color:var(--txt3);font-size:10px">${adv.statuteCitation}${adv.jurisdictionNote?' \u00B7 '+adv.jurisdictionNote:''}</span>`)}
@@ -1172,7 +1217,7 @@ async function runPhase_chk(){
 // ─── CHK-3: Export checklist to CSV ───
 function exportChecklistCSV(){
   const cats=document.querySelectorAll('.csec');
-  const rows=[['Category','Item','Required','Note','Status']];
+  const rows=[['Category','Item','Required','Note','Status','Source']];
   cats.forEach(cat=>{
     const catName=cat.querySelector('.cshd')?.textContent?.replace(/\d+$/,'').trim()||'';
     cat.querySelectorAll('.cit').forEach(item=>{
@@ -1180,7 +1225,8 @@ function exportChecklistCSV(){
       const note=item.querySelector('.cnote')?.textContent?.trim()||'';
       const req=item.querySelector('.creq')?'YES':'';
       const done=item.classList.contains('chk')?'✓ Complete':'Pending';
-      rows.push([catName,label,req,note,done]);
+      const source=item.getAttribute('data-source')||'';
+      rows.push([catName,label,req,note,done,source]);
     });
   });
   const csv=rows.map(r=>r.map(c=>'"'+(c||'').replace(/"/g,'""')+'"').join(',')).join('\n');
@@ -1196,7 +1242,12 @@ function buildChecklist(data){
   (data?.categories||[]).forEach(cat=>{
     const s=document.createElement('div');s.className='csec';
     const TL_MAP={"Site":"2–4 wks","Arch":"3–6 wks","Struct":"4–8 wks","MEP":"3–5 wks","Energy":"1–2 wks","Admin":"1–3 wks","Flood":"2–4 wks","Historic":"4–12 wks"};
-  s.innerHTML=`<div class="cshd">${cat.name}<span style="font-size:6.5px;color:var(--txt3);margin-left:4px">${Object.entries(TL_MAP).find(([k])=>cat.name.includes(k))?.[1]||''}</span><span class="ccnt">${cat.items?.length||0}</span></div>`+(cat.items||[]).map(it=>`<div class="cit" onclick="tCL(this)"><div class="cck"><svg width="7" height="7" viewBox="0 0 8 8" fill="none" style="display:none"><path d="M1 4l2 2.5L7 1.5" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg></div><div class="ctx">${it.label}${it.note?`<span class="cnote">${it.note}</span>`:''}</div>${it.required?'<span class="creq">REQ</span>':''}</div>`).join('');
+  s.innerHTML=`<div class="cshd">${cat.name}<span style="font-size:6.5px;color:var(--txt3);margin-left:4px">${Object.entries(TL_MAP).find(([k])=>cat.name.includes(k))?.[1]||''}</span><span class="ccnt">${cat.items?.length||0}</span></div>`+(cat.items||[]).map(it=>{
+      const srcAttr=it.source?` data-source="${(it.source+'').replace(/"/g,'&quot;')}"`:'';
+      const preCheck=it.autoCheck?' chk':'';
+      const srcBadge=it.source?`<span class="cnote" style="color:var(--green);margin-top:2px">\uD83D\uDCCE ${(it.source+'').substring(0,90)}</span>`:'';
+      return `<div class="cit${preCheck}"${srcAttr} onclick="tCL(this)"><div class="cck"><svg width="7" height="7" viewBox="0 0 8 8" fill="none" style="display:${it.autoCheck?'block':'none'}"><path d="M1 4l2 2.5L7 1.5" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg></div><div class="ctx">${it.label}${it.note?`<span class="cnote">${it.note}</span>`:''}${srcBadge}</div>${it.required?'<span class="creq">REQ</span>':''}</div>`;
+    }).join('');
     sc.appendChild(s);
   });pUp();
 }
@@ -1310,6 +1361,130 @@ function drawDisclosureBlock(ctx,W,H,x,y,width){
   }
   if(line&&ly<=y+boxH-lh)ctx.fillText(line,x+pad,ly);
   ctx.restore();
+}
+
+// ═══ USE-CASE-ADVISOR — Q&A intake (Mode B) ═══
+// Mirrors .claude/agents/use-case-advisor.md. 8 questions, corroborated against
+// zoning + site before the brief is locked. Answers persist to S._useCaseBrief.
+const QA_QUESTIONS=[
+  {k:'goal',q:'What is your primary goal for this project?',opts:[
+    {v:'sell',t:'Build to sell (flip / spec)'},
+    {v:'rent',t:'Build to rent (buy-and-hold)'},
+    {v:'own',t:'Build to own & live in'},
+    {v:'split',t:'Split & hold (SB9 / lot split)'},
+  ]},
+  {k:'household',q:'Who will occupy the primary unit?',opts:[
+    {v:'sfr',t:'Single-family, owner-occupied'},
+    {v:'multigen',t:'Multigenerational (ADU for parents / kids)'},
+    {v:'rental',t:'Small-scale rental (2–4 units)'},
+    {v:'developer',t:'Development project (no personal occupancy)'},
+  ]},
+  {k:'units',q:'How many total housing units are you targeting?',opts:[
+    {v:1,t:'1 unit'},{v:2,t:'2 units (duplex or SFR + ADU)'},
+    {v:4,t:'3–4 units'},{v:9,t:'5–9 units'},{v:20,t:'10+ units'},
+  ]},
+  {k:'budget',q:'What is your total project budget band?',opts:[
+    {v:300,t:'Under $300k'},{v:600,t:'$300k – $600k'},
+    {v:1200,t:'$600k – $1.2M'},{v:3000,t:'$1.2M – $3M'},{v:5000,t:'$3M+'},
+  ]},
+  {k:'timeline',q:'When do you want to break ground?',opts:[
+    {v:3,t:'Within 3 months'},{v:6,t:'3–6 months'},
+    {v:12,t:'6–12 months'},{v:18,t:'12–18 months'},{v:36,t:'18+ months'},
+  ]},
+  {k:'priorities',q:'Which design priority matters most?',opts:[
+    {v:'gsf',t:'Maximum square footage'},
+    {v:'netzero',t:'Net-zero energy / sustainability'},
+    {v:'aging',t:'Aging in place / accessibility'},
+    {v:'yield',t:'Rental yield / cash flow'},
+    {v:'preserve',t:'Preserve the existing structure'},
+  ]},
+  {k:'risk',q:'What is your tolerance for entitlement risk?',opts:[
+    {v:'conservative',t:'Conservative — by-right only, no variance'},
+    {v:'moderate',t:'Moderate — minor variance or density bonus'},
+    {v:'aggressive',t:'Aggressive — rezone, CUP, or design review'},
+  ]},
+  {k:'existing',q:'What will you do with any existing structure?',opts:[
+    {v:'demolish',t:'Demolish entirely'},
+    {v:'renovate',t:'Renovate in place'},
+    {v:'add',t:'Keep + add new units (retain structural system)'},
+    {v:'keep',t:'Keep as-is (new construction beside it)'},
+    {v:'none',t:'No existing structure / vacant lot'},
+  ]},
+];
+let _qaState={step:0,answers:{}};
+
+function openQA(){
+  _qaState={step:0,answers:{...(S._useCaseBrief?.answers||{})}};
+  const modal=document.getElementById('qa-modal');modal.style.display='flex';
+  renderQA();
+}
+function closeQA(){document.getElementById('qa-modal').style.display='none'}
+function renderQA(){
+  const q=QA_QUESTIONS[_qaState.step];if(!q)return;
+  document.getElementById('qa-step-label').textContent=`Question ${_qaState.step+1} of ${QA_QUESTIONS.length}`;
+  document.getElementById('qa-question').textContent=q.q;
+  const cur=_qaState.answers[q.k];
+  document.getElementById('qa-options').innerHTML=q.opts.map(o=>`
+    <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid ${cur==o.v?'var(--blue)':'var(--brd)'};border-radius:5px;cursor:pointer;background:${cur==o.v?'rgba(61,139,255,.08)':'transparent'};font-size:10.5px">
+      <input type="radio" name="qa-opt" value="${o.v}" ${cur==o.v?'checked':''} onchange="_qaState.answers['${q.k}']=this.value;renderQA()" style="accent-color:var(--blue)">
+      <span>${o.t}</span>
+    </label>`).join('');
+  document.getElementById('qa-back').style.visibility=_qaState.step>0?'visible':'hidden';
+  document.getElementById('qa-next').textContent=_qaState.step===QA_QUESTIONS.length-1?'Save & Apply →':'Next →';
+  // Live corroboration hint
+  const hint=corroborateHint(_qaState.answers);
+  document.getElementById('qa-corroboration').innerHTML=hint||'';
+}
+function qaBack(){if(_qaState.step>0){_qaState.step--;renderQA()}}
+function qaNext(){
+  const q=QA_QUESTIONS[_qaState.step];
+  if(_qaState.answers[q.k]===undefined){alert('Please select an answer.');return}
+  if(_qaState.step<QA_QUESTIONS.length-1){_qaState.step++;renderQA();return}
+  // Final submit — build the corroborated brief
+  const brief=buildUseCaseBrief(_qaState.answers);S._useCaseBrief=brief;
+  L.info(`Intake brief: ${brief.summary} — corroborated by ${brief.corroboratedBy.length} sources`);
+  if(brief._flags.length){L.warn(`Intake flags: ${brief._flags.join(' | ')}`)}
+  closeQA();
+  // Re-render options if visible so the brief-applied highlights appear
+  if(S._z&&S.generatedOptions){renderOptionsPanel(S.generatedOptions,S.generatedOptions.find(o=>o.recommended)||S.generatedOptions[0],S._z)}
+}
+
+function corroborateHint(a){
+  const z=S._z;if(!z||!a.units)return '';
+  const unitsNum=+a.units;const bits=[];
+  if(unitsNum>4&&z.aduAllowed!==false)bits.push(`zoning: ADU allowed in ${z.zoningDistrict}`);
+  if(unitsNum>2&&z.maxStories<2)bits.push(`\u26A0 zoning max ${z.maxStories}-story may not fit ${unitsNum} units`);
+  if(a.existing==='renovate'||a.existing==='add')bits.push('\u26A0 triggers RDP review (structural modification)');
+  return bits.length?`<span style="color:var(--txt2)">Cross-check: ${bits.join(' \u00B7 ')}</span>`:'';
+}
+
+function buildUseCaseBrief(a){
+  const z=S._z||{};const units=+a.units||1;const corroboratedBy=[];const _flags=[];
+  // Program inference
+  let program='SFR';
+  if(units===2)program=z.aduAllowed!==false?'SFR + ADU':'Duplex';
+  else if(units<=4)program='Small multi-family';
+  else if(units<=9)program='Multi-family (5–9 units)';
+  else program='Mid-density multi-family';
+  // Corroboration
+  if(z.aduAllowed!==false&&units>=2)corroboratedBy.push(`zoning.aduRights.allowed=true (${z.zoningDistrict})`);
+  if(z.maxStories>=2&&units>=2)corroboratedBy.push(`zoning.dimensional.maxStories=${z.maxStories} supports selected unit count`);
+  if(a.risk==='conservative')corroboratedBy.push(`user.risk=conservative \u2192 restricting to by-right`);
+  else if(a.risk==='aggressive')_flags.push('Aggressive risk tolerance — may require variance/rezone');
+  if(units>4&&(z.maxStories||0)<2)_flags.push(`Target ${units} units, but zoning ${z.zoningDistrict} caps at ${z.maxStories} story`);
+  if(a.existing==='renovate'||a.existing==='add')_flags.push('Existing-structure modification triggers RDP seal requirement');
+  if(a.budget==='300'&&units>=2)_flags.push('Sub-$300K budget likely insufficient for multi-unit at regional $/SF');
+  corroboratedBy.push(`user.Q3=${units} units · Q6=${a.priorities} · Q8=${a.existing}`);
+  return{
+    program,units,gsf:null,
+    targetMarket:a.goal==='rent'?'build-to-rent':a.goal==='sell'?'build-to-sell':a.goal==='own'?'owner-occupied':'lot-split',
+    budgetBand:a.budget,timelineMonths:+a.timeline||12,
+    designPriorities:[a.priorities],riskTolerance:a.risk||'moderate',
+    existingStructureAction:a.existing||'none',
+    answers:a,corroboratedBy,_flags,
+    summary:`${program} \u00B7 ${units}u \u00B7 ${a.goal||'—'} \u00B7 ${a.risk||'moderate'} risk`,
+    _provenance:Object.entries(a).map(([k,v])=>({q:QA_QUESTIONS.find(x=>x.k===k)?.q,a:v,at:new Date().toISOString()})),
+  };
 }
 
 // ── SHEET: A-0 Cover Sheet ──
