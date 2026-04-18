@@ -236,7 +236,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--ink);color:var
     </div>
     <div id="key-area">
       <div class="key-row">
-        <input class="ainp" id="addr-inp" type="text" placeholder="e.g. 355 NE 151st St, Shoreline WA 98155" style="width:100%" onkeydown="addrKeydown(event)" oninput="addrSuggest(this.value)" autocomplete="off">
+        <input class="key-inp" id="key-inp" type="password" placeholder="sk-ant-api03-..." onkeydown="if(event.key==='Enter')saveKey()">
         <button class="key-btn" id="save-btn" onclick="saveKey()">Connect</button>
         <button class="key-btn" onclick="toggleKey()">👁</button>
       </div>
@@ -450,7 +450,7 @@ Always give your most experienced professional opinion. Specific, bold, code-ref
 
 async function callAI(msgs,sys,maxTok=2200,timeoutMs=90000){
   const headers={'Content-Type':'application/json'};
-  if(S.mode==='standalone'&&S.apiKey){headers['x-api-key']=S.apiKey;headers['anthropic-version']='2023-06-01'}
+  if(S.mode==='standalone'&&S.apiKey){headers['x-api-key']=S.apiKey;headers['anthropic-version']='2023-06-01';headers['anthropic-dangerous-direct-browser-access']='true'}
   const body={model:'claude-sonnet-4-6',max_tokens:maxTok,messages:msgs};
   if(sys)body.system=sys;
   const label=(msgs[0]?.content||'').substring(0,40).replace(/\n/g,' ');
@@ -503,7 +503,7 @@ async function callJSON(msgs,sys,maxTok=2200,timeoutMs=90000){
 
 async function callAIWithImg(prompt,b64,mime,sys,maxTok=1000){
   const headers={'Content-Type':'application/json'};
-  if(S.mode==='standalone'&&S.apiKey){headers['x-api-key']=S.apiKey;headers['anthropic-version']='2023-06-01'}
+  if(S.mode==='standalone'&&S.apiKey){headers['x-api-key']=S.apiKey;headers['anthropic-version']='2023-06-01';headers['anthropic-dangerous-direct-browser-access']='true'}
   const body={model:'claude-sonnet-4-6',max_tokens:maxTok,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:mime,data:b64}},{type:'text',text:prompt}]}]};
   if(sys)body.system=sys;
   const fp=fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers,body:JSON.stringify(body)}).then(async r=>{if(!r.ok)throw new Error(`API ${r.status}`);const d=await r.json();return d.content.filter(b=>b.type==='text').map(b=>b.text).join('\n')});
