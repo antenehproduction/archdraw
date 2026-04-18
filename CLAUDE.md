@@ -6,6 +6,8 @@ Single-file HTML application (`index.html`) that generates permit-ready architec
 
 **Live at:** https://antenehproduction.github.io/Premit-Ready (GitHub Pages)
 
+**Agent architecture:** See [AGENTS.md](AGENTS.md) and `.claude/agents/*.md` for the seven-agent model (project-coordinator, site-intel, zoning-legal, use-case-advisor, drawing-engine, architect-advisor, checklist-auto). Every export must pass through `architect-advisor` for the professional-disclosure block.
+
 ---
 
 ## Current state
