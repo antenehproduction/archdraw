@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>ArchDraw Intel v13 — Permit Architect</title>
+<title>ArchDraw Intel v14 — Expert Permit Architect</title>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
 <style>
@@ -197,6 +197,25 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--ink);color:var
 .upzone:hover{border-color:var(--blue);color:var(--txt2);background:var(--ink2)}
 #file-inp{display:none}#img-prev{width:40px;height:30px;border-radius:3px;object-fit:cover;border:1px solid var(--brd2);display:none}
 #img-tag{font-size:7.5px;color:var(--green);display:none;padding:2px 5px;background:rgba(34,224,138,.08);border:1px solid rgba(34,224,138,.2);border-radius:3px;white-space:nowrap}
+
+/* ── UX-9: Responsive layout for smaller screens ── */
+@media(max-width:900px){
+  #workspace{flex-direction:column}
+  #rp{width:100%;height:220px;border-right:none;border-bottom:1px solid var(--brd)}
+  #clp{width:100%;height:180px;border-left:none;border-top:1px solid var(--brd)}
+  #phases{display:flex;flex-wrap:wrap;gap:3px;padding:4px}
+  .ph{min-width:120px;flex:1}
+  #ptb{flex-wrap:wrap;height:auto;padding:4px 6px;gap:3px}
+  #sheet-tabs{max-width:100%;flex-wrap:wrap}
+  .opts-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:600px){
+  .opts-grid{grid-template-columns:1fr}
+  #rp{height:180px}
+  #clp{height:160px}
+  .brand-title{font-size:22px}
+  .acard,.ov-grid{padding:12px}
+}
 </style>
 </head>
 <body>
@@ -205,7 +224,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--ink);color:var
 <div class="screen" id="landing">
   <div class="brand">
     <div class="brand-icon">AI</div>
-    <div class="brand-title">ArchDraw <em style="color:var(--blue)">Intel</em> v13</div>
+    <div class="brand-title">ArchDraw <em style="color:var(--blue)">Intel</em> v14</div>
     <div class="brand-sub">Real satellite imagery · OSM parcel data · Complete printable 24"×36" permit drawing set</div>
   </div>
 
@@ -217,7 +236,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--ink);color:var
     </div>
     <div id="key-area">
       <div class="key-row">
-        <input class="key-inp" id="key-inp" type="password" placeholder="sk-ant-api03-..." onkeydown="if(event.key==='Enter')saveKey()">
+        <input class="ainp" id="addr-inp" type="text" placeholder="e.g. 355 NE 151st St, Shoreline WA 98155" style="width:100%" onkeydown="addrKeydown(event)" oninput="addrSuggest(this.value)" autocomplete="off">
         <button class="key-btn" id="save-btn" onclick="saveKey()">Connect</button>
         <button class="key-btn" onclick="toggleKey()">👁</button>
       </div>
@@ -229,7 +248,13 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--ink);color:var
   <div class="acard">
     <div class="clbl">Property Address</div>
     <div class="irow">
-      <input class="ainp" id="addr-inp" type="text" placeholder="e.g. 355 NE 151st St, Shoreline WA 98155" onkeydown="if(event.key==='Enter')startAnalysis()">
+      <div style="position:relative;flex:1">
+      <input class="ainp" id="addr-inp" type="text" placeholder="e.g. 355 NE 151st St, Shoreline WA 98155"
+        style="width:100%"
+        onkeydown="if(event.key==='Enter'){hideSuggest();startAnalysis();}else if(event.key==='Escape')hideSuggest();else addrSuggest(this.value)"
+        oninput="addrSuggest(this.value)" autocomplete="off">
+      <div id="suggest-box" style="display:none;position:absolute;top:100%;left:0;right:0;background:var(--ink1);border:1px solid var(--brd2);border-radius:0 0 7px 7px;z-index:100;max-height:160px;overflow-y:auto"></div>
+    </div>
       <button class="rbtn" id="run-btn" onclick="startAnalysis()" disabled>ANALYZE →</button>
     </div>
     <div class="upload-row">
@@ -309,7 +334,13 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--ink);color:var
   </div>
 
   <div id="clp">
-    <div id="clp-hdr"><div class="clt">PERMIT CHECKLIST</div><div class="cls" id="cljur">Loading...</div></div>
+    <div id="clp-hdr">
+      <div style="display:flex;align-items:center;justify-content:space-between">
+        <div class="clt">PERMIT CHECKLIST</div>
+        <button onclick="exportChecklistCSV()" title="Export to CSV" style="font-size:7.5px;padding:2px 6px;border:1px solid var(--brd2);border-radius:3px;background:none;color:var(--txt3);cursor:pointer">↓ CSV</button>
+      </div>
+      <div class="cls" id="cljur">Loading...</div>
+    </div>
     <div id="cl-scroll"></div>
     <div class="pwrap"><div class="prow"><span>Completion</span><span id="ppct">0%</span></div><div class="ptr"><div class="pf" id="pf" style="width:0%"></div></div></div>
     <div class="exb" onclick="exportPermitPDF()"><div class="ext">↓ Export Full Permit Package PDF</div><div class="exs">24"×36" sheets · A-0 through A-6</div></div>
@@ -353,7 +384,9 @@ const L={info:(...a)=>log('info',...a),warn:(...a)=>log('warn',...a),error:(...a
 window.onerror=(m,s,l)=>L.error(`Uncaught: ${m} (${s}:${l})`);
 window.onunhandledrejection=e=>L.error('UnhandledPromise:',e.reason?.message||e.reason);
 function renderLog(){if(!logPanel)return;const tb=logPanel.querySelector('#lb');if(!tb)return;tb.innerHTML=LOG.slice(-80).map(e=>{const ts=((e.t-LOG[0]?.t)/1000).toFixed(1)+'s';const col=e.level==='error'?'var(--coral)':e.level==='warn'?'var(--amber)':'var(--txt2)';return`<tr><td style="color:var(--txt3);padding:1px 6px;white-space:nowrap">${ts}</td><td style="color:${col};padding:1px 4px;word-break:break-all">${e.msg.replace(/</g,'&lt;')}</td></tr>`}).join('');tb.scrollTop=1e9}
-function toggleLogPanel(){if(logPanel){logPanel.remove();logPanel=null;return}logPanel=document.createElement('div');logPanel.id='log-panel';logPanel.style.cssText='position:fixed;bottom:0;left:0;right:0;height:200px;background:#0a0d12;border-top:1px solid rgba(61,139,255,.3);z-index:9999;display:flex;flex-direction:column;font-family:JetBrains Mono,monospace;font-size:9.5px';logPanel.innerHTML=`<div style="display:flex;align-items:center;gap:7px;padding:5px 9px;border-bottom:1px solid rgba(61,139,255,.15);flex-shrink:0"><span style="color:var(--blue);font-size:9px">SYSTEM LOG</span><span style="color:var(--txt3);font-size:9px">${LOG.length} entries</span><div style="flex:1"></div><button onclick="navigator.clipboard?.writeText(LOG.map(e=>e.msg).join('\n'))" style="font-size:8px;padding:2px 7px;border:1px solid rgba(61,139,255,.3);border-radius:3px;background:none;color:var(--txt3);cursor:pointer">Copy</button><button onclick="toggleLogPanel()" style="font-size:8px;padding:2px 7px;border:1px solid var(--brd);border-radius:3px;background:none;color:var(--txt3);cursor:pointer">✕</button></div><div style="flex:1;overflow-y:auto"><table style="width:100%;border-collapse:collapse"><tbody id="lb"></tbody></table></div>`;document.body.appendChild(logPanel);renderLog()}
+function toggleLogPanel(){if(logPanel){logPanel.remove();logPanel=null;return}
+  // UX-2: only show log panel when workspace is visible
+  const ws=document.getElementById('workspace');if(ws&&ws.classList.contains('hidden')){alert('Open an analysis first, then use the LOG button in the toolbar.');return}logPanel=document.createElement('div');logPanel.id='log-panel';logPanel.style.cssText='position:fixed;bottom:0;left:0;right:0;height:200px;background:#0a0d12;border-top:1px solid rgba(61,139,255,.3);z-index:9999;display:flex;flex-direction:column;font-family:JetBrains Mono,monospace;font-size:9.5px';logPanel.innerHTML=`<div style="display:flex;align-items:center;gap:7px;padding:5px 9px;border-bottom:1px solid rgba(61,139,255,.15);flex-shrink:0"><span style="color:var(--blue);font-size:9px">SYSTEM LOG</span><span style="color:var(--txt3);font-size:9px">${LOG.length} entries</span><div style="flex:1"></div><button onclick="navigator.clipboard?.writeText(LOG.map(e=>e.msg).join('\n'))" style="font-size:8px;padding:2px 7px;border:1px solid rgba(61,139,255,.3);border-radius:3px;background:none;color:var(--txt3);cursor:pointer">Copy</button><button onclick="toggleLogPanel()" style="font-size:8px;padding:2px 7px;border:1px solid var(--brd);border-radius:3px;background:none;color:var(--txt3);cursor:pointer">✕</button></div><div style="flex:1;overflow-y:auto"><table style="width:100%;border-collapse:collapse"><tbody id="lb"></tbody></table></div>`;document.body.appendChild(logPanel);renderLog()}
 
 // ═══ JSON REPAIR ═══
 function repairJSON(s){return s.replace(/,(\s*[}\]])/g,'$1').replace(/\/\/[^\n]*/g,'').replace(/[\u201C\u201D]/g,'"').replace(/:\s*(undefined|NaN)\b/g,':null')}
@@ -428,6 +461,32 @@ async function callAI(msgs,sys,maxTok=2200,timeoutMs=90000){
     rej(new Error(`Timeout after ${Math.round(timeoutMs/1000)}s`));
   },timeoutMs));
   return Promise.race([fp,tp]);
+}
+
+// ── API-3: Retry wrapper with exponential backoff on 429 rate-limit ──
+async function callAIWithRetry(msgs,sys,maxTok=2200,timeoutMs=90000){
+  for(let attempt=0;attempt<3;attempt++){
+    try{ return await callAI(msgs,sys,maxTok,timeoutMs); }
+    catch(e){
+      if((e.message.includes('429')||e.message.toLowerCase().includes('rate'))&&attempt<2){
+        const wait=1000*(2**attempt);
+        L.warn(`Rate-limit 429 — retry ${attempt+1}/2 in ${wait/1000}s`);
+        await delay(wait);
+      } else throw e;
+    }
+  }
+}
+async function callJSONWithRetry(msgs,sys,maxTok=2200,timeoutMs=90000){
+  for(let attempt=0;attempt<3;attempt++){
+    try{ return await callJSON(msgs,sys,maxTok,timeoutMs); }
+    catch(e){
+      if((e.message.includes('429')||e.message.toLowerCase().includes('rate'))&&attempt<2){
+        const wait=1000*(2**attempt);
+        L.warn(`Rate-limit 429 — retry ${attempt+1}/2 in ${wait/1000}s`);
+        await delay(wait);
+      } else throw e;
+    }
+  }
 }
 
 async function callJSON(msgs,sys,maxTok=2200,timeoutMs=90000){
@@ -548,8 +607,9 @@ async function initMap(lat,lon,z){
   MAP_INSTANCE.setView([lat,lon],19);
   drawMapOverlay(lat,lon,z);
 
-  // Fetch existing buildings from OpenStreetMap Overpass API
-  await fetchOSMBuildings(lat,lon);
+  // MAP-3: kick off OSM fetch in background — don't block map display
+  // fetchOSMBuildings adds layers when ready (non-blocking)
+  fetchOSMBuildings(lat,lon).catch(e=>L.warn('OSM background fetch failed:',e.message));
 
   // Show map info panel
   const info=document.getElementById('map-info');
@@ -600,6 +660,7 @@ async function fetchOSMBuildings(lat,lon){
     const d=await r.json();
     S.osmBuildings=d.elements||[];
     L.info(`OSM: ${S.osmBuildings.length} existing buildings`);
+    phaseRunners.record=runPhase_record;
     if(S.osmBuildings.length&&MAP_INSTANCE){
       // Remove old OSM layers
       MAP_INSTANCE.eachLayer(l=>{if(l._isOSM)MAP_INSTANCE.removeLayer(l)});
@@ -688,7 +749,12 @@ function localFloorPlan(z, selectedOption){
 function valPlan(plan,z){
   const minX=z.leftSetback,maxX=z.lotWidth-z.rightSetback,minY=z.frontSetback,maxY=z.lotDepth-z.rearSetback;
   if(!plan.floors)return;
-  plan.floors.forEach(fl=>{if(!fl.rooms)fl.rooms=[];fl.rooms=fl.rooms.filter(r=>typeof r.w==='number'&&r.w>=2&&r.h>=2);fl.rooms.forEach(r=>{r.x=Math.max(minX,r.x||minX);r.y=Math.max(minY,r.y||minY);if(r.x+r.w>maxX)r.w=maxX-r.x;if(r.y+r.h>maxY)r.h=maxY-r.y;if(r.w<2)r.w=2;if(r.h<2)r.h=2})});
+  plan.floors.forEach(fl=>{if(!fl.rooms)fl.rooms=[];fl.rooms=fl.rooms.filter(r=>{
+      if(typeof r.w!=='number'||typeof r.h!=='number')return false;
+      const EXEMPT=new Set(['corridor','stair','storage','balcony','entry','laundry']);
+      const minD=EXEMPT.has(r.type||'')?3:7; // GEOM-3: IBC §1208.1 min 7ft habitable
+      return r.w>=minD&&r.h>=minD;
+    });fl.rooms.forEach(r=>{r.x=Math.max(minX,r.x||minX);r.y=Math.max(minY,r.y||minY);if(r.x+r.w>maxX)r.w=maxX-r.x;if(r.y+r.h>maxY)r.h=maxY-r.y;if(r.w<2)r.w=2;if(r.h<2)r.h=2})});
 }
 
 // ═══ PIPELINE ═══
@@ -728,9 +794,19 @@ async function runPhase_site(){
   try{
     let prompt=`Research property: "${S.addr}"\n1. Governing jurisdiction (city/county + building dept)\n2. Typical lot dimensions for this block\n3. Current land use and existing structure type\n4. Neighborhood context (urban density, adjacent uses)\n5. Topography, slope, aspect (north-facing?)\n6. Infrastructure (sewer, water, gas, fiber)\n7. Transit proximity (walk score, nearest transit)\n8. Key redevelopment opportunity in one sentence`;
     if(S.img64){const imgA=await callAIWithImg(`Analyze site for: ${S.addr}. Describe: existing structure condition, lot coverage, setback violations, orientation, neighboring scale, opportunities for passive solar.`,S.img64,S.imgType,SYS,600);prompt+=`\n\nSite photo analysis:\n${imgA}`;addFind('img','📷 Site Photo',fmt(imgA))}
-    const res=await callAI([{role:'user',content:prompt}],SYS,1500);
+    const res=await callAIWithRetry([{role:'user',content:prompt}],SYS,1500);
     // Geocode
-    try{const gr=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(S.addr)}&format=json&limit=1&countrycodes=us`,{headers:{'User-Agent':'ArchDrawIntel/1.0'}});const gd=await gr.json();if(gd?.length){S.lat=parseFloat(gd[0].lat);S.lon=parseFloat(gd[0].lon);L.info(`Geocoded: ${S.lat.toFixed(5)}, ${S.lon.toFixed(5)}`)}}catch(e){L.warn('Geocode failed:',e.message)}
+    try{
+      const gr=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(S.addr)}&format=json&limit=1&countrycodes=us&addressdetails=1`,{headers:{'User-Agent':'ArchDrawIntel/1.0'}});
+      const gd=await gr.json();
+      if(gd?.length){
+        S.lat=parseFloat(gd[0].lat);S.lon=parseFloat(gd[0].lon);
+        // DATA-3: extract address components for title block APN lookup hint
+        const addr=gd[0].address||{};
+        S._geoAddr={city:addr.city||addr.town||addr.village||addr.county||'',state:addr.state_code||addr.state||'',zip:addr.postcode||'',county:addr.county||''};
+        L.info(`Geocoded: ${S.lat.toFixed(5)}, ${S.lon.toFixed(5)} — ${JSON.stringify(S._geoAddr)}`);
+      }
+    }catch(e){L.warn('Geocode failed:',e.message)}
     phSet('site','done',`${((Date.now()-t)/1000).toFixed(1)}s`);addFind('site','📍 Site Identification',fmt(res));S._siteRes=res;phaseRunners.site=runPhase_site;
   }catch(e){phSet('site','error',`${((Date.now()-t)/1000).toFixed(1)}s`);addFind('site','📍 Site',`<div class="ebox">${e.message}</div>`);throw e}
 }
@@ -738,10 +814,10 @@ async function runPhase_site(){
 async function runPhase_zone(){
   L.info('--- Phase 2: Zoning ---');phSet('zone','active');setOvl('ZONING','Pulling setbacks, FAR, height limits, ADU rights');const t=Date.now();
   try{
-    const z=await callJSON([{role:'user',content:`For property "${S.addr}", return ONLY JSON zoning values:\n{"lotWidth":60,"lotDepth":120,"frontSetback":20,"rearSetback":15,"leftSetback":5,"rightSetback":5,"maxHeightFt":35,"maxStories":2,"maxFAR":0.6,"maxLotCoverage":50,"parkingPerUnit":1,"zoningDistrict":"NR-2","zoningFullName":"Neighborhood Residential","jurisdiction":"City of Shoreline","county":"King County","state":"WA","permittedUses":["SFR","ADU","duplex"],"conditionalUses":[],"specialOverlays":[],"aduAllowed":true,"aduMaxSqFt":1200,"densityBonusEligible":true,"sb9Eligible":false,"notes":""}`}],SYS,1500);
+    const z=await callJSON([{role:'user',content:`For property "${S.addr}", return ONLY JSON with ACCURATE values for this EXACT address "${S.addr}" — do NOT use placeholder/example values:\n{"lotWidth":0,"lotDepth":0,"frontSetback":0,"rearSetback":0,"leftSetback":0,"rightSetback":0,"maxHeightFt":0,"maxStories":0,"maxFAR":0,"maxLotCoverage":0,"parkingPerUnit":0,"zoningDistrict":"","zoningFullName":"","jurisdiction":"","county":"","state":"","permittedUses":["SFR","ADU","duplex"],"conditionalUses":[],"specialOverlays":[],"aduAllowed":true,"aduMaxSqFt":1200,"densityBonusEligible":true,"sb9Eligible":false,"notes":""}`}],SYS,1500);
     if(!Array.isArray(z.specialOverlays))z.specialOverlays=[];if(!Array.isArray(z.permittedUses))z.permittedUses=[];if(!Array.isArray(z.conditionalUses))z.conditionalUses=[];
     L.info(`Zone: ${z.zoningDistrict} ${z.jurisdiction} ${z.state} lot=${z.lotWidth}×${z.lotDepth}`);
-    const zt=await callAI([{role:'user',content:`Expert zoning analysis for "${S.addr}" — ${z.zoningDistrict}, ${z.jurisdiction}, ${z.state}.\nCover: by-right vs conditional development options, setbacks front ${z.frontSetback}/rear ${z.rearSetback}/sides ${z.leftSetback}-${z.rightSetback}ft, FAR ${z.maxFAR}, ${z.maxLotCoverage}% coverage, ${z.maxStories} stories, ADU rights: ${z.aduAllowed}. Note any density bonus programs, SB9 rights, or form-based code options.`}],SYS,1000);
+    const zt=await callAIWithRetry([{role:'user',content:`Expert zoning analysis for "${S.addr}" — ${z.zoningDistrict}, ${z.jurisdiction}, ${z.state}.\nCover: by-right vs conditional development options, setbacks front ${z.frontSetback}/rear ${z.rearSetback}/sides ${z.leftSetback}-${z.rightSetback}ft, FAR ${z.maxFAR}, ${z.maxLotCoverage}% coverage, ${z.maxStories} stories, ADU rights: ${z.aduAllowed}. Note any density bonus programs, SB9 rights, or form-based code options.`}],SYS,1000);
     phSet('zone','done',`${((Date.now()-t)/1000).toFixed(1)}s`);addFind('zone','📋 Zoning',fmt(zt)+buildZT(z));S._z=z;phaseRunners.zone=runPhase_zone;
   }catch(e){phSet('zone','error',`${((Date.now()-t)/1000).toFixed(1)}s`);addFind('zone','📋 Zoning',`<div class="ebox">${e.message}</div>`);throw e}
 }
@@ -874,8 +950,14 @@ async function runPhase_opts(){
     S._optionResolve=resolve;
     renderOptionsPanel(opts,recommended,z);
     document.getElementById('opts-overlay').classList.add('vis');
-    // Auto-resolve after 90 seconds if user doesn't pick (pick recommended)
-    setTimeout(()=>{if(S._optionResolve){L.warn('Options: auto-selecting recommended after timeout');selectOption(recommended.id)}},90000);
+    // UX-5: auto-resolve after 90s — guard against undefined recommended
+    setTimeout(()=>{
+      if(S._optionResolve){
+        const fallback=(opts.find(o=>o.recommended)||opts[Math.floor(opts.length/2)]||opts[0]);
+        if(fallback){L.warn('Options: auto-selecting "'+fallback.name+'" after 90s timeout');selectOption(fallback.id);}
+        else{L.error('Options: no fallback option available — pipeline stalled');S._optionResolve=null;}
+      }
+    },90000);
   });
 }
 
@@ -927,7 +1009,16 @@ function selectOption(optId){
 }
 
 async function runPhase_comp(){
-  L.info('--- Phase 5: Competitor Research ---');phSet('comp','active');setOvl('COMPETITOR RESEARCH','Analyzing comparable recent developments 2019-2024');const t=Date.now();
+  L.info('--- Phase 5: Competitor Research ---');phSet('comp','active');setOvl('COMPETITOR RESEARCH','Analyzing 3-4 comparable projects (2019–2024)');
+  // PIPE-5: update overlay with progress dots so user knows something is happening
+  let _compDot=0;const _compInt=setInterval(()=>{
+    _compDot++;
+    const dots=['●○○○','●●○○','●●●○','●●●●'][_compDot%4];
+    const ot=document.getElementById('otxt');
+    if(ot)ot.innerHTML=`${dots} Researching market comparables in ${S._z?.jurisdiction||'the area'}... <span class="df"></span>`;
+  },900);
+  // Store interval ID so we can clear it
+  S._compInterval=_compInt;const t=Date.now();
   const z=S._z;const opt=S.selectedOption;
   try{
     const res=await callAI([{role:'user',content:
@@ -949,7 +1040,8 @@ Then recommend:
 **2 structural improvements** over typical code minimum (with specific member sizes)
 **1 green technology** with proven market ROI in this market`
     }],SYS,1000);
-    phSet('comp','done',`${((Date.now()-t)/1000).toFixed(1)}s`);addFind('comp','🏆 Competitor Analysis & Market Intelligence',fmt(res));S.competitors=res;phaseRunners.comp=runPhase_comp;
+    phSet('comp','done',`${((Date.now()-t)/1000).toFixed(1)}s`);
+    if(S._compInterval){clearInterval(S._compInterval);S._compInterval=null;}addFind('comp','🏆 Competitor Analysis & Market Intelligence',fmt(res));S.competitors=res;phaseRunners.comp=runPhase_comp;
   }catch(e){phSet('comp','error',`${((Date.now()-t)/1000).toFixed(1)}s`);addFind('comp','🏆 Competitor Research',`<div class="ebox">Competitor research failed: ${e.message}<br><em>Proceeding with design — competitor data will not be incorporated.</em></div>`);// don't throw — not critical
   }
 }
@@ -960,9 +1052,11 @@ async function runPhase_plan(){
   try{
     const pd=localFloorPlan(z,S.selectedOption);valPlan(pd,z);
     L.info(`Plan: ${pd.floors.length} floors, ${pd.floors.reduce((a,f)=>a+f.rooms.length,0)} rooms, ${pd.meta.totalSqFt} SF in ${Date.now()-t}ms`);
-    S.plan=pd;phSet('plan','done',`${((Date.now()-t)/1000).toFixed(2)}s`);
+    phSet('plan','done',`${((Date.now()-t)/1000).toFixed(2)}s`);
     addFind('plan','📐 Expert Development Program',buildMT(pd)+'<div style="margin-top:6px;font-size:9px;color:var(--txt2)">🏗️ Structural grid: 20\'-0" bay spacing · 2×6 @ 16" o.c. · <span style="color:var(--green)">Net-zero energy capable</span></div>');
     buildSheetTabs();
+    // MAP-1: assign S.plan BEFORE initMap so drawMapOverlay can draw the footprint
+    S.plan=pd;
     if(S.lat&&S.lon){await initMap(S.lat,S.lon,z);setView('map')}else{setView('plan')}
     requestAnimationFrame(()=>{resetPanZoom();renderSheet('A-2');buildLegend(pd);document.getElementById('legend').classList.add('vis')});
     initThree();gen3D(pd);phaseRunners.plan=runPhase_plan;
@@ -1066,12 +1160,34 @@ async function runPhase_chk(){
   L.info(`Checklist: ${total} items, fees ${feeRange}`);phaseRunners.chk=runPhase_chk;
 }
 
+// ─── CHK-3: Export checklist to CSV ───
+function exportChecklistCSV(){
+  const cats=document.querySelectorAll('.csec');
+  const rows=[['Category','Item','Required','Note','Status']];
+  cats.forEach(cat=>{
+    const catName=cat.querySelector('.cshd')?.textContent?.replace(/\d+$/,'').trim()||'';
+    cat.querySelectorAll('.cit').forEach(item=>{
+      const label=item.querySelector('.ctx')?.childNodes[0]?.textContent?.trim()||'';
+      const note=item.querySelector('.cnote')?.textContent?.trim()||'';
+      const req=item.querySelector('.creq')?'YES':'';
+      const done=item.classList.contains('chk')?'✓ Complete':'Pending';
+      rows.push([catName,label,req,note,done]);
+    });
+  });
+  const csv=rows.map(r=>r.map(c=>'"'+(c||'').replace(/"/g,'""')+'"').join(',')).join('\n');
+  const blob=new Blob([csv],{type:'text/csv'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=`${(S.addr||'checklist').replace(/[^a-z0-9]/gi,'_').substring(0,25)}_permit_checklist.csv`;
+  a.click();L.info('Checklist exported to CSV');
+}
+
 // ═══ CHECKLIST UI ═══
 function buildChecklist(data){
   const sc=document.getElementById('cl-scroll');sc.innerHTML='';
   (data?.categories||[]).forEach(cat=>{
     const s=document.createElement('div');s.className='csec';
-    s.innerHTML=`<div class="cshd">${cat.name}<span class="ccnt">${cat.items?.length||0}</span></div>`+(cat.items||[]).map(it=>`<div class="cit" onclick="tCL(this)"><div class="cck"><svg width="7" height="7" viewBox="0 0 8 8" fill="none" style="display:none"><path d="M1 4l2 2.5L7 1.5" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg></div><div class="ctx">${it.label}${it.note?`<span class="cnote">${it.note}</span>`:''}</div>${it.required?'<span class="creq">REQ</span>':''}</div>`).join('');
+    const TL_MAP={"Site":"2–4 wks","Arch":"3–6 wks","Struct":"4–8 wks","MEP":"3–5 wks","Energy":"1–2 wks","Admin":"1–3 wks","Flood":"2–4 wks","Historic":"4–12 wks"};
+  s.innerHTML=`<div class="cshd">${cat.name}<span style="font-size:6.5px;color:var(--txt3);margin-left:4px">${Object.entries(TL_MAP).find(([k])=>cat.name.includes(k))?.[1]||''}</span><span class="ccnt">${cat.items?.length||0}</span></div>`+(cat.items||[]).map(it=>`<div class="cit" onclick="tCL(this)"><div class="cck"><svg width="7" height="7" viewBox="0 0 8 8" fill="none" style="display:none"><path d="M1 4l2 2.5L7 1.5" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg></div><div class="ctx">${it.label}${it.note?`<span class="cnote">${it.note}</span>`:''}</div>${it.required?'<span class="creq">REQ</span>':''}</div>`).join('');
     sc.appendChild(s);
   });pUp();
 }
@@ -1142,7 +1258,7 @@ function drawCoverSheet(ctx,W,H){
   ctx.fillText((m.address||S.addr||'').substring(0,60),20,TY+38);
   ctx.fillText(`Zone: ${z.zoningDistrict||'—'} · ${z.jurisdiction||'—'}, ${st} · ${db.bc}`,20,TY+52);
   ctx.fillText(`${(m.totalSqFt||0).toLocaleString()} GSF · ${m.units||0} units · ${m.stories||1} stories`,20,TY+66);
-  ctx.fillText(`ArchDraw Intel v13 · ${new Date().toLocaleDateString('en-US',{month:'short',day:'2-digit',year:'numeric'})}`,20,TY+80);
+  ctx.fillText(`ArchDraw Intel v14 · ${new Date().toLocaleDateString('en-US',{month:'short',day:'2-digit',year:'numeric'})}`,20,TY+80);
   ctx.textAlign='center';ctx.fillStyle='rgba(210,225,244,.9)';ctx.font='500 18px JetBrains Mono,monospace';
   ctx.fillText('A-0',W-90,TY+42);ctx.font='8px JetBrains Mono,monospace';ctx.fillStyle='rgba(61,139,255,.5)';ctx.fillText('COVER SHEET',W-90,TY+60);
 
@@ -1186,8 +1302,55 @@ function drawCoverSheet(ctx,W,H){
   drawNorthArrow(ctx,W-60,60);
 }
 
+// ── CODE-2 helper: energy schedule called from drawSchedulesSheet ──
+function drawEnergySchedule(ctx,W,H,TY,z){
+  const st=z?.state||'';const db=STATE_DB[st]||{ec:'IECC 2018'};
+  const isCA=st==='CA',isFL=st==='FL',isAK=st==='AK',isWA=st==='WA';
+  const R={
+    ceil:isCA?'R-49':isFL?'R-30':isAK?'R-60':'R-49',
+    wall:isCA?'R-21+5ci':isFL?'R-13':'R-20+5ci',
+    floor:isCA?'R-19':isFL?'R-13':'R-19',
+    slab:isCA||isWA?'R-10':'R-10 (if applicable)',
+    win:isCA?'U-0.28 / SHGC-0.25':isFL?'U-0.40 / SHGC-0.25':'U-0.28 / SHGC-0.40',
+    ach:isCA||isWA?'≤3.0 ACH50':'≤3.0 ACH50',
+  };
+  let cy=TY-220;
+  ctx.fillStyle='rgba(34,224,138,.7)';ctx.font='500 9px JetBrains Mono,monospace';
+  ctx.textAlign='left';ctx.textBaseline='alphabetic';
+  ctx.fillText(`ENERGY COMPLIANCE — ${db.ec} / Climate Zone per IECC Table R302.1`,20,cy);cy+=14;
+  const rows=[
+    ['COMPONENT','MIN R-VALUE / MAX U-FACTOR','MATERIAL SPECIFICATION','CODE SECTION'],
+    ['Ceiling/Attic',R.ceil,'Blown fiberglass or cellulose','IECC R402.1.2'],
+    ['Exterior Wall',R.wall,'R-21 batt + R-5 continuous rigid EPS','IECC R402.1.2'],
+    ['Floor over crawl',R.floor,'Unfaced batt between joists','IECC R402.1.2'],
+    ['Slab perimeter',R.slab,'2" XPS to 2\'-0" below grade','IECC R402.1.2'],
+    ['Windows & Doors',R.win,'Triple-pane Fibrex or equal','IECC R402.1.2'],
+    ['Air barrier',R.ach,'Continuous membrane + blower door test','IECC R402.4.1.2'],
+    ['Mechanical vent','0.35 ACH min','Zehnder ComfoAir 200 ERV or equal','ASHRAE 62.2'],
+    ['Domestic HW','EF ≥ 2.0','Heat pump water heater (HPWH)','IECC R403.5.3'],
+    ['Lighting','100% high-efficacy','LED throughout, no IC-rated incandescent','IECC R404.1'],
+    ['HVAC','HSPF ≥ 10 / SEER2 ≥ 16','Mitsubishi Hyper-Heat ASHP or equal','IECC R403.1.1'],
+  ];
+  const colW=[W*.2,W*.22,W*.32,W*.14];
+  rows.forEach((row,ri)=>{
+    let cx=20;const rh=16;
+    ctx.fillStyle=ri===0?'rgba(15,40,70,.9)':ri%2===0?'rgba(11,14,21,.5)':'rgba(18,26,40,.4)';
+    ctx.fillRect(18,cy,W-36,rh);
+    row.forEach((cell,ci)=>{
+      ctx.strokeStyle='rgba(61,139,255,.1)';ctx.lineWidth=.4;ctx.strokeRect(cx,cy,colW[ci]||80,rh);
+      ctx.fillStyle=ri===0?'rgba(34,224,138,.85)':'rgba(200,220,240,.7)';
+      ctx.font=`${ri===0?'500':'400'} ${ri===0?7:6.5}px JetBrains Mono,monospace`;
+      ctx.textAlign='left';ctx.textBaseline='middle';
+      ctx.fillText(cell.substring(0,44),cx+3,cy+rh/2);
+      cx+=colW[ci]||80;
+    });
+    cy+=rh;
+  });
+}
+
 // ── SHEET: A-1 Site Plan ──
 function drawSitePlanSheet(ctx,W,H){
+  ctx.textBaseline='alphabetic'; // DRAW-3: baseline reset
   const z=S._z||{lotWidth:60,lotDepth:120,frontSetback:20,rearSetback:15,leftSetback:5,rightSetback:5};
   const m=S.plan?.meta||{};
   ctx.fillStyle='#0c1420';ctx.fillRect(0,0,W,H);
@@ -1234,6 +1397,23 @@ function drawSitePlanSheet(ctx,W,H){
     dimLine(ctx,ox,sy+sh/2,bx,sy+sh/2,`${z.leftSetback}' SB`);
     dimLine(ctx,ox,oy,ox,sy,`${z.frontSetback}'\nFRONT SB`,true);
   }
+  // ── GEOM-4: Parking stalls (8.5'×18' per IBC §1106) ──
+  const numStalls=(S.plan?.meta?.parkingSpaces)||0;
+  if(numStalls>0){
+    const stallW=ft(8.5),stallD=ft(18);
+    const stallY=oy+ft(z.lotDepth)-ft(z.rearSetback||15)-stallD-ft(2);
+    ctx.fillStyle='rgba(90,100,115,.25)';ctx.strokeStyle='rgba(122,154,184,.5)';ctx.lineWidth=0.7;
+    for(let s=0;s<Math.min(numStalls,6);s++){
+      const stallX=tx(z.leftSetback||5)+s*stallW;
+      if(stallX+stallW>tx(z.lotWidth-(z.rightSetback||5)))break;
+      ctx.fillRect(stallX,stallY,stallW,stallD);ctx.strokeRect(stallX,stallY,stallW,stallD);
+      // Center line
+      ctx.beginPath();ctx.moveTo(stallX+stallW/2,stallY);ctx.lineTo(stallX+stallW/2,stallY+stallD);ctx.stroke();
+    }
+    ctx.fillStyle='rgba(122,154,184,.6)';ctx.font='7px JetBrains Mono,monospace';ctx.textAlign='left';ctx.textBaseline='middle';
+    ctx.fillText(`PARKING: ${numStalls} STALLS @ 8'-6"×18'-0" (IBC §1106)`,tx(z.leftSetback||5),stallY-8);
+  }
+
   // Street label
   ctx.fillStyle='rgba(245,200,66,.5)';ctx.font='500 9px JetBrains Mono,monospace';ctx.textAlign='center';ctx.textBaseline='top';
   ctx.fillText('STREET / RIGHT-OF-WAY',ox+ft(z.lotWidth)/2,oy+ft(z.lotDepth)+22);
@@ -1251,6 +1431,7 @@ function drawSitePlanSheet(ctx,W,H){
 
 // ── SHEET: A-2 Floor Plans ──
 function drawFloorPlanSheet(ctx,W,H,floorIdx){
+  ctx.textBaseline='alphabetic'; // DRAW-3: always reset baseline
   const z=S._z||{lotWidth:60,lotDepth:120,frontSetback:20,rearSetback:15,leftSetback:5,rightSetback:5};
   const pd=S.plan;if(!pd)return;
   const fl=pd.floors?.[floorIdx];if(!fl)return;
@@ -1308,6 +1489,36 @@ function drawFloorPlanSheet(ctx,W,H,floorIdx){
     }
     ctx.restore();
   });
+  // ── DRAW-8: Door swing arcs ──
+  (fl.rooms||[]).forEach(r=>{
+    if(!r.w||!r.h||r.w<3||r.h<3)return;
+    const rx=tx(r.x),ry=ty(r.y),rw=ft(r.w),rh=ft(r.h);
+    if(rw<8||rh<8)return;
+    const doorTypes=['bedroom','living','dining','kitchen','entry','laundry','office'];
+    if(!doorTypes.includes(r.type||''))return;
+    // Door on bottom wall of each room, 2'-8" = 2.67ft wide
+    const dw=ft(2.67);const dy=ry+rh;const dx=rx+rw*.18;
+    ctx.save();ctx.strokeStyle='rgba(200,215,235,.55)';ctx.lineWidth=0.6;
+    // Door leaf rectangle
+    ctx.strokeRect(dx,dy-dw,dw,dw*.08);
+    // 90° swing arc
+    ctx.beginPath();ctx.arc(dx,dy,dw,Math.PI*1.5,Math.PI*2);ctx.stroke();
+    ctx.restore();
+  });
+  // ── DRAW-9: Wall thickness lines ──
+  // Exterior wall: 5.5" = 0.46ft · Interior: 3.5" = 0.29ft
+  const extWallT=ft(0.5);// round to 0.5ft for visibility at drawing scale
+  (fl.rooms||[]).forEach(r=>{
+    if(!r.w||!r.h)return;
+    const rx=tx(r.x),ry=ty(r.y),rw=ft(r.w),rh=ft(r.h);
+    if(rw<4||rh<4)return;
+    const c=RC[r.type]||RC.default;
+    // Draw thickened exterior wall lines on all four sides
+    ctx.save();ctx.strokeStyle=c.s;ctx.lineWidth=Math.max(2.5,extWallT*.4);ctx.globalAlpha=.7;
+    ctx.strokeRect(rx,ry,rw,rh);
+    ctx.restore();
+  });
+
   // Dim lines
   dimLine(ctx,ox,oy+ft(z.lotDepth)+26,ox+ft(z.lotWidth),oy+ft(z.lotDepth)+26,`${z.lotWidth}'-0"  LOT WIDTH`);
   dimLine(ctx,ox+ft(z.lotWidth)+26,oy,ox+ft(z.lotWidth)+26,oy+ft(z.lotDepth),`${z.lotDepth}'-0"  LOT DEPTH`,true);
@@ -1322,6 +1533,7 @@ function drawFloorPlanSheet(ctx,W,H,floorIdx){
 
 // ── SHEET: A-3 Exterior Elevations ──
 function drawElevationsSheet(ctx,W,H){
+  ctx.textBaseline='alphabetic'; // DRAW-3: baseline reset
   const z=S._z||{};const pd=S.plan;if(!pd)return;
   const m=pd.meta||{};
   ctx.fillStyle='#0c1420';ctx.fillRect(0,0,W,H);
@@ -1353,9 +1565,33 @@ function drawElevation(ctx,ex,ey,eW,eH,name,bldW,totalH,stories,floorH,grndH,roo
   ctx.fillStyle='rgba(40,54,80,.5)';ctx.beginPath();ctx.moveTo(bpx,bpy-bH);ctx.lineTo(bpx+bldW*scl/2,bpy-bH-roofH);ctx.lineTo(bpx+bldW*scl,bpy-bH);ctx.closePath();ctx.fill();ctx.stroke();
   // Floor lines
   for(let f=1;f<stories;f++){const fy=bpy-f*floorH*scl;ctx.strokeStyle='rgba(122,154,184,.35)';ctx.lineWidth=.5;ctx.setLineDash([4,3]);ctx.beginPath();ctx.moveTo(bpx,fy);ctx.lineTo(bpx+bldW*scl,fy);ctx.stroke();ctx.setLineDash([]);ctx.fillStyle='rgba(122,154,184,.4)';ctx.font='6px JetBrains Mono,monospace';ctx.textAlign='right';ctx.fillText(`FL ${f+1}`,bpx-3,fy+3)}
-  // Windows per floor
-  const winW=Math.min(bldW*scl/4,36);const winH=6*scl;const winPerFlr=Math.min(4,Math.floor(bldW/12));
-  for(let f=0;f<stories;f++){const by2=bpy-(f+.5)*floorH*scl;for(let w=0;w<winPerFlr;w++){const wx=bpx+(w+1)*bldW*scl/(winPerFlr+1)-winW/2;ctx.fillStyle='rgba(100,170,255,.35)';ctx.fillRect(wx,by2-winH/2,winW,winH);ctx.strokeStyle='rgba(100,170,255,.6)';ctx.lineWidth=.7;ctx.strokeRect(wx,by2-winH/2,winW,winH);ctx.strokeStyle='rgba(100,170,255,.25)';ctx.beginPath();ctx.moveTo(wx+winW/2,by2-winH/2);ctx.lineTo(wx+winW/2,by2+winH/2);ctx.stroke()}}
+  // ── DRAW-10: Windows with sill 3ft AFF, head 7ft AFF, RO annotations ──
+  const winW=Math.min(bldW*scl/4,36);const winPerFlr=Math.min(4,Math.floor(bldW/12));
+  for(let f=0;f<stories;f++){
+    const fhFt=f===0?grndH:floorH;
+    const flrBase=bpy-f*floorH*scl;
+    const sillY=flrBase-(3/fhFt)*fhFt*scl;
+    const headY=flrBase-(7/fhFt)*fhFt*scl;
+    const wH=Math.max(3,sillY-headY);
+    for(let w=0;w<winPerFlr;w++){
+      const wx=bpx+(w+1)*bldW*scl/(winPerFlr+1)-winW/2;
+      ctx.fillStyle='rgba(100,170,255,.35)';ctx.fillRect(wx,headY,winW,wH);
+      ctx.strokeStyle='rgba(100,170,255,.7)';ctx.lineWidth=.8;ctx.strokeRect(wx,headY,winW,wH);
+      ctx.strokeStyle='rgba(100,170,255,.25)';ctx.beginPath();
+      ctx.moveTo(wx+winW/2,headY);ctx.lineTo(wx+winW/2,headY+wH);ctx.stroke();
+      ctx.strokeStyle='rgba(200,215,235,.25)';
+      ctx.beginPath();ctx.moveTo(wx,sillY);ctx.lineTo(wx+winW,sillY);ctx.stroke();
+    }
+    if(f===0&&winPerFlr>0&&scl>0.3){
+      const wx0=bpx+(1)*bldW*scl/(winPerFlr+1)-winW/2;
+      const sillY0=flrBase-(3/fhFt)*fhFt*scl;const headY0=flrBase-(7/fhFt)*fhFt*scl;
+      ctx.fillStyle='rgba(122,154,184,.55)';ctx.font='5.5px JetBrains Mono,monospace';
+      ctx.textAlign='left';ctx.textBaseline='middle';
+      ctx.fillText(`3'-0" SILL`,wx0+winW+3,sillY0);
+      ctx.fillText(`7'-0" HEAD`,wx0+winW+3,headY0);
+      ctx.fillText(`RO: ${(winW/scl).toFixed(1)}'W×4'-0"H`,wx0+winW+3,(sillY0+headY0)/2);
+    }
+  }
   // Entry door on front elevation
   if(name.includes('NORTH')){const dW=Math.min(bldW*scl/8,20);const dH=8*scl;const dx=bpx+bldW*scl/2-dW/2;ctx.fillStyle='rgba(180,140,90,.3)';ctx.fillRect(dx,bpy-dH,dW,dH);ctx.strokeStyle='rgba(180,140,90,.6)';ctx.lineWidth=1;ctx.strokeRect(dx,bpy-dH,dW,dH)}
   // Height dimension
@@ -1369,6 +1605,7 @@ function drawElevation(ctx,ex,ey,eW,eH,name,bldW,totalH,stories,floorH,grndH,roo
 
 // ── SHEET: A-4 Building Sections ──
 function drawSectionsSheet(ctx,W,H){
+  ctx.textBaseline='alphabetic'; // DRAW-3: baseline reset
   const z=S._z||{};const pd=S.plan;if(!pd)return;
   ctx.fillStyle='#0c1420';ctx.fillRect(0,0,W,H);
   ctx.strokeStyle='rgba(61,139,255,.35)';ctx.lineWidth=2;ctx.strokeRect(12,12,W-24,H-24);
@@ -1406,7 +1643,8 @@ function drawSection(ctx,ex,ey,eW,eH,name,bldD,stories,dir){
   // Walls
   ctx.strokeStyle='rgba(61,139,255,.5)';ctx.lineWidth=2;ctx.strokeRect(bpx,bpy-totalH*scl,bldD*scl,totalH*scl);
   // Roof line
-  const rpx=roofLine=>ctx.beginPath();const roofH=totalH*scl;ctx.strokeStyle='rgba(150,100,50,.6)';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(bpx,bpy-roofH);ctx.lineTo(bpx+bldD*scl/2,bpy-roofH-20);ctx.lineTo(bpx+bldD*scl,bpy-roofH);ctx.stroke();
+  // roof line drawn inline below
+  const roofH=totalH*scl;ctx.strokeStyle='rgba(150,100,50,.6)';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(bpx,bpy-roofH);ctx.lineTo(bpx+bldD*scl/2,bpy-roofH-20);ctx.lineTo(bpx+bldD*scl,bpy-roofH);ctx.stroke();
   // Insulation hatching
   ctx.save();ctx.beginPath();ctx.rect(bpx,bpy-totalH*scl,4,totalH*scl);ctx.clip();for(let y=0;y<totalH*scl;y+=6){ctx.strokeStyle='rgba(34,224,138,.3)';ctx.lineWidth=.5;ctx.beginPath();ctx.arc(bpx+2,bpy-y,2,0,Math.PI);ctx.stroke()}ctx.restore();
   // Dimension
@@ -1447,6 +1685,7 @@ function drawSchedulesSheet(ctx,W,H){
   cy=Math.max(nextY1,cy+280)+16;
   // General notes
   ctx.fillStyle='rgba(61,139,255,.7)';ctx.font='500 9px JetBrains Mono,monospace';ctx.textAlign='left';ctx.fillText('GENERAL NOTES:',20,cy);cy+=16;
+  if(S._z)drawEnergySchedule(ctx,W,H,TY,S._z);
   const notes=['1. All doors and windows to be installed per manufacturer\'s instructions and local building code.','2. Verify rough opening dimensions with manufacturer prior to framing.',`3. All glazing to meet ANSI Z97.1 safety glazing requirements where required by code.`,`4. All windows and doors to meet energy compliance: U-factor ≤0.30, SHGC ≤0.25 (verify with ${S._z?.jurisdiction||'local'} requirements).`,'5. Hardware: All accessible units to have lever handles (ADA). Deadbolts on all exterior entry doors.','6. Fire-rated doors: Provide UL-listed frames and hardware. Verify rating with local fire marshal.'];
   notes.forEach(n=>{ctx.font='7.5px JetBrains Mono,monospace';ctx.fillStyle='rgba(122,154,184,.65)';ctx.fillText(n,20,cy);cy+=14});
 }
@@ -1462,7 +1701,8 @@ function drawTitleBlock(ctx,W,H,TH,sheetNum,sheetTitle,scale){
   ctx.font='7.5px JetBrains Mono,monospace';ctx.fillStyle='rgba(122,154,184,.6)';
   ctx.fillText((m.address||S.addr||'').substring(0,60),20,TY+32);
   ctx.fillText(`${z.jurisdiction||'—'}, ${z.state||'—'}  ·  Zone: ${z.zoningDistrict||'—'}  ·  APN: TBD`,20,TY+44);
-  ctx.fillText(`ArchDraw Intel v13  ·  AI-Generated Schematic  ·  ${new Date().toLocaleDateString('en-US',{month:'short',day:'2-digit',year:'numeric'})}`,20,TY+56);
+  const apn=S.countyRecord?.esri?.APN||S.countyRecord?.esri?.PARCELNO||S.countyRecord?.esri?.PIN||'See County Assessor';
+    ctx.fillText(`APN: ${apn}  ·  ArchDraw Intel v14  ·  AI Schematic  ·  ${new Date().toLocaleDateString('en-US',{month:'short',day:'2-digit',year:'numeric'})}`,20,TY+56);
   // Sheet info
   ctx.textAlign='center';ctx.fillStyle='rgba(210,225,244,.9)';ctx.font='500 22px JetBrains Mono,monospace';ctx.fillText(sheetNum,W-100,TY+TH/2-6);
   ctx.font='7px JetBrains Mono,monospace';ctx.fillStyle='rgba(61,139,255,.5)';ctx.fillText(sheetTitle.toUpperCase(),W-100,TY+TH/2+12);ctx.fillText('SCALE: '+scale,W-100,TY+TH/2+24);
@@ -1497,9 +1737,17 @@ function setView(v){
   const mapView=document.getElementById('map-view');const planCv=document.getElementById('plan-canvas');const threeCv=document.getElementById('three-canvas');
   mapView.classList.toggle('vis',v==='map');planCv.style.display=v==='plan'?'block':'none';threeCv.style.display=v==='3d'?'block':'none';
   document.getElementById('legend').classList.toggle('vis',v==='plan'&&!!S.plan);
+  const zh=document.getElementById('zoom-hint');if(zh)zh.classList.remove('vis'); // UX-3: hide zoom hint on all view switches
   if(v==='plan'&&S.plan){requestAnimationFrame(()=>renderSheet(S.activeSheet));document.getElementById('zoom-hint').classList.add('vis');setTimeout(()=>document.getElementById('zoom-hint').classList.remove('vis'),3000)}
   if(v==='3d'){if(!THREE_INIT)initThree();if(S.plan)gen3D(S.plan);const tc=document.getElementById('three-canvas');if(!tc._b3){tc._b3=true;bind3DControls()}}
-  if(v==='map'){if(MAP_INSTANCE)setTimeout(()=>MAP_INSTANCE.invalidateSize(),50)}
+  if(v==='map'){
+    if(MAP_INSTANCE){
+      // MAP-2: wait for container to be visible before invalidating
+      requestAnimationFrame(()=>{
+        setTimeout(()=>{if(MAP_INSTANCE)MAP_INSTANCE.invalidateSize();},100);
+      });
+    }
+  }
 }
 function resetPanZoom(){S.zoom=1;S.panX=0;S.panY=0}
 function fitPlan(){resetPanZoom();if(S.plan&&S.view==='plan')renderSheet(S.activeSheet)}
@@ -1513,7 +1761,27 @@ planCv.addEventListener('mouseup',()=>{S.panning=false;planCv.style.cursor='grab
 planCv.addEventListener('mouseleave',()=>{S.panning=false});
 
 // PNG export
-function exportSheetPNG(){if(!S.plan){alert('Run analysis first.');return}const link=document.createElement('a');link.download=`${(S.addr||'plan').replace(/[^a-z0-9]/gi,'_').substring(0,25)}_${S.activeSheet}.png`;link.href=planCv.toDataURL('image/png');link.click()}
+function exportSheetPNG(){
+  if(!S.plan){alert('Run analysis first.');return}
+  // UX-4: only export when plan canvas is visible; warn otherwise
+  if(S.view!=='plan'){
+    const ok=confirm(`Currently in ${S.view.toUpperCase()} view.\nSwitch to PLAN view and export the current sheet?`);
+    if(!ok)return;
+    setView('plan');
+    // Small delay for canvas to render before capturing
+    setTimeout(()=>{
+      const link=document.createElement('a');
+      link.download=`${(S.addr||'plan').replace(/[^a-z0-9]/gi,'_').substring(0,25)}_${S.activeSheet}.png`;
+      link.href=document.getElementById('plan-canvas').toDataURL('image/png');
+      link.click();
+    },200);
+    return;
+  }
+  const link=document.createElement('a');
+  link.download=`${(S.addr||'plan').replace(/[^a-z0-9]/gi,'_').substring(0,25)}_${S.activeSheet}.png`;
+  link.href=document.getElementById('plan-canvas').toDataURL('image/png');
+  link.click();
+}
 
 // ═══ PDF EXPORT — Full Permit Set ═══
 async function exportPermitPDF(){
@@ -1537,10 +1805,12 @@ async function exportPermitPDF(){
   try{
     addSheet(drawCoverSheet,'A-0 Cover');
     doc.addPage([914,610],'landscape');addSheet(drawSitePlanSheet,'A-1 Site Plan');
+    const savedFloor=S.floor; // DRAW-6: save floor index before PDF loop
     for(let i=0;i<(S.plan.floors||[]).length;i++){
       const fi=i;doc.addPage([914,610],'landscape');
       addSheet((c,w,h)=>{S.floor=fi;drawFloorPlanSheet(c,w,h,fi)},`A-2 Floor ${i+1}`);
     }
+    S.floor=savedFloor; // DRAW-6: restore after loop so canvas stays on user's floor
     doc.addPage([914,610],'landscape');addSheet(drawElevationsSheet,'A-3 Elevations');
     doc.addPage([914,610],'landscape');addSheet(drawSectionsSheet,'A-4 Sections');
     doc.addPage([914,610],'landscape');addSheet(drawSchedulesSheet,'A-5 Schedules');
@@ -1578,9 +1848,89 @@ function camUp(){if(!cam)return;const t=orb.ph*Math.PI/180,p=orb.th*Math.PI/180;
 function bind3DControls(){const tc=document.getElementById('three-canvas');tc.addEventListener('mousedown',e=>{orb.dn=true;orb.x=e.clientX;orb.y=e.clientY});tc.addEventListener('mousemove',e=>{if(!orb.dn)return;orb.th+=(e.clientX-orb.x)*.4;orb.ph=Math.max(10,Math.min(80,orb.ph-(e.clientY-orb.y)*.3));orb.x=e.clientX;orb.y=e.clientY;camUp()});tc.addEventListener('mouseup',()=>orb.dn=false);tc.addEventListener('mouseleave',()=>orb.dn=false);tc.addEventListener('wheel',e=>{e.preventDefault();orb.r=Math.max(20,Math.min(2000,orb.r+e.deltaY*.5));camUp()},{passive:false})}
 
 // ═══ NAV ═══
-function goBack(){S.plan=null;S.floor=0;S.analyzing=false;resetPanZoom();document.getElementById('run-btn').disabled=!S.apiReady;document.getElementById('run-btn').textContent='ANALYZE →';document.getElementById('legend').classList.remove('vis');document.getElementById('map-info').classList.remove('vis');showScreen('landing')}
+function goBack(){
+  // PIPE-3: cancel any pending option-selection Promise
+  if(S._optionResolve){
+    L.info('goBack: cancelling pending option selection');
+    S._optionResolve=null; // release reference — resolves naturally via timeout or ignored
+  }
+  // PIPE-4: always close options overlay
+  const ov=document.getElementById('opts-overlay');
+  if(ov)ov.classList.remove('vis');
+  S.plan=null;S.floor=0;S.analyzing=false;S.generatedOptions=[];S.selectedOption=null;
+  resetPanZoom();
+  document.getElementById('run-btn').disabled=!S.apiReady;
+  document.getElementById('run-btn').textContent='ANALYZE →';
+  document.getElementById('legend').classList.remove('vis');
+  const mi=document.getElementById('map-info');if(mi)mi.classList.remove('vis');
+  // Clear stale sheet tabs
+  const st=document.getElementById('sheet-tabs');if(st)st.innerHTML='';
+  showScreen('landing');
+}
 
 new ResizeObserver(()=>{const p=document.getElementById('cc');if(!p.offsetWidth||!p.offsetHeight)return;if(S.plan&&S.view==='plan')renderSheet(S.activeSheet);if(THREE_INIT&&ren3){ren3.setSize(p.offsetWidth,p.offsetHeight);cam.aspect=p.offsetWidth/p.offsetHeight;cam.updateProjectionMatrix()}if(MAP_INSTANCE&&S.view==='map')MAP_INSTANCE.invalidateSize()}).observe(document.getElementById('cc'));
+
+// ── UX-6: Keyboard shortcuts ──
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){
+    hideSuggest();
+    const ov=document.getElementById('opts-overlay');if(ov&&ov.classList.contains('vis'))ov.classList.remove('vis');
+    if(logPanel){logPanel.remove();logPanel=null}
+  }
+  if(!S.plan||document.getElementById('workspace').classList.contains('hidden'))return;
+  if(e.key==='ArrowRight'&&!e.ctrlKey){
+    const tabs=[...document.querySelectorAll('.stab')];const cur=tabs.findIndex(t=>t.classList.contains('on'));
+    if(cur<tabs.length-1)tabs[cur+1].click();
+  }
+  if(e.key==='ArrowLeft'&&!e.ctrlKey){
+    const tabs=[...document.querySelectorAll('.stab')];const cur=tabs.findIndex(t=>t.classList.contains('on'));
+    if(cur>0)tabs[cur-1].click();
+  }
+  if(e.key==='f'||e.key==='F'){fitPlan()}
+  if(e.key==='m'||e.key==='M'){setView('map')}
+  if(e.key==='p'||e.key==='P'){setView('plan')}
+  if(e.key==='3'){setView('3d')}
+  if(e.key==='l'||e.key==='L'){toggleLogPanel()}
+});
+
+
+// ── UX-7: Address autocomplete (Nominatim) ──
+let _suggestTimer=null;
+function addrKeydown(e){
+  if(e.key==='Enter'){hideSuggest();startAnalysis();}
+  else if(e.key==='Escape'){hideSuggest();}
+}
+async function addrSuggest(q){
+  const box=document.getElementById('suggest-box');
+  if(!q||q.length<4){box.style.display='none';return}
+  clearTimeout(_suggestTimer);
+  _suggestTimer=setTimeout(async()=>{
+    try{
+      const r=await fetch(`https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=5&countrycodes=us&addressdetails=1`,{headers:{'User-Agent':'ArchDrawIntel/1.0'}});
+      const d=await r.json();
+      if(!d.length){box.style.display='none';return}
+      box.style.display='block';
+      box.innerHTML=d.map((item,i)=>`<div onclick="pickSuggest(${JSON.stringify(item.display_name.substring(0,80)).replace(/"/g,'&quot;')})"
+        style="padding:6px 10px;font-size:9px;color:var(--txt2);cursor:pointer;border-bottom:1px solid var(--brd);white-space:nowrap;overflow:hidden;text-overflow:ellipsis"
+        onmouseover="this.style.background='var(--ink2)'" onmouseout="this.style.background=''">${item.display_name.substring(0,80)}</div>`).join('');
+    }catch(_){box.style.display='none'}
+  },380);
+}
+function pickSuggest(addr){document.getElementById('addr-inp').value=addr;hideSuggest()}
+function hideSuggest(){const b=document.getElementById('suggest-box');if(b)b.style.display='none'}
+document.addEventListener('click',e=>{if(!e.target.closest('#addr-inp')&&!e.target.closest('#suggest-box'))hideSuggest()});
+
+
+// ── UX-8: Restore last address from sessionStorage ──
+(function restoreLastAddr(){
+  try{
+    const last=sessionStorage.getItem('adi_last_addr');
+    if(last)document.getElementById('addr-inp').value=last;
+  }catch(_){}
+})();
+document.getElementById('addr-inp').addEventListener('change',e=>{
+  try{sessionStorage.setItem('adi_last_addr',e.target.value);}catch(_){}
+});
 
 // ── INIT ──
 probeConnection();

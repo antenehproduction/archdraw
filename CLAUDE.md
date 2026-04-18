@@ -11,11 +11,19 @@ Single-file HTML application (`index.html`) that generates permit-ready architec
 ## Current state
 
 **Active branch:** `main`  
-**Working version:** v13 (API connection verified working)  
-**In-progress:** v14 — has all sprint fixes but broke API connection (under investigation)
+**Working version:** v14 (all sprint fixes shipped; parse errors resolved)
 
-### Known issue in v14
-The `probeConnection()` and `saveKey()` functions were rewritten in v14 and broke the embedded Claude.ai proxy. v13's versions work correctly. Do NOT modify these two functions without explicit instruction.
+### v14 sprint fixes included
+- API-3 retry wrappers with exponential backoff (`callAIWithRetry`, `callJSONWithRetry`)
+- UX-6 keyboard shortcuts, UX-7 address autocomplete, UX-9 responsive layout
+- GEOM-3 min-room-dim filter (IBC §1208.1), GEOM-4 parking stalls
+- DRAW-3/6/8/9/10 drawing fixes (baseline, floor restore, door swings, wall thickness, window sill/head annotations)
+- CODE-2 per-state energy schedule, CHK-3 CSV checklist export
+- PIPE-3/4/5 pipeline robustness (cancel handlers, progress dots)
+- `probeConnection()` and `saveKey()` are byte-identical to v13 — still locked, do not alter without confirmed bug report.
+
+### v14 rewrite history (for context)
+The original v14 drop had parse errors from unescaped apostrophes in single-quoted string literals (violates critical rule #2) and one comment-swallows-code line. These were fixed before shipping to `main`. `probeConnection`/`saveKey` were never actually changed in v14 — the apparent "API connection bug" was a script parse failure that prevented the entire `<script>` block from executing.
 
 ---
 
@@ -114,7 +122,7 @@ Google Fonts      fonts.googleapis.com
 ## Active bugs to fix (v14 → v15)
 
 Priority order:
-1. **API-CONN** — probeConnection / saveKey broken in v14 (use v13 versions)
+1. ~~**API-CONN** — probeConnection / saveKey broken in v14~~ — resolved: was a script parse error from unescaped apostrophes, not a real bug in the connection functions
 2. **DRAW-5** — PDF aspect ratio slight distortion (1440/960 ≠ 914/610mm exactly)
 3. **GEOM-2** — ADU rooms can exceed rear setback when lot is shallow
 4. **MAP-6** — Parcel shown as rectangle; real parcels are irregular
@@ -125,7 +133,8 @@ Priority order:
 ## File history
 
 ```
-index.html    v13 — working API connection, all core features
+index.html    v14 — sprint fixes, retries, autocomplete, CSV export, responsive layout
+archdraw-intel-v14.html  snapshot kept for reference; do not edit
 ```
 
 Do not create additional versioned files. Git history tracks versions.
