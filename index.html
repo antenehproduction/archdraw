@@ -1209,7 +1209,7 @@ async function runPhase_chk(){
   // architect-advisor: surface the verdict in UI (already computed above)
   L.info(`Advisor: rdpRequired=${adv.rdpRequired} seals=[${adv.sealsRequired.join(',')}] triggers=[${adv.triggeredBy.join('; ')}]`);
   renderAdvisorBanner(adv);
-  if(adv.rdpRequired){addFind('advisor','\u26A0 Professional Review Required',`<strong>A Registered Design Professional must review and seal drawings</strong> before permit submittal.<br>Triggers: ${adv.triggeredBy.join(' \u00B7 ')}<br>Required seals: <strong>${adv.sealsRequired.join(', ')}</strong><br><span style="color:var(--txt3);font-size:10px">${adv.statuteCitation}${adv.jurisdictionNote?' \u00B7 '+adv.jurisdictionNote:''}</span>`)}
+  if(adv.rdpRequired){addFind('advisor','\uD83D\uDCCB Expert Sign-Off Before Submittal',`<strong>This set is a draft. A Registered Design Professional must review, revise as needed, and seal the drawings</strong> before permit submittal.<br>Scope triggers: ${adv.triggeredBy.join(' \u00B7 ')}<br>Required seals: <strong>${adv.sealsRequired.join(', ')}</strong><br><span style="color:var(--txt3);font-size:10px">${adv.statuteCitation}${adv.jurisdictionNote?' \u00B7 '+adv.jurisdictionNote:''}</span>`)}
   // Re-render the current sheet so disclosure + footer appear immediately
   if(S.view==='plan'&&S.activeSheet)renderSheet(S.activeSheet);
 }
@@ -1339,7 +1339,7 @@ function renderAdvisorBanner(adv){
   if(adv.rdpRequired){
     b.style.display='flex';
     const trigs=adv.triggeredBy.slice(0,3).join(' \u00B7 ');
-    b.innerHTML=`<span style="color:#ff6555;font-weight:500;white-space:nowrap">\u26A0 RDP REQUIRED</span><span style="opacity:.8;overflow:hidden;text-overflow:ellipsis">${trigs}</span><span style="opacity:.6;white-space:nowrap">Seals: ${adv.sealsRequired.join(', ')}</span>`;
+    b.innerHTML=`<span style="color:#f5c842;font-weight:500;white-space:nowrap">\uD83C\uDFAF Expert Sign-Off Required</span><span style="opacity:.8;overflow:hidden;text-overflow:ellipsis">${trigs}</span><span style="opacity:.6;white-space:nowrap">Seals: ${adv.sealsRequired.join(', ')}</span>`;
   }else{b.style.display='none';b.innerHTML=''}
 }
 
@@ -1552,7 +1552,7 @@ function drawCoverSheet(ctx,W,H){
     ctx.fillStyle='rgba(255,101,85,.15)';ctx.fillRect(discX,discY-22,discW,18);
     ctx.strokeStyle='rgba(255,101,85,.6)';ctx.lineWidth=.7;ctx.strokeRect(discX,discY-22,discW,18);
     ctx.fillStyle='rgba(255,101,85,.95)';ctx.font='500 8px JetBrains Mono,monospace';ctx.textAlign='left';ctx.textBaseline='middle';
-    ctx.fillText(`\u26A0 RDP REQUIRED \u00B7 Seals: ${adv.sealsRequired.join(', ')} \u00B7 Triggers: ${adv.triggeredBy.slice(0,2).join('; ')}`.substring(0,140),discX+8,discY-13);
+    ctx.fillText(`\uD83C\uDFAF EXPERT SIGN-OFF REQUIRED \u00B7 Seals: ${adv.sealsRequired.join(', ')} \u00B7 Triggers: ${adv.triggeredBy.slice(0,2).join('; ')}`.substring(0,140),discX+8,discY-13);
   }
   // Single copyright line
   ctx.font='6.5px JetBrains Mono,monospace';ctx.fillStyle='rgba(122,154,184,.4)';ctx.textAlign='center';ctx.textBaseline='alphabetic';
@@ -2025,8 +2025,7 @@ planCv.addEventListener('mouseleave',()=>{S.panning=false});
 function exportSheetPNG(){
   if(!S.plan){alert('Run analysis first.');return}
   const adv=S._advisor||runArchitectAdvisor();S._advisor=adv;
-  if(adv.exportBlocked){L.error('Export blocked by architect-advisor:',adv.triggeredBy.join(', '));alert('Export blocked — professional disclosure missing. Check LOG.');return}
-  L.info(`PNG export \u2192 advisor: rdpRequired=${adv.rdpRequired} seals=[${adv.sealsRequired.join(',')}]`);
+  L.info(`PNG export \u2192 advisor: rdpRequired=${adv.rdpRequired} seals=[${adv.sealsRequired.join(',')}] (draft \u2014 expert sign-off required before submittal)`);
   // UX-4: only export when plan canvas is visible; warn otherwise
   if(S.view!=='plan'){
     const ok=confirm(`Currently in ${S.view.toUpperCase()} view.\nSwitch to PLAN view and export the current sheet?`);
@@ -2052,8 +2051,7 @@ async function exportPermitPDF(){
   if(!S.plan){alert('Run analysis first.');return}
   if(!window.jspdf){alert('jsPDF not loaded — check internet connection.');return}
   const adv=S._advisor||runArchitectAdvisor();S._advisor=adv;
-  if(adv.exportBlocked){L.error('PDF export blocked by architect-advisor:',adv.triggeredBy.join(', '));alert('Export blocked — professional disclosure missing. Check LOG.');return}
-  L.info(`PDF export \u2192 advisor: rdpRequired=${adv.rdpRequired} seals=[${adv.sealsRequired.join(',')}] triggers=[${adv.triggeredBy.join('; ')}]`);
+  L.info(`PDF export \u2192 advisor: rdpRequired=${adv.rdpRequired} seals=[${adv.sealsRequired.join(',')}] triggers=[${adv.triggeredBy.join('; ')}] (draft \u2014 expert sign-off required before submittal)`);
   const {jsPDF}=window.jspdf;
   const W=1440,H=960;// virtual sheet size in px for rendering
   const offscreen=document.createElement('canvas');offscreen.width=W;offscreen.height=H;
