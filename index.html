@@ -2027,6 +2027,185 @@ function drawWindowSlider(ctx,cx,cy,ft,opts={}){
   ctx.strokeRect(cx-pw*.02,cy-.8,pw*.52,1.6);
   ctx.restore();
 }
+
+// ── FURNITURE (adds programmatic intent to empty rooms) ──
+function drawBed(ctx,cx,cy,ft,opts={}){
+  // Bed with headboard + pillows + mattress outline. size = 'queen'|'king'|'full'|'twin'
+  const size=opts.size||'queen';
+  const sz={queen:{w:5,d:6.67},king:{w:6.33,d:6.67},full:{w:4.5,d:6.25},twin:{w:3.25,d:6.25}}[size];
+  const w=ft(sz.w),d=ft(sz.d);
+  ctx.save();ctx.translate(cx,cy);if(opts.orient)ctx.rotate(opts.orient*Math.PI/180);
+  // Headboard (darker strip at top)
+  ctx.fillStyle='rgba(110,130,170,.55)';ctx.fillRect(-w/2,-d/2,w,d*.1);
+  // Mattress
+  ctx.fillStyle='rgba(210,225,244,.35)';ctx.strokeStyle=ARCH_STANDARDS.symbols.fixtureStroke;ctx.lineWidth=ARCH_STANDARDS.lineWeights.fixture;
+  ctx.fillRect(-w/2,-d/2+d*.1,w,d*.9);ctx.strokeRect(-w/2,-d/2+d*.1,w,d*.9);
+  // Pillows (2 rectangles at head)
+  ctx.fillStyle='rgba(240,240,245,.6)';ctx.strokeStyle='rgba(200,215,235,.5)';ctx.lineWidth=.4;
+  ctx.fillRect(-w*.42,-d*.38,w*.35,d*.12);ctx.strokeRect(-w*.42,-d*.38,w*.35,d*.12);
+  ctx.fillRect(w*.07,-d*.38,w*.35,d*.12);ctx.strokeRect(w*.07,-d*.38,w*.35,d*.12);
+  // Size label
+  ctx.fillStyle='rgba(210,225,244,.55)';ctx.font=ARCH_STANDARDS.typography.fixture;ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(size.toUpperCase(),0,d*.15);
+  ctx.restore();
+}
+function drawSofa(ctx,cx,cy,ft,opts={}){
+  // 3-seat sofa with back + armrests
+  const w=opts.w||7,d=opts.d||3;const pw=ft(w),pd=ft(d);
+  ctx.save();ctx.translate(cx,cy);if(opts.orient)ctx.rotate(opts.orient*Math.PI/180);
+  // Base cushion
+  ctx.fillStyle='rgba(150,120,90,.4)';ctx.strokeStyle=ARCH_STANDARDS.symbols.fixtureStroke;ctx.lineWidth=ARCH_STANDARDS.lineWeights.fixture;
+  const r=pd*.15;
+  ctx.beginPath();ctx.moveTo(-pw/2+r,-pd/2);ctx.lineTo(pw/2-r,-pd/2);ctx.arcTo(pw/2,-pd/2,pw/2,-pd/2+r,r);ctx.lineTo(pw/2,pd/2-r);ctx.arcTo(pw/2,pd/2,pw/2-r,pd/2,r);ctx.lineTo(-pw/2+r,pd/2);ctx.arcTo(-pw/2,pd/2,-pw/2,pd/2-r,r);ctx.lineTo(-pw/2,-pd/2+r);ctx.arcTo(-pw/2,-pd/2,-pw/2+r,-pd/2,r);ctx.closePath();ctx.fill();ctx.stroke();
+  // Back cushions divider lines
+  ctx.beginPath();ctx.moveTo(-pw*.16,-pd/2);ctx.lineTo(-pw*.16,-pd*.1);ctx.moveTo(pw*.16,-pd/2);ctx.lineTo(pw*.16,-pd*.1);ctx.stroke();
+  // Armrests (slightly darker)
+  ctx.fillStyle='rgba(110,90,70,.55)';
+  ctx.fillRect(-pw/2,-pd/2,pw*.08,pd);ctx.strokeRect(-pw/2,-pd/2,pw*.08,pd);
+  ctx.fillRect(pw/2-pw*.08,-pd/2,pw*.08,pd);ctx.strokeRect(pw/2-pw*.08,-pd/2,pw*.08,pd);
+  ctx.restore();
+}
+function drawDiningTable(ctx,cx,cy,ft,opts={}){
+  // Dining table (rectangular) with chairs. seats = 4|6|8
+  const seats=opts.seats||6;
+  const w=seats>=8?8:seats>=6?6:4,d=3;const pw=ft(w),pd=ft(d);
+  ctx.save();ctx.translate(cx,cy);if(opts.orient)ctx.rotate(opts.orient*Math.PI/180);
+  // Table
+  ctx.fillStyle='rgba(140,110,80,.45)';ctx.strokeStyle=ARCH_STANDARDS.symbols.fixtureStroke;ctx.lineWidth=ARCH_STANDARDS.lineWeights.fixture;
+  ctx.fillRect(-pw/2,-pd/2,pw,pd);ctx.strokeRect(-pw/2,-pd/2,pw,pd);
+  // Chairs (one per long side for 4-seat; two for 6; three for 8 + 1 each head)
+  const perLong=seats===4?1:seats===6?2:3;
+  const chW=ft(1.5),chD=ft(1.5);const chSpacing=pw/(perLong+1);
+  ctx.fillStyle='rgba(100,80,60,.5)';ctx.strokeStyle='rgba(200,215,235,.55)';ctx.lineWidth=0.4;
+  for(let i=1;i<=perLong;i++){
+    const xoff=-pw/2+i*chSpacing;
+    // Top chair
+    ctx.fillRect(xoff-chW/2,-pd/2-chD-2,chW,chD);ctx.strokeRect(xoff-chW/2,-pd/2-chD-2,chW,chD);
+    // Bottom chair
+    ctx.fillRect(xoff-chW/2,pd/2+2,chW,chD);ctx.strokeRect(xoff-chW/2,pd/2+2,chW,chD);
+  }
+  // Head chairs (for 6+)
+  if(seats>=6){
+    ctx.fillRect(-pw/2-chD-2,-chW/2,chD,chW);ctx.strokeRect(-pw/2-chD-2,-chW/2,chD,chW);
+    ctx.fillRect(pw/2+2,-chW/2,chD,chW);ctx.strokeRect(pw/2+2,-chW/2,chD,chW);
+  }
+  ctx.restore();
+}
+function drawDesk(ctx,cx,cy,ft,opts={}){
+  // Desk with chair
+  const w=opts.w||5,d=opts.d||2.5;const pw=ft(w),pd=ft(d);
+  ctx.save();ctx.translate(cx,cy);if(opts.orient)ctx.rotate(opts.orient*Math.PI/180);
+  ctx.fillStyle='rgba(140,110,80,.4)';ctx.strokeStyle=ARCH_STANDARDS.symbols.fixtureStroke;ctx.lineWidth=ARCH_STANDARDS.lineWeights.fixture;
+  ctx.fillRect(-pw/2,-pd/2,pw,pd);ctx.strokeRect(-pw/2,-pd/2,pw,pd);
+  // Chair (behind desk)
+  ctx.fillStyle='rgba(100,80,60,.5)';const chW=ft(1.8),chD=ft(1.8);
+  ctx.fillRect(-chW/2,pd/2+2,chW,chD);ctx.strokeRect(-chW/2,pd/2+2,chW,chD);
+  ctx.restore();
+}
+function drawTV(ctx,cx,cy,ft,opts={}){
+  // Wall-mounted TV + media console
+  const w=opts.w||5,d=opts.d||1.5;const pw=ft(w),pd=ft(d);
+  ctx.save();ctx.translate(cx,cy);if(opts.orient)ctx.rotate(opts.orient*Math.PI/180);
+  // Console
+  ctx.fillStyle='rgba(70,80,95,.5)';ctx.strokeStyle=ARCH_STANDARDS.symbols.fixtureStroke;ctx.lineWidth=ARCH_STANDARDS.lineWeights.fixture;
+  ctx.fillRect(-pw/2,0,pw,pd);ctx.strokeRect(-pw/2,0,pw,pd);
+  // TV screen (darker, above console)
+  ctx.fillStyle='rgba(20,30,50,.9)';ctx.strokeStyle='rgba(100,170,255,.5)';
+  ctx.fillRect(-pw*.4,-pd*.8,pw*.8,pd*.5);ctx.strokeRect(-pw*.4,-pd*.8,pw*.8,pd*.5);
+  ctx.fillStyle='rgba(100,170,255,.5)';ctx.font=ARCH_STANDARDS.typography.fixture;ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('TV',0,-pd*.55);
+  ctx.restore();
+}
+function drawKitchenIsland(ctx,cx,cy,ft,opts={}){
+  // Kitchen island with optional bar-stool seating
+  const w=opts.w||6,d=opts.d||3;const pw=ft(w),pd=ft(d);
+  ctx.save();ctx.translate(cx,cy);if(opts.orient)ctx.rotate(opts.orient*Math.PI/180);
+  ctx.fillStyle='rgba(200,170,80,.3)';ctx.strokeStyle=ARCH_STANDARDS.symbols.kitchenAppliance;ctx.lineWidth=ARCH_STANDARDS.lineWeights.fixtureHeavy;
+  ctx.fillRect(-pw/2,-pd/2,pw,pd);ctx.strokeRect(-pw/2,-pd/2,pw,pd);
+  // Sink cut-out (optional)
+  if(opts.sink){
+    ctx.strokeStyle=ARCH_STANDARDS.symbols.waterFixture;ctx.lineWidth=ARCH_STANDARDS.lineWeights.fixture;
+    ctx.strokeRect(-pw*.2,-pd*.35,pw*.4,pd*.35);
+  }
+  // Bar-stool indicators along one long side
+  if(opts.stools){
+    ctx.fillStyle='rgba(100,80,60,.5)';ctx.strokeStyle='rgba(200,215,235,.55)';ctx.lineWidth=0.4;
+    const stools=Math.min(4,Math.floor(w/2.5));
+    for(let i=0;i<stools;i++){const sx=-pw/2+(i+0.5)*(pw/stools);
+      ctx.beginPath();ctx.arc(sx,pd/2+ft(1),ft(.75),0,Math.PI*2);ctx.fill();ctx.stroke()}
+  }
+  ctx.fillStyle='rgba(245,200,66,.7)';ctx.font=ARCH_STANDARDS.typography.fixture;ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('ISLAND',0,0);
+  ctx.restore();
+}
+function drawArmchair(ctx,cx,cy,ft,opts={}){
+  const w=opts.w||3,d=opts.d||3;const pw=ft(w),pd=ft(d);
+  ctx.save();ctx.translate(cx,cy);if(opts.orient)ctx.rotate(opts.orient*Math.PI/180);
+  ctx.fillStyle='rgba(150,120,90,.45)';ctx.strokeStyle=ARCH_STANDARDS.symbols.fixtureStroke;ctx.lineWidth=ARCH_STANDARDS.lineWeights.fixture;
+  const r=pd*.2;
+  ctx.beginPath();ctx.moveTo(-pw/2+r,-pd/2);ctx.lineTo(pw/2-r,-pd/2);ctx.arcTo(pw/2,-pd/2,pw/2,-pd/2+r,r);ctx.lineTo(pw/2,pd/2-r);ctx.arcTo(pw/2,pd/2,pw/2-r,pd/2,r);ctx.lineTo(-pw/2+r,pd/2);ctx.arcTo(-pw/2,pd/2,-pw/2,pd/2-r,r);ctx.lineTo(-pw/2,-pd/2+r);ctx.arcTo(-pw/2,-pd/2,-pw/2+r,-pd/2,r);ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.restore();
+}
+function drawCoffeeTable(ctx,cx,cy,ft,opts={}){
+  const w=opts.w||4,d=opts.d||2;const pw=ft(w),pd=ft(d);
+  ctx.save();ctx.translate(cx,cy);if(opts.orient)ctx.rotate(opts.orient*Math.PI/180);
+  ctx.fillStyle='rgba(140,110,80,.35)';ctx.strokeStyle=ARCH_STANDARDS.symbols.fixtureStroke;ctx.lineWidth=ARCH_STANDARDS.lineWeights.fixture;
+  ctx.fillRect(-pw/2,-pd/2,pw,pd);ctx.strokeRect(-pw/2,-pd/2,pw,pd);
+  ctx.restore();
+}
+
+// ── STAIR VARIANTS ──
+function drawStairLShape(ctx,x,y,w,d,ft,opts={}){
+  // L-shape with landing. x,y,w,d in pixel space; landing at bottom, run along right.
+  const landingSize=Math.min(w,d)/2.2;
+  ctx.save();
+  // Landing (square at corner)
+  ctx.strokeStyle=ARCH_STANDARDS.symbols.fixtureStroke;ctx.lineWidth=ARCH_STANDARDS.lineWeights.fixtureHeavy;
+  ctx.strokeRect(x,y,w,d);
+  // Tread lines in run 1 (bottom to landing) — horizontal treads
+  ctx.strokeStyle=ARCH_STANDARDS.symbols.stairTread;ctx.lineWidth=0.5;
+  const risersFlight1=7;const td1=(d-landingSize)/risersFlight1;
+  for(let i=1;i<risersFlight1;i++){ctx.beginPath();ctx.moveTo(x,y+landingSize+i*td1);ctx.lineTo(x+landingSize,y+landingSize+i*td1);ctx.stroke()}
+  // Tread lines in run 2 (landing to top) — vertical treads going right
+  const risersFlight2=7;const td2=(w-landingSize)/risersFlight2;
+  for(let i=1;i<risersFlight2;i++){ctx.beginPath();ctx.moveTo(x+landingSize+i*td2,y);ctx.lineTo(x+landingSize+i*td2,y+landingSize);ctx.stroke()}
+  // Landing outline (inside the L)
+  ctx.strokeStyle='rgba(210,225,244,.35)';ctx.lineWidth=0.6;
+  ctx.strokeRect(x,y,landingSize,landingSize);
+  // UP arrow along run 1
+  ctx.strokeStyle='rgba(245,200,66,.8)';ctx.fillStyle='rgba(245,200,66,.8)';ctx.lineWidth=1.2;
+  const ax=x+landingSize/2;ctx.beginPath();ctx.moveTo(ax,y+d-ft(1));ctx.lineTo(ax,y+landingSize+ft(1));ctx.stroke();
+  ctx.beginPath();ctx.moveTo(ax,y+landingSize+ft(1));ctx.lineTo(ax-landingSize*.2,y+landingSize+ft(2));ctx.lineTo(ax+landingSize*.2,y+landingSize+ft(2));ctx.closePath();ctx.fill();
+  ctx.fillStyle='rgba(245,200,66,.9)';ctx.font=ARCH_STANDARDS.typography.fixture;ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('UP 14R',x+landingSize/2,y+landingSize/2);
+  ctx.restore();
+}
+function drawStairUShape(ctx,x,y,w,d,ft,opts={}){
+  // U-shape with landing at top. Two parallel runs with landing connecting them.
+  const midW=w/2;
+  ctx.save();
+  ctx.strokeStyle=ARCH_STANDARDS.symbols.fixtureStroke;ctx.lineWidth=ARCH_STANDARDS.lineWeights.fixtureHeavy;
+  ctx.strokeRect(x,y,w,d);
+  // Landing strip at top
+  ctx.strokeStyle='rgba(210,225,244,.35)';ctx.lineWidth=0.5;
+  ctx.strokeRect(x,y,w,d*.25);
+  // Tread lines — left flight (going down)
+  ctx.strokeStyle=ARCH_STANDARDS.symbols.stairTread;ctx.lineWidth=0.5;
+  const r=7;const td=(d-d*.25)/r;
+  for(let i=1;i<r;i++){ctx.beginPath();ctx.moveTo(x,y+d*.25+i*td);ctx.lineTo(x+midW,y+d*.25+i*td);ctx.stroke()}
+  // Tread lines — right flight (going up)
+  for(let i=1;i<r;i++){ctx.beginPath();ctx.moveTo(x+midW,y+d*.25+i*td);ctx.lineTo(x+w,y+d*.25+i*td);ctx.stroke()}
+  // Divider between two flights
+  ctx.strokeStyle='rgba(210,225,244,.5)';ctx.lineWidth=0.6;
+  ctx.beginPath();ctx.moveTo(x+midW,y+d*.25);ctx.lineTo(x+midW,y+d);ctx.stroke();
+  // UP arrow on right flight
+  ctx.strokeStyle='rgba(245,200,66,.8)';ctx.fillStyle='rgba(245,200,66,.8)';ctx.lineWidth=1.2;
+  const ax=x+midW+midW/2;ctx.beginPath();ctx.moveTo(ax,y+d-ft(1));ctx.lineTo(ax,y+d*.25+ft(1));ctx.stroke();
+  ctx.beginPath();ctx.moveTo(ax,y+d*.25+ft(1));ctx.lineTo(ax-midW*.15,y+d*.25+ft(2));ctx.lineTo(ax+midW*.15,y+d*.25+ft(2));ctx.closePath();ctx.fill();
+  ctx.fillStyle='rgba(245,200,66,.9)';ctx.font=ARCH_STANDARDS.typography.fixture;ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('UP 14R',x+w/2,y+d*.12);
+  ctx.restore();
+}
 const SHEETS=[
   {id:'A-0',lbl:'A-0 Cover'},
   {id:'A-1',lbl:'A-1 Site Plan'},
