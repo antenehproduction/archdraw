@@ -845,9 +845,15 @@ async function runPhase_zone(){
   try{
     const z=await callJSON([{role:'user',content:`For property "${S.addr}", return ONLY JSON with ACCURATE values for this EXACT address "${S.addr}" — do NOT use placeholder/example values:\n{"lotWidth":0,"lotDepth":0,"frontSetback":0,"rearSetback":0,"leftSetback":0,"rightSetback":0,"maxHeightFt":0,"maxStories":0,"maxFAR":0,"maxLotCoverage":0,"parkingPerUnit":0,"zoningDistrict":"","zoningFullName":"","jurisdiction":"","county":"","state":"","permittedUses":["SFR","ADU","duplex"],"conditionalUses":[],"specialOverlays":[],"aduAllowed":true,"aduMaxSqFt":1200,"densityBonusEligible":true,"sb9Eligible":false,"notes":""}`}],SYS,1500);
     if(!Array.isArray(z.specialOverlays))z.specialOverlays=[];if(!Array.isArray(z.permittedUses))z.permittedUses=[];if(!Array.isArray(z.conditionalUses))z.conditionalUses=[];
-    L.info(`Zone: ${z.zoningDistrict} ${z.jurisdiction} ${z.state} lot=${z.lotWidth}×${z.lotDepth}`);
+    // Initial provenance tag — runPhase_record may recalibrate from OSM after fetch
+    const looksDefault=(!z.lotWidth||!z.lotDepth||(z.lotWidth===60&&z.lotDepth===120));
+    z._lotSource=looksDefault?'AI default (pending OSM calibration)':'AI research';
+    z._lotConfidence=looksDefault?'unverified':'verify-with-plat';
+    L.info(`Zone: ${z.zoningDistrict} ${z.jurisdiction} ${z.state} lot=${z.lotWidth}×${z.lotDepth} src=${z._lotSource}`);
     const zt=await callAIWithRetry([{role:'user',content:`Expert zoning analysis for "${S.addr}" — ${z.zoningDistrict}, ${z.jurisdiction}, ${z.state}.\nCover: by-right vs conditional development options, setbacks front ${z.frontSetback}/rear ${z.rearSetback}/sides ${z.leftSetback}-${z.rightSetback}ft, FAR ${z.maxFAR}, ${z.maxLotCoverage}% coverage, ${z.maxStories} stories, ADU rights: ${z.aduAllowed}. Note any density bonus programs, SB9 rights, or form-based code options.`}],SYS,1000);
-    phSet('zone','done',`${((Date.now()-t)/1000).toFixed(1)}s`);addFind('zone','📋 Zoning',fmt(zt)+buildZT(z));S._z=z;phaseRunners.zone=runPhase_zone;
+    phSet('zone','done',`${((Date.now()-t)/1000).toFixed(1)}s`);
+    const lotNote=z._lotSource?`<div style="margin-top:6px;padding:5px 8px;border:1px dashed var(--brd);border-radius:3px;font-size:9px;color:var(--txt3)">\uD83D\uDCCE Lot dims source: <strong>${z._lotSource}</strong> \u00B7 confidence: <em>${z._lotConfidence}</em></div>`:'';
+    addFind('zone','📋 Zoning',fmt(zt)+buildZT(z)+lotNote);S._z=z;phaseRunners.zone=runPhase_zone;
   }catch(e){phSet('zone','error',`${((Date.now()-t)/1000).toFixed(1)}s`);addFind('zone','📋 Zoning',`<div class="ebox">${e.message}</div>`);throw e}
 }
 
@@ -913,6 +919,19 @@ async function runPhase_record(){
   }else{findings.push('Address geocoding required to query site records. Enter address with city/state.')}
 
   const summary=osmFound?`**Existing Site Survey — ${S.osmBuildings.filter(e=>e.tags?.building).length} structure(s) identified** via OpenStreetMap (community-maintained survey data). Use as reference; verify with licensed surveyor.\n\n`:`**No existing buildings found** in public OpenStreetMap records for this parcel — lot may be vacant or structures not yet mapped.\n\n`;
+  // ── Lot dimension calibration — re-run now that OSM data is fetched ──
+  if(S._z&&S.lat&&S.lon&&(S._z._lotConfidence==='unverified'||S._z._lotSource?.includes('pending'))){
+    const cal=calibrateLotFromOSM(S.lat,S.lon);
+    if(cal){
+      const oldW=S._z.lotWidth,oldD=S._z.lotDepth;
+      S._z.lotWidth=cal.lotWidth;S._z.lotDepth=cal.lotDepth;
+      S._z._lotSource=cal.source;S._z._lotConfidence=cal.confidence;
+      L.info(`Lot dims recalibrated from OSM: ${oldW}\u00D7${oldD}\u2192${cal.lotWidth}\u00D7${cal.lotDepth} (${cal.fromBuildings} buildings, ${cal.confidence} confidence)`);
+      findings.push(`**Lot dimensions calibrated:** ${cal.lotWidth}'\u00D7${cal.lotDepth}' based on ${cal.fromBuildings} neighboring building footprints (was AI default ${oldW}'\u00D7${oldD}'). ${cal.confidence} confidence \u2014 verify with plat/survey.`);
+    }else if(S._z._lotSource?.includes('pending')){
+      S._z._lotSource='AI default (OSM insufficient \u2014 VERIFY with plat/survey before design)';
+    }
+  }
   // site-intel: record provenance trail for auditability
   S._sitePackProvenance={
     nominatim:S.lat?`lat=${S.lat.toFixed(5)} lon=${S.lon.toFixed(5)}`:'MISSING',
@@ -930,6 +949,44 @@ function calcOSMArea(geometry){// rough footprint SF from OSM geometry lat/lon p
   if(!geometry||geometry.length<3)return null;
   let area=0;for(let i=0;i<geometry.length;i++){const j=(i+1)%geometry.length;area+=geometry[i].lon*geometry[j].lat;area-=geometry[j].lon*geometry[i].lat}
   const areaDeg=Math.abs(area)/2;const areaSF=areaDeg*(364000*364000*Math.cos(geometry[0].lat*Math.PI/180));return areaSF;
+}
+
+// ── LOT DIMENSION CALIBRATION (used when county ArcGIS is blocked) ──
+// Reads OSM building/parcel shapes near the site, estimates lot width × depth
+// from typical neighborhood proportions. Returns null when data insufficient.
+function calibrateLotFromOSM(lat,lon){
+  if(!S.osmBuildings?.length)return null;
+  const bldgs=S.osmBuildings.filter(b=>b.tags?.building&&b.geometry&&b.geometry.length>=3);
+  if(!bldgs.length)return null;
+  // Building bounding boxes in feet (approx)
+  const ftLat=364000,ftLon=364000*Math.cos(lat*Math.PI/180);
+  const bboxes=bldgs.map(b=>{
+    const lats=b.geometry.map(p=>p.lat),lons=b.geometry.map(p=>p.lon);
+    const w=(Math.max(...lons)-Math.min(...lons))*ftLon;
+    const d=(Math.max(...lats)-Math.min(...lats))*ftLat;
+    const cx=(Math.max(...lons)+Math.min(...lons))/2,cy=(Math.max(...lats)+Math.min(...lats))/2;
+    const distFt=Math.sqrt(((cx-lon)*ftLon)**2+((cy-lat)*ftLat)**2);
+    return {w,d,dist:distFt,area:w*d};
+  }).filter(b=>b.area>200&&b.area<12000);
+  if(!bboxes.length)return null;
+  // Typical US SFR footprint is 25-40% of lot. Infer lot dims from nearest 3-5 buildings.
+  bboxes.sort((a,b)=>a.dist-b.dist);
+  const nearest=bboxes.slice(0,Math.min(5,bboxes.length));
+  const avgW=nearest.reduce((s,b)=>s+b.w,0)/nearest.length;
+  const avgD=nearest.reduce((s,b)=>s+b.d,0)/nearest.length;
+  // Typical suburban lot: footprint ~30% of lot. Commercial urban: ~60%. Default 32%.
+  const covRatio=0.32;
+  const estLotArea=(avgW*avgD)/covRatio;
+  // Preserve building aspect ratio when inferring lot aspect ratio
+  const aspectB=avgW/avgD;
+  const estLotD=Math.round(Math.sqrt(estLotArea/aspectB));
+  const estLotW=Math.round(estLotArea/estLotD);
+  return {
+    lotWidth:estLotW,lotDepth:estLotD,
+    source:`OSM neighborhood calibration (${nearest.length} buildings, avg ${Math.round(avgW)}'×${Math.round(avgD)}' footprint, assumed 32% coverage)`,
+    confidence:nearest.length>=4?'medium':'low',
+    fromBuildings:nearest.length,
+  };
 }
 
 // ── DEVELOPMENT OPTIONS GENERATION (local, instant) ──
