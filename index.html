@@ -381,8 +381,40 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--ink);color:var
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<!-- ArchDraw Intel data registries (hand-curated) — populate window.COUNTY_REGISTRY etc. -->
+<script src="data/county-registry.js"></script>
+<script src="data/zoning-matrix.js"></script>
+<script src="data/permit-registry.js"></script>
 <script>
 // ═══ STATE ═══
+// ═══ ADI_PROXY configuration ═══
+// The ArchDraw Intel proxy (workers/proxy.js) unlocks CORS-blocked data sources:
+// FEMA, county ArcGIS, municipal codes, Socrata permit portals.
+// To enable: deploy the worker (see workers/README.md) then either:
+//   (a) set window.ADI_PROXY_DEFAULT=<url> below, or
+//   (b) run localStorage.setItem('ADI_PROXY', <url>) in the browser console.
+// When unset, the app falls back to direct fetch + public corsproxy.io.
+window.ADI_PROXY_DEFAULT=window.ADI_PROXY_DEFAULT||null;
+function getProxyBase(){
+  try{return localStorage.getItem('ADI_PROXY')||window.ADI_PROXY_DEFAULT||null}
+  catch(_){return window.ADI_PROXY_DEFAULT||null}
+}
+// Proxy-aware fetch: when ADI_PROXY is set, routes through our worker;
+// otherwise uses direct fetch with corsproxy.io fallback on failure.
+async function proxyFetch(route,upstreamUrl){
+  const base=getProxyBase();
+  if(base){
+    // Route through our worker. "route" is like '/fema?lat=X&lon=Y' or '/arcgis?url=...'
+    return fetch(`${base}${route}`);
+  }
+  if(upstreamUrl){
+    // No proxy configured — try direct, fall back to corsproxy.io
+    try{const r=await fetch(upstreamUrl);if(r.ok)return r;throw new Error('direct failed')}
+    catch(_){return fetch(`https://corsproxy.io/?${encodeURIComponent(upstreamUrl)}`)}
+  }
+  throw new Error('proxyFetch: no route and no upstreamUrl');
+}
+
 const S={
   addr:'',img64:null,imgType:null,plan:null,floor:0,
   view:'map',activeSheet:'A-0',
@@ -445,12 +477,10 @@ async function detectFEMA(){
     st.innerHTML=`<span style="color:var(--txt3)">Geocoded: ${lat.toFixed(5)}, ${lon.toFixed(5)}. Querying FEMA...</span>`;
     // FEMA NFHL — may be blocked by CORS in standalone Chrome/artifact context.
     // Strategy: try direct first (Claude.ai embedded proxy supports it); on failure, fall back
-    // through a public CORS proxy so the app still resolves flood zone without a backend.
+    // through ADI_PROXY if set, else a public CORS proxy, so flood zone resolves without a backend.
     const femaBase=`hazards.fema.gov/gis/nfhl/rest/services/public/NFHL/MapServer/28/query?geometry=${lon},${lat}&geometryType=esriGeometryPoint&spatialRel=esriSpatialRelIntersects&outFields=FLD_ZONE,SFHA_TF&returnGeometry=false&f=json`;
     const femaUrl=`https://${femaBase}`;
-    const femaProxy=`https://corsproxy.io/?${encodeURIComponent(femaUrl)}`;
-    const tryFema=async()=>{try{const r=await fetch(femaUrl);return await r.json()}catch(_){const r=await fetch(femaProxy);return await r.json()}};
-    const femaFetch=tryFema();
+    const femaFetch=(async()=>{const r=await proxyFetch(`/fema?lat=${lat}&lon=${lon}`,femaUrl);return r.json()})();
     const femaTimeout=new Promise((_,r)=>setTimeout(()=>r(new Error('fema_timeout')),12000));
     const fd=await Promise.race([femaFetch,femaTimeout]);
     const feats=fd?.features||[];
@@ -856,6 +886,18 @@ async function runPhase_zone(){
   try{
     const z=await callJSON([{role:'user',content:`For property "${S.addr}", return ONLY JSON with ACCURATE values for this EXACT address "${S.addr}" — do NOT use placeholder/example values:\n{"lotWidth":0,"lotDepth":0,"frontSetback":0,"rearSetback":0,"leftSetback":0,"rightSetback":0,"maxHeightFt":0,"maxStories":0,"maxFAR":0,"maxLotCoverage":0,"parkingPerUnit":0,"zoningDistrict":"","zoningFullName":"","jurisdiction":"","county":"","state":"","permittedUses":["SFR","ADU","duplex"],"conditionalUses":[],"specialOverlays":[],"aduAllowed":true,"aduMaxSqFt":1200,"densityBonusEligible":true,"sb9Eligible":false,"notes":""}`}],SYS,1500);
     if(!Array.isArray(z.specialOverlays))z.specialOverlays=[];if(!Array.isArray(z.permittedUses))z.permittedUses=[];if(!Array.isArray(z.conditionalUses))z.conditionalUses=[];
+    // ── ZONING_MATRIX_DB override — verified development standards ──
+    if(window.ZONING_MATRIX_DB&&window.zoningMatrixKey){
+      const mk=window.zoningMatrixKey(z.jurisdiction,z.state,z.zoningDistrict);
+      const verified=window.ZONING_MATRIX_DB[mk];
+      if(verified){
+        L.info(`Zoning matrix hit: ${mk} \u2192 overriding AI values with verified ${verified.verifiedDate}`);
+        // Override numeric fields only; keep AI text for narrative
+        ['frontSetback','rearSetback','leftSetback','rightSetback','maxHeightFt','maxStories','maxFAR','maxLotCoverage','parkingPerUnit','aduAllowed','aduMaxSqFt'].forEach(f=>{if(verified[f]!==undefined)z[f]=verified[f]});
+        z._zoneMatrixVerified=true;z._zoneMatrixDate=verified.verifiedDate;z._zoneMatrixURL=verified.codeURL;
+        if(verified.notes)z.notes=(z.notes?z.notes+' · ':'')+verified.notes;
+      }
+    }
     // Initial provenance tag — runPhase_record may recalibrate from OSM after fetch
     const looksDefault=(!z.lotWidth||!z.lotDepth||(z.lotWidth===60&&z.lotDepth===120));
     z._lotSource=looksDefault?'AI default (pending OSM calibration)':'AI research';
@@ -864,7 +906,8 @@ async function runPhase_zone(){
     const zt=await callAIWithRetry([{role:'user',content:`Expert zoning analysis for "${S.addr}" — ${z.zoningDistrict}, ${z.jurisdiction}, ${z.state}.\nCover: by-right vs conditional development options, setbacks front ${z.frontSetback}/rear ${z.rearSetback}/sides ${z.leftSetback}-${z.rightSetback}ft, FAR ${z.maxFAR}, ${z.maxLotCoverage}% coverage, ${z.maxStories} stories, ADU rights: ${z.aduAllowed}. Note any density bonus programs, SB9 rights, or form-based code options.`}],SYS,1000);
     phSet('zone','done',`${((Date.now()-t)/1000).toFixed(1)}s`);
     const lotNote=z._lotSource?`<div style="margin-top:6px;padding:5px 8px;border:1px dashed var(--brd);border-radius:3px;font-size:9px;color:var(--txt3)">\uD83D\uDCCE Lot dims source: <strong>${z._lotSource}</strong> \u00B7 confidence: <em>${z._lotConfidence}</em></div>`:'';
-    addFind('zone','📋 Zoning',fmt(zt)+buildZT(z)+lotNote);S._z=z;phaseRunners.zone=runPhase_zone;
+    const matrixNote=z._zoneMatrixVerified?`<div style="margin-top:4px;padding:5px 8px;border:1px solid rgba(34,224,138,.35);border-radius:3px;font-size:9px;color:var(--green)">\u2713 Zoning standards <strong>verified</strong> against ${z.jurisdiction} municipal code (${z._zoneMatrixDate}) \u00B7 <a href="${z._zoneMatrixURL}" target="_blank" style="color:var(--blue)">open code \u2192</a></div>`:'';
+    addFind('zone','📋 Zoning',fmt(zt)+buildZT(z)+lotNote+matrixNote);S._z=z;phaseRunners.zone=runPhase_zone;
   }catch(e){phSet('zone','error',`${((Date.now()-t)/1000).toFixed(1)}s`);addFind('zone','📋 Zoning',`<div class="ebox">${e.message}</div>`);throw e}
 }
 
@@ -898,8 +941,8 @@ async function runPhase_record(){
     if(!S.femaZone){
       try{
         const femaBase=`hazards.fema.gov/gis/nfhl/rest/services/public/NFHL/MapServer/28/query?geometry=${S.lon},${S.lat}&geometryType=esriGeometryPoint&spatialRel=esriSpatialRelIntersects&outFields=FLD_ZONE,SFHA_TF&returnGeometry=false&f=json`;
-        const direct=`https://${femaBase}`;const proxy=`https://corsproxy.io/?${encodeURIComponent(direct)}`;
-        const fP=(async()=>{try{const r=await fetch(direct);return await r.json()}catch(_){L.info('FEMA direct blocked \u2014 falling back to corsproxy.io');const r=await fetch(proxy);return await r.json()}})();
+        const direct=`https://${femaBase}`;
+        const fP=(async()=>{const r=await proxyFetch(`/fema?lat=${S.lat}&lon=${S.lon}`,direct);return r.json()})();
         const fT=new Promise((_,r)=>setTimeout(()=>r(new Error('fema_timeout')),10000));
         const fd=await Promise.race([fP,fT]);
         const feats=fd?.features||[];
@@ -912,20 +955,51 @@ async function runPhase_record(){
       }
     }
 
-    // Strategy 3: Attempt county ESRI ArcGIS parcel REST API
-    if(z){
+    // Strategy 3: COUNTY_REGISTRY lookup (verified ArcGIS parcel endpoints)
+    if(z&&window.COUNTY_REGISTRY&&window.countyRegistryKey){
       try{
-        // Many US counties expose parcels via ESRI REST — try common URL patterns
-        const county=(z.county||'').toLowerCase().replace(/\s/g,'');
-        const state=(z.state||'').toLowerCase();
-        const esriUrls=[
-          `https://services.arcgis.com/${county}/arcgis/rest/services/Parcels/FeatureServer/0/query?geometry=${S.lon},${S.lat}&geometryType=esriGeometryPoint&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false&f=json`,
-          `https://gis.${county}.${state}.gov/arcgis/rest/services/Parcels/MapServer/0/query?geometry=${S.lon},${S.lat}&geometryType=esriGeometryPoint&outFields=*&returnGeometry=false&f=json`,
-        ];
-        for(const url of esriUrls){
-          try{const rr=await Promise.race([fetch(url),new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),6000))]);if(rr.ok){const dd=await rr.json();if(dd.features?.length){const attrs=dd.features[0].attributes;findings.push(`• **County GIS Record Found:** APN ${attrs.APN||attrs.PARCELNO||attrs.PIN||'—'}, Legal Area: ${attrs.LEGALACRES||attrs.TOTALAREA||'—'} acres`);S.countyRecord={...S.countyRecord,esri:attrs};L.info('ESRI parcel found:',JSON.stringify(attrs).substring(0,100));break}}}catch(_){}
+        const key=window.countyRegistryKey(z.county,z.state);
+        const reg=window.COUNTY_REGISTRY[key];
+        if(reg){
+          L.info(`County registry hit: ${key}`);
+          // Build the query URL — include spatial filter for point lookup
+          const q=`?geometry=${S.lon},${S.lat}&geometryType=esriGeometryPoint&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=true&f=geojson`;
+          const url=reg.parcelQuery+(reg.parcelQuery.includes('?')?q.replace(/^\?/,'&'):q);
+          try{
+            const rr=await Promise.race([proxyFetch(`/arcgis?url=${encodeURIComponent(url)}`,url),new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),8000))]);
+            const dd=await rr.json();
+            const f=dd.features?.[0];
+            if(f){
+              const attrs=f.properties||f.attributes||{};
+              const fmap=reg.fields||{};
+              const apn=attrs[fmap.apn]||attrs.APN||attrs.PARCELNO||attrs.PIN;
+              const use=attrs[fmap.useClass]||attrs.USE_CLASS;
+              const yr=attrs[fmap.yearBuilt]||attrs.YearBuilt;
+              findings.push(`\u2705 **Verified County Assessor Record** (${reg.county} Co, ${reg.state}): APN ${apn||'—'}, Use: ${use||'—'}${yr?`, Year Built: ${yr}`:''}`);
+              S.countyRecord={...(S.countyRecord||{}),esri:attrs,verified:true,source:`${reg.county} Co ArcGIS`,assessorURL:reg.assessorURL};
+              // If geometry returned, use it to compute exact lot dimensions
+              if(f.geometry?.coordinates&&S._z&&(S._z._lotConfidence==='unverified'||S._z._lotConfidence==='low')){
+                const ring=f.geometry.coordinates[0]||f.geometry.coordinates;
+                if(Array.isArray(ring)&&ring.length>=3){
+                  const lats=ring.map(p=>p[1]),lons=ring.map(p=>p[0]);
+                  const ftLat=364000,ftLon=364000*Math.cos(S.lat*Math.PI/180);
+                  const w=Math.round((Math.max(...lons)-Math.min(...lons))*ftLon);
+                  const d=Math.round((Math.max(...lats)-Math.min(...lats))*ftLat);
+                  if(w>0&&d>0){
+                    S._z.lotWidth=w;S._z.lotDepth=d;
+                    S._z._lotSource=`County Assessor (${reg.county} Co ArcGIS) \u2014 verified parcel polygon`;
+                    S._z._lotConfidence='verified';
+                    L.info(`Lot dims from county polygon: ${w}\u00D7${d}ft (VERIFIED)`);
+                    findings.push(`\u2705 **Lot dimensions from county polygon:** ${w}' \u00D7 ${d}' (verified surveyed data)`);
+                  }
+                }
+              }
+            }
+          }catch(e){L.warn(`County registry fetch failed for ${key}: ${e.message}`)}
+        }else{
+          L.info(`County registry miss: ${key||'(no county)'} \u2014 generic ArcGIS fallback not attempted to avoid false positives`);
         }
-      }catch(e){L.info('ESRI parcel search: no public API found (normal)')}
+      }catch(e){L.info('County registry lookup error:',e.message)}
     }
   }else{findings.push('Address geocoding required to query site records. Enter address with city/state.')}
 
@@ -1161,6 +1235,25 @@ Then recommend:
     }],SYS,1000);
     phSet('comp','done',`${((Date.now()-t)/1000).toFixed(1)}s`);
     if(S._compInterval){clearInterval(S._compInterval);S._compInterval=null;}addFind('comp','🏆 Competitor Analysis & Market Intelligence',fmt(res));S.competitors=res;phaseRunners.comp=runPhase_comp;
+    // ── Cross-check with permit-portal registry (public permit data) ──
+    if(window.PERMIT_PORTAL_REGISTRY&&window.permitRegistryKey&&S.lat&&S.lon){
+      const cityKey=window.permitRegistryKey(z?.jurisdiction||'');
+      const portal=window.PERMIT_PORTAL_REGISTRY[cityKey];
+      if(portal&&portal.radiusSearch){
+        try{
+          const purl=portal.radiusSearch(S.lat,S.lon,2);
+          const pr=await Promise.race([proxyFetch(`/permits/${cityKey}?${purl.split('?')[1]||''}`,purl),new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),10000))]);
+          const pd=await pr.json();
+          const permits=Array.isArray(pd)?pd:(pd.result?.records||pd.features||[]);
+          if(permits.length){
+            L.info(`Permit portal hit (${portal.city}): ${permits.length} filings within 2mi`);
+            const sample=permits.slice(0,5).map((p,i)=>`${i+1}. ${p.description||p.work_description||p.project_name||p.scope_of_work||'permit'} \u2014 ${p.address||p.original_address1||p.house__||'\u2014'}`).join('<br>');
+            addFind('comps-permit','\uD83D\uDCDD Verified Permit Filings (2mi radius)',`<div style="font-size:9.5px">${permits.length} building permits on file within 2 miles of site in ${portal.city}:</div><div style="margin-top:6px;font-size:9px;color:var(--txt2);line-height:1.5">${sample}</div><div style="margin-top:8px"><a href="${portal.portalURL}" target="_blank" style="color:var(--blue);font-size:9px">\u2192 Full ${portal.city} permit portal</a></div>`);
+            S._permitHits=permits;
+          }else{L.info(`Permit portal: 0 records within 2mi in ${portal.city}`)}
+        }catch(e){L.info(`Permit portal query failed: ${e.message.substring(0,60)}`)}
+      }else if(z?.jurisdiction){L.info(`Permit portal: no registry entry for "${z.jurisdiction}" \u2014 skipping cross-check`)}
+    }
   }catch(e){phSet('comp','error',`${((Date.now()-t)/1000).toFixed(1)}s`);addFind('comp','🏆 Competitor Research',`<div class="ebox">Competitor research failed: ${e.message}<br><em>Proceeding with design — competitor data will not be incorporated.</em></div>`);// don't throw — not critical
   }
 }
