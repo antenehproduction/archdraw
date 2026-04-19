@@ -2394,6 +2394,33 @@ function drawShearWallHatch(ctx,x,y,w,h,label='SW-1'){
   ctx.restore();
 }
 
+// ═══ LIB — public namespace exposing every primitive in one place ═══
+// Usage: LIB.d2.fixture.toilet(ctx, cx, cy, ft) — same signature as the raw fn.
+// This is for discoverability and easier future extension. The raw drawXxx
+// functions remain callable directly; LIB is a thin pointer map.
+const LIB={
+  get standards(){return ARCH_STANDARDS},
+  d2:{
+    fixture:{toilet:drawToilet,lavatory:drawLavatory,tub:drawTub,shower:drawShower,kitchenSink:drawKitchenSink,waterHeater:drawWaterHeater},
+    appliance:{range:drawRange,fridge:drawFridge,dishwasher:drawDishwasher,washerDryer:drawWasherDryer,kitchenIsland:drawKitchenIsland,miniSplit:drawMiniSplit},
+    door:{double:drawDoorDouble,french:drawDoorFrench,pocket:drawDoorPocket,sliding:drawDoorSliding,bifold:drawDoorBifold,overhead:drawDoorGarage},
+    window:{doubleHung:drawWindowDoubleHung,casement:drawWindowCasement,bay:drawWindowBay,awning:drawWindowAwning,fixed:drawWindowFixed,slider:drawWindowSlider},
+    furniture:{bed:drawBed,sofa:drawSofa,diningTable:drawDiningTable,desk:drawDesk,tv:drawTV,armchair:drawArmchair,coffeeTable:drawCoffeeTable},
+    stair:{straight:drawStairRun,lShape:drawStairLShape,uShape:drawStairUShape},
+    symbol:{doorTag:drawDoorTag,windowTag:drawWindowTag,roomTag:drawRoomTag,sectionCut:drawSectionCut,detailCallout:drawDetailCallout,elevationKey:drawElevationKey,revisionCloud:drawRevisionCloud,noteLeader:drawNoteLeader},
+    hvac:{waterHeater:drawWaterHeater,furnace:drawFurnace,miniSplit:drawMiniSplit,erv:drawERV},
+    electrical:{panel:drawElectricalPanel},
+    structural:{columnBubble:drawColumnBubble,beamOverhead:drawBeamOverhead,shearWall:drawShearWallHatch},
+    closet:drawClosetInset,
+    disclosure:drawDisclosureBlock,
+    dispatcher:drawRoomFixtures,
+  },
+  d3:{
+    roof:{gable:_roofGable,hip:_roofHip,shed:_roofShed,flat:_roofFlat,pick:_pickRoofForm},
+    mass:{withOpenings:_buildMassWithOpenings},
+  },
+};
+
 function drawStairUShape(ctx,x,y,w,d,ft,opts={}){
   // U-shape with landing at top. Two parallel runs with landing connecting them.
   const midW=w/2;
@@ -3350,12 +3377,211 @@ function initThree(){
   document.getElementById('three-canvas').addEventListener('webglcontextlost',e=>{e.preventDefault();THREE_INIT=false;L.warn('WebGL context lost')});
   a3d();
 }
+// ═══ LIB.d3 — 3D building primitives ═══
+// Each returns a THREE.Group at origin; caller positions + rotates as needed.
+
+function _roofGable(bw,bd,rh,color){
+  // Gable roof — ridge runs along the LONGER axis so gables face the short ends
+  const g=new THREE.Group();
+  const ridgeAlongX=bw>=bd;
+  const geo=new THREE.BufferGeometry();
+  const vx=[];
+  if(ridgeAlongX){
+    // Eaves along Z axis, ridge along X axis
+    vx.push(-bw/2,0,-bd/2,  bw/2,0,-bd/2,  bw/2,0,bd/2,  -bw/2,0,bd/2,   // eave plane quad
+            -bw/2,rh,0,       bw/2,rh,0);                                // ridge line points
+  }else{
+    vx.push(-bw/2,0,-bd/2,  bw/2,0,-bd/2,  bw/2,0,bd/2,  -bw/2,0,bd/2,
+            0,rh,-bd/2,      0,rh,bd/2);
+  }
+  // Build two sloping faces + two gable end triangles
+  const verts=new Float32Array(vx);geo.setAttribute('position',new THREE.BufferAttribute(verts,3));
+  // 4 triangles: 2 for roof slopes + 2 for gable ends
+  let idx;
+  if(ridgeAlongX){idx=[0,1,4, 1,5,4,  2,3,5, 3,4,5,  0,4,3,  1,2,5]}
+  else{idx=[0,3,4, 3,5,4,  1,2,5, 1,5,4,  0,1,4,  2,3,5]}
+  geo.setIndex(idx);geo.computeVertexNormals();
+  const mat=new THREE.MeshLambertMaterial({color,side:THREE.DoubleSide});
+  const roof=new THREE.Mesh(geo,mat);roof.castShadow=true;g.add(roof);
+  return g;
+}
+function _roofHip(bw,bd,rh,color){
+  // Hipped roof — 4 sloped faces meeting at a ridge
+  const g=new THREE.Group();
+  // Use a pyramid for short/square shapes; flat-top ridge for rectangular
+  if(Math.abs(bw-bd)<3){
+    // Pyramid (square hip)
+    const geo=new THREE.ConeGeometry(Math.max(bw,bd)*.72,rh,4);
+    const m=new THREE.Mesh(geo,new THREE.MeshLambertMaterial({color}));
+    m.rotation.y=Math.PI/4;m.position.y=rh/2;m.castShadow=true;g.add(m);
+  }else{
+    // Rectangular hip — ridge along long axis, 4 sloped planes
+    const ridgeLen=Math.max(bw,bd)-Math.min(bw,bd);
+    const ridgeAlongX=bw>bd;
+    const geo=new THREE.BufferGeometry();
+    const vx=[
+      -bw/2,0,-bd/2,  bw/2,0,-bd/2,  bw/2,0,bd/2,  -bw/2,0,bd/2,     // 0-3 eave corners
+    ];
+    if(ridgeAlongX){vx.push(-ridgeLen/2,rh,0,  ridgeLen/2,rh,0)}       // 4-5 ridge
+    else{vx.push(0,rh,-ridgeLen/2,  0,rh,ridgeLen/2)}
+    const verts=new Float32Array(vx);geo.setAttribute('position',new THREE.BufferAttribute(verts,3));
+    // 4 sloping faces + small triangles for the ends
+    let idx;
+    if(ridgeAlongX){idx=[0,1,4,  1,5,4,  1,2,5,  2,3,5,  3,0,4,  3,4,5]}
+    else{idx=[0,1,5,  1,2,5,  2,3,5,  3,0,4,  0,4,5,  2,4,5]}
+    geo.setIndex(idx);geo.computeVertexNormals();
+    const mat=new THREE.MeshLambertMaterial({color,side:THREE.DoubleSide});
+    const roof=new THREE.Mesh(geo,mat);roof.castShadow=true;g.add(roof);
+  }
+  return g;
+}
+function _roofShed(bw,bd,rh,color){
+  // Shed roof — single slope. High side = -Z.
+  const g=new THREE.Group();
+  const geo=new THREE.BufferGeometry();
+  const verts=new Float32Array([
+    -bw/2,0,-bd/2,  bw/2,0,-bd/2,  bw/2,0,bd/2,  -bw/2,0,bd/2,         // eave quad
+    -bw/2,rh,-bd/2,  bw/2,rh,-bd/2,                                      // ridge at back
+  ]);
+  geo.setAttribute('position',new THREE.BufferAttribute(verts,3));
+  geo.setIndex([0,1,5, 0,5,4,   2,3,4,5,   0,4,3,   1,2,5]);  // slope + back wall + small gable ends
+  // safer: set just the main slope and let it be a simple tilted plane
+  const planeGeo=new THREE.BufferGeometry();
+  planeGeo.setAttribute('position',new THREE.BufferAttribute(new Float32Array([
+    -bw/2,rh,-bd/2,  bw/2,rh,-bd/2,  bw/2,0,bd/2,  -bw/2,0,bd/2,
+  ]),3));
+  planeGeo.setIndex([0,1,2, 0,2,3]);planeGeo.computeVertexNormals();
+  const roof=new THREE.Mesh(planeGeo,new THREE.MeshLambertMaterial({color,side:THREE.DoubleSide}));
+  roof.castShadow=true;g.add(roof);
+  return g;
+}
+function _roofFlat(bw,bd,color){
+  const g=new THREE.Group();
+  const geo=new THREE.BoxGeometry(bw*1.05,0.8,bd*1.05);
+  const m=new THREE.Mesh(geo,new THREE.MeshLambertMaterial({color}));m.position.y=0.4;m.castShadow=true;g.add(m);
+  return g;
+}
+
+// Decide roof form based on geometry + stories
+function _pickRoofForm(bw,bd,stories){
+  // Square + 1-2 story → hip (classic suburban)
+  // Rectangular + any → gable (runs ridge along long axis)
+  // Low + wide + ADU → shed
+  // 3+ story → flat (modern)
+  const ratio=Math.max(bw,bd)/Math.min(bw,bd);
+  if(stories>=3)return 'flat';
+  if(ratio>=1.6)return 'gable';
+  return 'hip';
+}
+
+function _buildMassWithOpenings(w,h,d,color,stories,opts={}){
+  // Build a mass with window rectangles etched into each long face.
+  const g=new THREE.Group();
+  // Main volume
+  const geo=new THREE.BoxGeometry(w,h,d);
+  const mat=new THREE.MeshLambertMaterial({color});
+  const mesh=new THREE.Mesh(geo,mat);mesh.castShadow=mesh.receiveShadow=true;mesh.position.y=h/2;g.add(mesh);
+  // Edge lines
+  const el=new THREE.LineSegments(new THREE.EdgesGeometry(geo),new THREE.LineBasicMaterial({color:0x1e2d42}));
+  el.position.y=h/2;g.add(el);
+  // Window cut-outs — dark inset rectangles per face, per floor
+  const floorHt=h/Math.max(1,stories);
+  const perFace={front:Math.max(2,Math.floor(w/10)),back:Math.max(2,Math.floor(w/10)),left:Math.max(1,Math.floor(d/10)),right:Math.max(1,Math.floor(d/10))};
+  const winMat=new THREE.MeshLambertMaterial({color:0x1a2a40});
+  const winW=Math.min(w*.12,3.5),winH=floorHt*.45;
+  const drawFace=(count,ax,plane,normal)=>{
+    for(let f=0;f<stories;f++){
+      const y=f*floorHt+floorHt*.55;
+      for(let i=0;i<count;i++){
+        const pos=(i+.5)/count;
+        const wg=new THREE.BoxGeometry(winW,winH,.3);
+        const wm=new THREE.Mesh(wg,winMat);
+        if(plane==='z'){wm.position.set(-w/2+pos*w,y,normal*(d/2+.01))}
+        else{wm.rotation.y=Math.PI/2;wm.position.set(normal*(w/2+.01),y,-d/2+pos*d)}
+        g.add(wm);
+      }
+    }
+  };
+  drawFace(perFace.front,'x','z',1);
+  drawFace(perFace.back,'x','z',-1);
+  drawFace(perFace.left,'z','x',-1);
+  drawFace(perFace.right,'z','x',1);
+  // Entry door on front face (center-ish, ground floor)
+  const doorW=3,doorH=6.67;
+  const doorGeo=new THREE.BoxGeometry(doorW,doorH,.3);
+  const doorMat=new THREE.MeshLambertMaterial({color:0x6a4528});
+  const door=new THREE.Mesh(doorGeo,doorMat);
+  door.position.set(opts.entryX||0,doorH/2,d/2+.02);g.add(door);
+  return g;
+}
+
 function gen3D(pd){
   if(!THREE_INIT||!mg)return;while(mg.children.length){const c=mg.children[0];c.geometry?.dispose();c.material?.dispose();mg.remove(c)}
-  if(!pd?.floors)return;let cumY=0;let mnX=Infinity,mxX=-Infinity,mnZ=Infinity,mxZ=-Infinity;
-  pd.floors.forEach(fl=>{const fh=fl.heightFt||9;(fl.rooms||[]).forEach(r=>{if(!r.w||!r.h||r.w<1||r.h<1)return;mnX=Math.min(mnX,r.x);mxX=Math.max(mxX,r.x+r.w);mnZ=Math.min(mnZ,r.y);mxZ=Math.max(mxZ,r.y+r.h);const geo=new THREE.BoxGeometry(r.w,fh,r.h);const mat=new THREE.MeshLambertMaterial({color:C3[r.type]||C3.default,transparent:r.type==='balcony',opacity:r.type==='balcony'?.45:1});const mesh=new THREE.Mesh(geo,mat);mesh.castShadow=mesh.receiveShadow=true;mesh.position.set(r.x+r.w/2,cumY+fh/2,r.y+r.h/2);mg.add(mesh);const el=new THREE.LineSegments(new THREE.EdgesGeometry(geo),new THREE.LineBasicMaterial({color:0x1e2d42}));el.position.copy(mesh.position);mg.add(el)});cumY+=fh});
-  if(mnX<Infinity){const bw=mxX-mnX,bd=mxZ-mnZ,bcx=(mnX+mxX)/2,bcz=(mnZ+mxZ)/2,rH=Math.min(bw,bd)*.28;const rg=new THREE.ConeGeometry(Math.max(bw,bd)*.72,rH,4);const rf=new THREE.Mesh(rg,new THREE.MeshLambertMaterial({color:0x2a3650}));rf.position.set(bcx,cumY+rH/2,bcz);rf.rotation.y=Math.PI/4;rf.castShadow=true;mg.add(rf)}
-  const mm=pd.meta||{};orb.cx=(mm.lotWidth||50)/2;orb.cz=(mm.lotDepth||100)/2;orb.cy=cumY/2;orb.r=Math.max(mm.lotWidth||50,mm.lotDepth||100)*2.5;camUp();
+  if(!pd?.floors)return;
+  const stories=pd.meta?.stories||pd.floors.length||1;
+  const fh=pd.floors[0]?.heightFt||9;const totalH=stories*fh;
+  // Separate main volume from ADU volume (ADU rooms have names starting with "ADU ")
+  const mainRooms=[];const aduRooms=[];const balconyRooms=[];
+  pd.floors.forEach((fl,fIdx)=>{(fl.rooms||[]).forEach(r=>{
+    if(!r.w||!r.h||r.w<1||r.h<1)return;
+    if(r.type==='balcony'){balconyRooms.push({...r,floor:fIdx,fh:fl.heightFt||9})}
+    else if((r.name||'').startsWith('ADU '))aduRooms.push({...r,floor:fIdx,fh:fl.heightFt||9});
+    else mainRooms.push({...r,floor:fIdx,fh:fl.heightFt||9});
+  })});
+  const bounds=rs=>{let mnX=Infinity,mxX=-Infinity,mnZ=Infinity,mxZ=-Infinity;
+    rs.forEach(r=>{mnX=Math.min(mnX,r.x);mxX=Math.max(mxX,r.x+r.w);mnZ=Math.min(mnZ,r.y);mxZ=Math.max(mxZ,r.y+r.h)});
+    return {mnX,mxX,mnZ,mxZ,w:mxX-mnX,d:mxZ-mnZ,cx:(mnX+mxX)/2,cz:(mnZ+mxZ)/2};
+  };
+  const mainColor=0x6b7a8c,aduColor=0x7a8a9c;
+  // Main mass
+  if(mainRooms.length){
+    const mb=bounds(mainRooms);
+    const mass=_buildMassWithOpenings(mb.w,totalH,mb.d,mainColor,stories);
+    mass.position.set(mb.cx,0,mb.cz);mg.add(mass);
+    // Roof
+    const roofForm=_pickRoofForm(mb.w,mb.d,stories);
+    let roof;const rH=Math.min(mb.w,mb.d)*.28;
+    if(roofForm==='gable')roof=_roofGable(mb.w,mb.d,rH,0x2a3650);
+    else if(roofForm==='shed')roof=_roofShed(mb.w,mb.d,rH,0x2a3650);
+    else if(roofForm==='flat')roof=_roofFlat(mb.w,mb.d,0x2a3650);
+    else roof=_roofHip(mb.w,mb.d,rH,0x2a3650);
+    roof.position.set(mb.cx,totalH,mb.cz);mg.add(roof);
+  }
+  // ADU mass (1 story)
+  if(aduRooms.length){
+    const ab=bounds(aduRooms);
+    const aH=Math.min(fh,10);
+    const aduMass=_buildMassWithOpenings(ab.w,aH,ab.d,aduColor,1,{entryX:0});
+    aduMass.position.set(ab.cx,0,ab.cz);mg.add(aduMass);
+    // ADUs usually get a shed or small hip
+    const aduRoofH=Math.min(ab.w,ab.d)*.2;
+    const aduRoof=_roofShed(ab.w,ab.d,aduRoofH,0x3a4660);
+    aduRoof.position.set(ab.cx,aH,ab.cz);mg.add(aduRoof);
+  }
+  // Balconies (translucent)
+  balconyRooms.forEach(r=>{
+    const geo=new THREE.BoxGeometry(r.w,.5,r.h);
+    const m=new THREE.Mesh(geo,new THREE.MeshLambertMaterial({color:0x289678,transparent:true,opacity:.45}));
+    m.position.set(r.x+r.w/2,r.floor*fh+fh-.25,r.y+r.h/2);mg.add(m);
+  });
+  // ── Site accents — driveway + trees ──
+  const mm=pd.meta||{};const lotW=mm.lotWidth||50,lotD=mm.lotDepth||100;
+  // Driveway strip from front curb to main entry
+  if(mainRooms.length){
+    const mb=bounds(mainRooms);
+    const dwGeo=new THREE.PlaneGeometry(10,mb.mnZ-0);
+    const dw=new THREE.Mesh(dwGeo,new THREE.MeshLambertMaterial({color:0x14202c}));
+    dw.rotation.x=-Math.PI/2;dw.position.set(mb.cx,0.05,mb.mnZ/2);mg.add(dw);
+  }
+  // Two trees (front corners of lot)
+  [[3,3],[lotW-3,3]].forEach(([tx,tz])=>{
+    const trunk=new THREE.Mesh(new THREE.CylinderGeometry(.4,.5,5),new THREE.MeshLambertMaterial({color:0x3a2818}));
+    trunk.position.set(tx,2.5,tz);mg.add(trunk);
+    const canopy=new THREE.Mesh(new THREE.SphereGeometry(4,8,6),new THREE.MeshLambertMaterial({color:0x2a4a2a}));
+    canopy.position.set(tx,7,tz);canopy.castShadow=true;mg.add(canopy);
+  });
+  // Camera framing
+  orb.cx=lotW/2;orb.cz=lotD/2;orb.cy=totalH/2;orb.r=Math.max(lotW,lotD)*2.5;camUp();
 }
 function a3d(){requestAnimationFrame(a3d);if(ren3&&THREE_INIT&&S.view==='3d')ren3.render(scene,cam)}
 function camUp(){if(!cam)return;const t=orb.ph*Math.PI/180,p=orb.th*Math.PI/180;cam.position.set(orb.cx+orb.r*Math.sin(t)*Math.sin(p),orb.cy+orb.r*Math.cos(t),orb.cz+orb.r*Math.sin(t)*Math.cos(p));cam.lookAt(orb.cx,orb.cy,orb.cz)}
