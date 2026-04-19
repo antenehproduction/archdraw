@@ -143,11 +143,22 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--ink);color:var
 .csec{margin-bottom:9px}
 .cshd{font-size:7px;letter-spacing:.6px;color:var(--blue);text-transform:uppercase;padding:3px 0;border-bottom:1px solid var(--brd);margin-bottom:4px;display:flex;align-items:center;justify-content:space-between}
 .ccnt{background:var(--ink3);border:1px solid var(--brd);border-radius:8px;padding:1px 4px;font-size:7px;color:var(--txt3)}
-.cit{display:flex;align-items:flex-start;gap:5px;margin-bottom:3px;padding:3px 5px;border-radius:3px;cursor:pointer;transition:background .1s}.cit:hover{background:var(--ink2)}
-.cck{width:10px;height:10px;border:1.5px solid var(--txt3);border-radius:2px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .18s;margin-top:1px}
+.citw{margin-bottom:3px}
+.cit{display:flex;align-items:flex-start;gap:5px;padding:3px 5px;border-radius:3px;cursor:pointer;transition:background .1s}.cit:hover{background:var(--ink2)}
+.cit.open{background:var(--ink2);border-radius:3px 3px 0 0}
+.cck{width:10px;height:10px;border:1.5px solid var(--txt3);border-radius:2px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .18s;margin-top:1px;cursor:pointer}
+.cck:hover{border-color:var(--green)}
 .cit.chk .cck{background:var(--green);border-color:var(--green)}
 .cit.chk .ctx{text-decoration:line-through;color:var(--txt3)}
 .ctx{font-size:8px;line-height:1.4;color:var(--txt2);flex:1}.cnote{font-size:7px;color:var(--txt3);display:block;margin-top:1px}.creq{font-size:7px;color:var(--coral);flex-shrink:0}
+.cchev{font-size:8px;color:var(--txt3);transition:transform .18s;flex-shrink:0;margin-top:1px}
+.cit.open .cchev{transform:rotate(90deg);color:var(--blue)}
+.cdetail{display:none;padding:6px 10px 7px 22px;background:var(--ink2);border-radius:0 0 3px 3px;border-left:2px solid var(--blue);font-size:8px;color:var(--txt2);line-height:1.5}
+.cit.open+.cdetail{display:block}
+.cdetail strong{color:var(--txt)}
+.cdetail .cd-src{color:var(--green);font-size:7.5px;margin-top:3px;word-break:break-all}
+.cdetail .cd-act{margin-top:5px;padding-top:4px;border-top:1px solid var(--brd)}
+.cdetail .cd-link{color:var(--blue);text-decoration:none;font-size:7.5px}.cdetail .cd-link:hover{text-decoration:underline}
 .pwrap{padding:7px 10px;border-top:1px solid var(--brd);flex-shrink:0}
 .prow{display:flex;justify-content:space-between;font-size:8px;color:var(--txt3);margin-bottom:3px}
 .ptr{height:2px;background:var(--ink3);border-radius:2px;overflow:hidden}
@@ -1328,13 +1339,39 @@ function buildChecklist(data){
   s.innerHTML=`<div class="cshd">${cat.name}<span style="font-size:6.5px;color:var(--txt3);margin-left:4px">${Object.entries(TL_MAP).find(([k])=>cat.name.includes(k))?.[1]||''}</span><span class="ccnt">${cat.items?.length||0}</span></div>`+(cat.items||[]).map(it=>{
       const srcAttr=it.source?` data-source="${(it.source+'').replace(/"/g,'&quot;')}"`:'';
       const preCheck=it.autoCheck?' chk':'';
-      const srcBadge=it.source?`<span class="cnote" style="color:var(--green);margin-top:2px">\uD83D\uDCCE ${(it.source+'').substring(0,90)}</span>`:'';
-      return `<div class="cit${preCheck}"${srcAttr} onclick="tCL(this)"><div class="cck"><svg width="7" height="7" viewBox="0 0 8 8" fill="none" style="display:${it.autoCheck?'block':'none'}"><path d="M1 4l2 2.5L7 1.5" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg></div><div class="ctx">${it.label}${it.note?`<span class="cnote">${it.note}</span>`:''}${srcBadge}</div>${it.required?'<span class="creq">REQ</span>':''}</div>`;
+      const escape=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      // Inline detail panel content: source + extended note + action links
+      const sourceBlock=it.source?`<div class="cd-src">\uD83D\uDCCE <strong>Source:</strong> ${escape(it.source).substring(0,160)}</div>`:'';
+      const noteBlock=it.note?`<div><strong>Scope / notes:</strong> ${escape(it.note)}</div>`:'';
+      // Action links based on category context
+      const actions=[];
+      if(/permit application|building permit/i.test(it.label))actions.push(`<a class="cd-link" href="https://www.google.com/search?q=${encodeURIComponent((data?.jurisdiction||'')+' building permit application')}" target="_blank">\u2192 Search ${data?.jurisdiction||'jurisdiction'} permit portal</a>`);
+      if(/FEMA/i.test(it.label))actions.push(`<a class="cd-link" href="https://msc.fema.gov/portal/search" target="_blank">\u2192 Check FEMA flood map</a>`);
+      if(/survey|plat|topograph/i.test(it.label))actions.push(`<a class="cd-link" href="https://www.google.com/search?q=${encodeURIComponent('licensed land surveyor '+(data?.jurisdiction||''))}" target="_blank">\u2192 Find local surveyor</a>`);
+      if(/historic|COA/i.test(it.label))actions.push(`<a class="cd-link" href="https://www.google.com/search?q=${encodeURIComponent((data?.jurisdiction||'')+' historic preservation certificate of appropriateness')}" target="_blank">\u2192 Historic board info</a>`);
+      if(/title 24|CALGreen/i.test(it.label))actions.push(`<a class="cd-link" href="https://www.energy.ca.gov/programs-and-topics/programs/building-energy-efficiency-standards" target="_blank">\u2192 CEC Title 24 reference</a>`);
+      if(/WSEC/i.test(it.label))actions.push(`<a class="cd-link" href="https://sbcc.wa.gov/page/energy-code" target="_blank">\u2192 WA Energy Code</a>`);
+      if(/structural|PE-stamped/i.test(it.label))actions.push(`<a class="cd-link" href="https://www.google.com/search?q=${encodeURIComponent('licensed structural engineer '+(data?.jurisdiction||''))}" target="_blank">\u2192 Find structural PE</a>`);
+      if(/architect|RA|RDP/i.test(it.label))actions.push(`<a class="cd-link" href="https://www.ncarb.org/licensees" target="_blank">\u2192 NCARB licensee directory</a>`);
+      const statusLbl=it.autoCheck?'<span style="color:var(--green)">\u2713 Auto-completed from upstream data</span>':'<span style="color:var(--amber)">\u25CB Pending \u2014 click the checkbox when complete</span>';
+      const actionBlock=actions.length?`<div class="cd-act"><strong>Next steps:</strong><br>${actions.join('<br>')}</div>`:'';
+      const detail=`<div class="cdetail"><div><strong>Status:</strong> ${statusLbl}</div>${sourceBlock?`<div style="margin-top:4px">${sourceBlock}</div>`:''}${noteBlock?`<div style="margin-top:4px">${noteBlock}</div>`:''}${actionBlock}</div>`;
+      const srcInline=it.source?`<span class="cnote" style="color:var(--green);margin-top:2px">\uD83D\uDCCE ${escape(it.source).substring(0,80)}</span>`:'';
+      const row=`<div class="cit${preCheck}"${srcAttr} onclick="tCD(this,event)"><div class="cck" onclick="event.stopPropagation();tCL(this.parentElement)"><svg width="7" height="7" viewBox="0 0 8 8" fill="none" style="display:${it.autoCheck?'block':'none'}"><path d="M1 4l2 2.5L7 1.5" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg></div><div class="ctx">${escape(it.label)}${it.note?`<span class="cnote">${escape(it.note)}</span>`:''}${srcInline}</div>${it.required?'<span class="creq">REQ</span>':''}<span class="cchev">\u25B8</span></div>`;
+      return `<div class="citw">${row}${detail}</div>`;
     }).join('');
     sc.appendChild(s);
   });pUp();
 }
 function tCL(el){el.classList.toggle('chk');const s=el.querySelector('.cck svg');if(s)s.style.display=el.classList.contains('chk')?'block':'none';pUp()}
+// Toggle checklist-card detail panel (inline expand/collapse)
+function tCD(el,ev){
+  // If the click originated from the checkbox, tCL handles it via stopPropagation.
+  // Close any other open card in the same panel (single-open behavior).
+  const panel=el.closest('#cl-scroll');
+  if(panel){panel.querySelectorAll('.cit.open').forEach(o=>{if(o!==el)o.classList.remove('open')})}
+  el.classList.toggle('open');
+}
 function pUp(){const a=document.querySelectorAll('.cit').length,d=document.querySelectorAll('.cit.chk').length,p=a>0?Math.round(d/a*100):0;document.getElementById('ppct').textContent=p+'%';document.getElementById('pf').style.width=p+'%'}
 
 // ═══ DRAWING ENGINE (24"×36" permit sheets) ═══
