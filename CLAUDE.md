@@ -59,7 +59,7 @@ index.html
 
 2. **No escaped apostrophes in JS** — `\'` is invalid outside string literals. Use `"double quotes"` for object keys. Python string generation has caused this bug twice.
 
-3. **probeConnection() and saveKey() are locked** — v13 versions work. Do not alter them without a confirmed bug report.
+3. **probeConnection() and saveKey() are locked** — v13 versions work. Do not alter them without a confirmed bug report. One minimal addition is permitted on success path: `saveKey` persists the verified key to `localStorage.ADI_ANTHROPIC_KEY`, and `bootstrapStoredKey()` loads it on init. `probeConnection` body itself is unchanged.
 
 4. **Model string is `claude-sonnet-4-6`** — do not change to any other string.
 

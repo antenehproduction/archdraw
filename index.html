@@ -629,8 +629,39 @@ async function saveKey(){
   L.info('saveKey: testing...');S.apiKey=key;S.mode='standalone';
   const btn=document.getElementById('save-btn');btn.textContent='Testing...';btn.disabled=true;
   showKS('Verifying<span class="df"></span>',false);
-  try{const r=await callAI([{role:'user',content:'KEY_OK'}],null,5,12000);if(r.length>0){setBanner('ok','✓ API Key Verified',`Key ${key.substring(0,16)}... active. Enter address to analyze.`);showKS('✓ Key verified',false,true);S.apiReady=true;document.getElementById('run-btn').disabled=false;btn.textContent='✓ Connected';btn.className='key-btn ok'}}
+  try{const r=await callAI([{role:'user',content:'KEY_OK'}],null,5,12000);if(r.length>0){setBanner('ok','✓ API Key Verified',`Key ${key.substring(0,16)}... active. Enter address to analyze. <a href="#" onclick="forgetStoredKey();return false" style="color:var(--txt3);font-size:8px;margin-left:6px">forget key</a>`);showKS('✓ Key verified — saved for future sessions',false,true);S.apiReady=true;document.getElementById('run-btn').disabled=false;btn.textContent='✓ Connected';btn.className='key-btn ok';try{localStorage.setItem('ADI_ANTHROPIC_KEY',key);L.info('API key persisted to localStorage for future sessions')}catch(_){}}}
   catch(e){S.apiKey='';S.mode='embedded';S.apiReady=false;const m=e.message.includes('401')?'Invalid key':e.message.includes('403')?'No permissions':e.message.substring(0,80);showKS('✗ '+m,true);btn.textContent='Retry';btn.disabled=false}
+}
+
+// ── Bootstrap a saved key from localStorage before probing ──
+// If a valid sk-ant-* key exists, verify it quickly and skip the 15s embedded probe.
+// Respects probeConnection's contract — doesn't modify its body; just avoids calling it when unnecessary.
+async function bootstrapStoredKey(){
+  let stored=null;try{stored=localStorage.getItem('ADI_ANTHROPIC_KEY')}catch(_){}
+  if(!stored||!stored.startsWith('sk-ant-'))return false;
+  setBanner('probing','Restoring saved key<span class="df"></span>','Testing saved Anthropic API key...');
+  document.getElementById('run-btn').disabled=true;
+  S.apiKey=stored;S.mode='standalone';
+  try{
+    const r=await callAI([{role:'user',content:'KEY_OK'}],null,5,12000);
+    if(r.length>0){
+      setBanner('ok','✓ API Key Restored',`Saved key ${stored.substring(0,16)}... active. <a href="#" onclick="forgetStoredKey();return false" style="color:var(--txt3);font-size:8px;margin-left:6px">forget key</a>`);
+      S.apiReady=true;document.getElementById('run-btn').disabled=false;
+      L.info('Restored Anthropic API key from localStorage (skipped probe)');
+      return true;
+    }
+  }catch(e){
+    L.warn('Stored key failed to verify:',e.message.substring(0,60));
+    try{localStorage.removeItem('ADI_ANTHROPIC_KEY')}catch(_){}
+    S.apiKey='';S.mode='embedded';S.apiReady=false;
+  }
+  return false;
+}
+function forgetStoredKey(){
+  try{localStorage.removeItem('ADI_ANTHROPIC_KEY')}catch(_){}
+  S.apiKey='';S.mode='embedded';S.apiReady=false;
+  L.info('Stored API key removed from localStorage');
+  location.reload();
 }
 function showKS(html,isErr,isOk=false){const el=document.getElementById('key-st');el.style.display='block';el.className=isErr?'err-msg':isOk?'ok-msg':'';el.innerHTML=html}
 function toggleKey(){const i=document.getElementById('key-inp');i.type=i.type==='password'?'text':'password'}
@@ -2791,7 +2822,8 @@ document.getElementById('addr-inp').addEventListener('change',e=>{
 });
 
 // ── INIT ──
-probeConnection();
+// Try the saved key first; only fall back to probeConnection() when no valid key is stored.
+bootstrapStoredKey().then(ok=>{if(!ok)probeConnection()}).catch(()=>probeConnection());
 </script>
 </body>
 </html>
