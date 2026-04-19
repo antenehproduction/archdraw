@@ -1563,6 +1563,166 @@ function getComparableInsights(z){
   return out;
 }
 
+// ═══ LIB.d2 — expanded 2D library ═══
+// Each primitive takes (ctx, cx, cy, ft, ...opts). Width/depth in feet drawn
+// at the sheet's transform scale. Rotation 0 = default; opts.orient=0|90|180|270.
+// Naming convention: LIB.d2.<category>.<name>(ctx, cx, cy, ft, opts)
+
+// ── DOORS ──
+function _doorSwing(ctx,x,y,w,dir,ft){
+  // Base swing door primitive — x,y is hinge point; w in feet; dir = 'NE'|'NW'|'SE'|'SW'
+  const pw=ft(w);
+  ctx.save();ctx.strokeStyle=ARCH_STANDARDS.symbols.doorOpening;ctx.lineWidth=ARCH_STANDARDS.lineWeights.doorOpening;
+  ctx.fillStyle='rgba(210,225,244,.1)';
+  // Leaf rectangle (thin) — direction of leaf depends on hinge side
+  if(dir==='NE'){ctx.fillRect(x,y-pw,pw*.08,pw);ctx.strokeRect(x,y-pw,pw*.08,pw);ctx.strokeStyle='rgba(200,215,235,.3)';ctx.setLineDash([2,2]);ctx.beginPath();ctx.arc(x,y,pw,Math.PI*1.5,0);ctx.stroke()}
+  else if(dir==='NW'){ctx.fillRect(x-pw*.08,y-pw,pw*.08,pw);ctx.strokeRect(x-pw*.08,y-pw,pw*.08,pw);ctx.strokeStyle='rgba(200,215,235,.3)';ctx.setLineDash([2,2]);ctx.beginPath();ctx.arc(x,y,pw,Math.PI,Math.PI*1.5);ctx.stroke()}
+  else if(dir==='SE'){ctx.fillRect(x,y,pw*.08,pw);ctx.strokeRect(x,y,pw*.08,pw);ctx.strokeStyle='rgba(200,215,235,.3)';ctx.setLineDash([2,2]);ctx.beginPath();ctx.arc(x,y,pw,0,Math.PI/2);ctx.stroke()}
+  else{ctx.fillRect(x-pw*.08,y,pw*.08,pw);ctx.strokeRect(x-pw*.08,y,pw*.08,pw);ctx.strokeStyle='rgba(200,215,235,.3)';ctx.setLineDash([2,2]);ctx.beginPath();ctx.arc(x,y,pw,Math.PI/2,Math.PI);ctx.stroke()}
+  ctx.setLineDash([]);ctx.restore();
+}
+function drawDoorDouble(ctx,cx,cy,ft,opts={}){
+  // Double door (French style without glass) — two leaves meeting in middle
+  const w=opts.w||6;const pw=ft(w);
+  ctx.save();ctx.strokeStyle=ARCH_STANDARDS.symbols.doorOpening;ctx.lineWidth=ARCH_STANDARDS.lineWeights.doorOpening;
+  ctx.strokeRect(cx-pw/2,cy-pw*.04,pw,pw*.08);
+  // Two arcs swinging inward
+  ctx.strokeStyle='rgba(200,215,235,.3)';ctx.setLineDash([2,2]);
+  ctx.beginPath();ctx.arc(cx-pw/2,cy,pw/2,Math.PI*1.5,0);ctx.stroke();
+  ctx.beginPath();ctx.arc(cx+pw/2,cy,pw/2,Math.PI,Math.PI*1.5);ctx.stroke();
+  ctx.setLineDash([]);ctx.restore();
+}
+function drawDoorFrench(ctx,cx,cy,ft,opts={}){
+  // French door — double door with glazing lines on leaves
+  const w=opts.w||6;const pw=ft(w);
+  drawDoorDouble(ctx,cx,cy,ft,opts);
+  ctx.save();ctx.strokeStyle=ARCH_STANDARDS.symbols.windowGlazing;ctx.lineWidth=0.5;
+  // Glazing muntins on each leaf (2 horizontal lines per leaf)
+  [cx-pw*.3,cx-pw*.15,cx+pw*.15,cx+pw*.3].forEach(lx=>{ctx.beginPath();ctx.moveTo(lx,cy-pw*.03);ctx.lineTo(lx,cy+pw*.03);ctx.stroke()});
+  ctx.restore();
+}
+function drawDoorPocket(ctx,cx,cy,ft,opts={}){
+  // Pocket door — slides into wall. Shown as a leaf tucked inside a wall pocket.
+  const w=opts.w||ARCH_STANDARDS.doors.interior.w;const pw=ft(w);
+  ctx.save();
+  // Pocket (dashed rectangle in wall)
+  ctx.strokeStyle='rgba(210,225,244,.4)';ctx.lineWidth=0.5;ctx.setLineDash([3,2]);
+  ctx.strokeRect(cx-pw/2,cy-pw*.05,pw,pw*.1);ctx.setLineDash([]);
+  // Leaf inside the pocket (solid)
+  ctx.fillStyle='rgba(210,225,244,.25)';ctx.strokeStyle=ARCH_STANDARDS.symbols.doorOpening;ctx.lineWidth=ARCH_STANDARDS.lineWeights.doorOpening;
+  ctx.fillRect(cx-pw/2+pw*.05,cy-pw*.035,pw*.45,pw*.07);
+  ctx.strokeRect(cx-pw/2+pw*.05,cy-pw*.035,pw*.45,pw*.07);
+  // Arrow showing slide direction
+  ctx.strokeStyle='rgba(245,200,66,.7)';ctx.lineWidth=0.6;
+  ctx.beginPath();ctx.moveTo(cx,cy+pw*.12);ctx.lineTo(cx+pw*.3,cy+pw*.12);ctx.lineTo(cx+pw*.25,cy+pw*.08);ctx.moveTo(cx+pw*.3,cy+pw*.12);ctx.lineTo(cx+pw*.25,cy+pw*.16);ctx.stroke();
+  // P tag
+  ctx.fillStyle='rgba(245,200,66,.8)';ctx.font=ARCH_STANDARDS.typography.fixture;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('P',cx,cy+pw*.25);
+  ctx.restore();
+}
+function drawDoorSliding(ctx,cx,cy,ft,opts={}){
+  // Sliding door (patio-style) — two panels, one fixed one sliding
+  const w=opts.w||6;const pw=ft(w);
+  ctx.save();ctx.strokeStyle=ARCH_STANDARDS.symbols.windowGlazing;ctx.lineWidth=ARCH_STANDARDS.lineWeights.doorOpening;
+  // Two overlapping panels
+  ctx.strokeRect(cx-pw/2,cy-pw*.05,pw*.52,pw*.1);
+  ctx.strokeRect(cx-pw*.02,cy-pw*.05,pw*.52,pw*.1);
+  // Slide arrow
+  ctx.strokeStyle='rgba(245,200,66,.7)';ctx.lineWidth=0.6;
+  ctx.beginPath();ctx.moveTo(cx-pw*.3,cy+pw*.12);ctx.lineTo(cx+pw*.3,cy+pw*.12);ctx.moveTo(cx+pw*.25,cy+pw*.08);ctx.lineTo(cx+pw*.3,cy+pw*.12);ctx.lineTo(cx+pw*.25,cy+pw*.16);ctx.stroke();
+  ctx.restore();
+}
+function drawDoorBifold(ctx,cx,cy,ft,opts={}){
+  // Bifold closet door — two panels that fold
+  const w=opts.w||4;const pw=ft(w);
+  ctx.save();ctx.strokeStyle=ARCH_STANDARDS.symbols.doorOpening;ctx.lineWidth=ARCH_STANDARDS.lineWeights.doorOpening;
+  // V-shape indicating folded panels
+  ctx.beginPath();ctx.moveTo(cx-pw/2,cy);ctx.lineTo(cx,cy-pw*.3);ctx.lineTo(cx+pw/2,cy);ctx.stroke();
+  // Frame line
+  ctx.strokeStyle='rgba(210,225,244,.3)';ctx.beginPath();ctx.moveTo(cx-pw/2,cy);ctx.lineTo(cx+pw/2,cy);ctx.stroke();
+  ctx.restore();
+}
+function drawDoorGarage(ctx,cx,cy,ft,opts={}){
+  // Overhead garage door — shown as segmented panel along wall
+  const w=opts.w||9;const pw=ft(w);
+  ctx.save();ctx.strokeStyle='rgba(122,154,184,.7)';ctx.lineWidth=1.2;ctx.fillStyle='rgba(90,100,115,.25)';
+  ctx.fillRect(cx-pw/2,cy-pw*.03,pw,pw*.06);ctx.strokeRect(cx-pw/2,cy-pw*.03,pw,pw*.06);
+  // Panel segments (4 vertical lines)
+  ctx.lineWidth=0.5;
+  for(let i=1;i<5;i++){const px=cx-pw/2+pw*(i/5);ctx.beginPath();ctx.moveTo(px,cy-pw*.03);ctx.lineTo(px,cy+pw*.03);ctx.stroke()}
+  // Up arrow indicating overhead operation
+  ctx.strokeStyle='rgba(245,200,66,.7)';ctx.beginPath();ctx.moveTo(cx,cy+pw*.06);ctx.lineTo(cx,cy+pw*.15);ctx.moveTo(cx-pw*.03,cy+pw*.10);ctx.lineTo(cx,cy+pw*.06);ctx.lineTo(cx+pw*.03,cy+pw*.10);ctx.stroke();
+  ctx.restore();
+}
+
+// ── WINDOWS ──
+function drawWindowDoubleHung(ctx,cx,cy,ft,opts={}){
+  // Double-hung — two sashes stacked. In plan: simple gap with 3 parallel lines.
+  const w=opts.w||ARCH_STANDARDS.windows.standard.w;const pw=ft(w);
+  ctx.save();ctx.strokeStyle=ARCH_STANDARDS.symbols.windowGlazing;ctx.lineWidth=ARCH_STANDARDS.lineWeights.windowFrame;
+  // Three parallel lines: outer frame, glass, outer frame
+  ctx.beginPath();ctx.moveTo(cx-pw/2,cy-1.5);ctx.lineTo(cx+pw/2,cy-1.5);
+  ctx.moveTo(cx-pw/2,cy);ctx.lineTo(cx+pw/2,cy);
+  ctx.moveTo(cx-pw/2,cy+1.5);ctx.lineTo(cx+pw/2,cy+1.5);ctx.stroke();
+  ctx.restore();
+}
+function drawWindowCasement(ctx,cx,cy,ft,opts={}){
+  // Casement — hinged on one side, swings outward. Drawn as gap with hinge indicator.
+  const w=opts.w||ARCH_STANDARDS.windows.standard.w;const pw=ft(w);const hinge=opts.hinge||'L';
+  ctx.save();ctx.strokeStyle=ARCH_STANDARDS.symbols.windowGlazing;ctx.lineWidth=ARCH_STANDARDS.lineWeights.windowFrame;
+  ctx.beginPath();ctx.moveTo(cx-pw/2,cy-1);ctx.lineTo(cx+pw/2,cy-1);ctx.moveTo(cx-pw/2,cy+1);ctx.lineTo(cx+pw/2,cy+1);ctx.stroke();
+  // Hinge marker (small triangle at hinge side)
+  ctx.fillStyle='rgba(100,170,255,.7)';
+  if(hinge==='L'){ctx.beginPath();ctx.moveTo(cx-pw/2,cy-2);ctx.lineTo(cx-pw/2,cy+2);ctx.lineTo(cx-pw/2+3,cy);ctx.closePath();ctx.fill()}
+  else{ctx.beginPath();ctx.moveTo(cx+pw/2,cy-2);ctx.lineTo(cx+pw/2,cy+2);ctx.lineTo(cx+pw/2-3,cy);ctx.closePath();ctx.fill()}
+  ctx.restore();
+}
+function drawWindowBay(ctx,cx,cy,ft,opts={}){
+  // Bay window — projecting 3-panel. Shown in plan as trapezoid.
+  const w=opts.w||6;const proj=opts.projection||2;const pw=ft(w);const pp=ft(proj);
+  ctx.save();ctx.fillStyle='rgba(100,170,255,.15)';ctx.strokeStyle=ARCH_STANDARDS.symbols.windowGlazing;ctx.lineWidth=ARCH_STANDARDS.lineWeights.windowFrame;
+  // Trapezoid projecting from the wall
+  ctx.beginPath();
+  ctx.moveTo(cx-pw/2,cy);
+  ctx.lineTo(cx-pw*.3,cy-pp);
+  ctx.lineTo(cx+pw*.3,cy-pp);
+  ctx.lineTo(cx+pw/2,cy);
+  ctx.closePath();ctx.fill();ctx.stroke();
+  // Muntin at each panel junction
+  ctx.lineWidth=0.4;ctx.beginPath();
+  ctx.moveTo(cx-pw*.3,cy-pp);ctx.lineTo(cx-pw*.3,cy);
+  ctx.moveTo(cx+pw*.3,cy-pp);ctx.lineTo(cx+pw*.3,cy);ctx.stroke();
+  ctx.restore();
+}
+function drawWindowAwning(ctx,cx,cy,ft,opts={}){
+  // Awning — hinged at top, opens outward. Small rectangular gap in plan.
+  const w=opts.w||3;const pw=ft(w);
+  ctx.save();ctx.strokeStyle=ARCH_STANDARDS.symbols.windowGlazing;ctx.lineWidth=ARCH_STANDARDS.lineWeights.windowFrame;
+  ctx.beginPath();ctx.moveTo(cx-pw/2,cy-.8);ctx.lineTo(cx+pw/2,cy-.8);ctx.moveTo(cx-pw/2,cy+.8);ctx.lineTo(cx+pw/2,cy+.8);ctx.stroke();
+  // Arrow pointing up indicating awning direction
+  ctx.strokeStyle='rgba(100,170,255,.55)';ctx.lineWidth=0.4;
+  ctx.beginPath();ctx.moveTo(cx,cy+3);ctx.lineTo(cx,cy-3);ctx.moveTo(cx-2,cy-1);ctx.lineTo(cx,cy-3);ctx.lineTo(cx+2,cy-1);ctx.stroke();
+  ctx.restore();
+}
+function drawWindowFixed(ctx,cx,cy,ft,opts={}){
+  // Fixed / picture window — one big panel, no operating sashes
+  const w=opts.w||4;const pw=ft(w);
+  ctx.save();ctx.strokeStyle=ARCH_STANDARDS.symbols.windowGlazing;ctx.lineWidth=ARCH_STANDARDS.lineWeights.windowFrame;
+  ctx.beginPath();ctx.moveTo(cx-pw/2,cy-1);ctx.lineTo(cx+pw/2,cy-1);ctx.moveTo(cx-pw/2,cy+1);ctx.lineTo(cx+pw/2,cy+1);ctx.stroke();
+  // FIX tag
+  ctx.fillStyle='rgba(100,170,255,.4)';ctx.font='4px JetBrains Mono,monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('FIX',cx,cy);
+  ctx.restore();
+}
+function drawWindowSlider(ctx,cx,cy,ft,opts={}){
+  // Horizontal slider
+  const w=opts.w||5;const pw=ft(w);
+  ctx.save();ctx.strokeStyle=ARCH_STANDARDS.symbols.windowGlazing;ctx.lineWidth=ARCH_STANDARDS.lineWeights.windowFrame;
+  ctx.beginPath();ctx.moveTo(cx-pw/2,cy-1);ctx.lineTo(cx+pw/2,cy-1);ctx.moveTo(cx-pw/2,cy+1);ctx.lineTo(cx+pw/2,cy+1);ctx.stroke();
+  // Two overlapping sash indicators
+  ctx.strokeRect(cx-pw/2,cy-.8,pw*.52,1.6);
+  ctx.strokeRect(cx-pw*.02,cy-.8,pw*.52,1.6);
+  ctx.restore();
+}
 const SHEETS=[
   {id:'A-0',lbl:'A-0 Cover'},
   {id:'A-1',lbl:'A-1 Site Plan'},
