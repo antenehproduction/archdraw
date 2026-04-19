@@ -432,10 +432,15 @@ async function detectFEMA(){
     const lat=parseFloat(gd[0].lat),lon=parseFloat(gd[0].lon);
     S.lat=lat;S.lon=lon;
     st.innerHTML=`<span style="color:var(--txt3)">Geocoded: ${lat.toFixed(5)}, ${lon.toFixed(5)}. Querying FEMA...</span>`;
-    // FEMA NFHL — may be blocked by CORS in standalone Chrome/artifact context
-    const femaUrl=`https://hazards.fema.gov/gis/nfhl/rest/services/public/NFHL/MapServer/28/query?geometry=${lon},${lat}&geometryType=esriGeometryPoint&spatialRel=esriSpatialRelIntersects&outFields=FLD_ZONE,SFHA_TF&returnGeometry=false&f=json`;
-    const femaFetch=fetch(femaUrl).then(r=>r.json());
-    const femaTimeout=new Promise((_,r)=>setTimeout(()=>r(new Error('fema_timeout')),10000));
+    // FEMA NFHL — may be blocked by CORS in standalone Chrome/artifact context.
+    // Strategy: try direct first (Claude.ai embedded proxy supports it); on failure, fall back
+    // through a public CORS proxy so the app still resolves flood zone without a backend.
+    const femaBase=`hazards.fema.gov/gis/nfhl/rest/services/public/NFHL/MapServer/28/query?geometry=${lon},${lat}&geometryType=esriGeometryPoint&spatialRel=esriSpatialRelIntersects&outFields=FLD_ZONE,SFHA_TF&returnGeometry=false&f=json`;
+    const femaUrl=`https://${femaBase}`;
+    const femaProxy=`https://corsproxy.io/?${encodeURIComponent(femaUrl)}`;
+    const tryFema=async()=>{try{const r=await fetch(femaUrl);return await r.json()}catch(_){const r=await fetch(femaProxy);return await r.json()}};
+    const femaFetch=tryFema();
+    const femaTimeout=new Promise((_,r)=>setTimeout(()=>r(new Error('fema_timeout')),12000));
     const fd=await Promise.race([femaFetch,femaTimeout]);
     const feats=fd?.features||[];
     if(!feats.length){S.femaZone='X';st.innerHTML='<span style="color:var(--green)">✓ FEMA Zone X — minimal flood risk</span>'}
@@ -872,12 +877,13 @@ async function runPhase_record(){
       }else{findings.push('No existing buildings recorded in OpenStreetMap for this parcel.')}
     }catch(e){L.warn('OSM record search failed:',e.message);findings.push('OSM query failed: '+e.message.substring(0,60))}
 
-    // Strategy 2: Try FEMA for flood zone (if not already done)
+    // Strategy 2: Try FEMA for flood zone (if not already done) — direct first, CORS proxy on failure
     if(!S.femaZone){
       try{
-        // FEMA may be CORS-blocked in standalone Chrome — use Promise.race with short timeout
-        const fP=fetch(`https://hazards.fema.gov/gis/nfhl/rest/services/public/NFHL/MapServer/28/query?geometry=${S.lon},${S.lat}&geometryType=esriGeometryPoint&spatialRel=esriSpatialRelIntersects&outFields=FLD_ZONE,SFHA_TF&returnGeometry=false&f=json`).then(r=>r.json());
-        const fT=new Promise((_,r)=>setTimeout(()=>r(new Error('fema_timeout')),8000));
+        const femaBase=`hazards.fema.gov/gis/nfhl/rest/services/public/NFHL/MapServer/28/query?geometry=${S.lon},${S.lat}&geometryType=esriGeometryPoint&spatialRel=esriSpatialRelIntersects&outFields=FLD_ZONE,SFHA_TF&returnGeometry=false&f=json`;
+        const direct=`https://${femaBase}`;const proxy=`https://corsproxy.io/?${encodeURIComponent(direct)}`;
+        const fP=(async()=>{try{const r=await fetch(direct);return await r.json()}catch(_){L.info('FEMA direct blocked \u2014 falling back to corsproxy.io');const r=await fetch(proxy);return await r.json()}})();
+        const fT=new Promise((_,r)=>setTimeout(()=>r(new Error('fema_timeout')),10000));
         const fd=await Promise.race([fP,fT]);
         const feats=fd?.features||[];
         if(feats.length){const fz=feats[0].attributes.FLD_ZONE||'X';S.femaZone=fz;const sfha=['A','AE','AO','AH','V','VE','A99'].includes(fz);if(sfha){S.overlays.flood=true;toggleOv('flood')};findings.push(`• **FEMA Flood Zone:** ${fz} — ${sfha?'SPECIAL FLOOD HAZARD AREA (affects design)':'Outside SFHA (minimal risk)'}`)}
@@ -1060,17 +1066,24 @@ async function runPhase_comp(){
   const z=S._z;const opt=S.selectedOption;
   try{
     const res=await callAI([{role:'user',content:
-      `As a PhD architect with 50 years of experience, research 3-4 comparable residential developments completed 2019-2024 near ${S.addr} in ${z.jurisdiction}, ${z.state}.
+      `As a PhD architect with 50 years of experience, research 3-5 SPECIFIC, NAMED comparable residential developments completed 2019-2024 within a 2–5 MILE RADIUS of ${S.addr} (${z.jurisdiction}, ${z.state}).
 
 We are designing a **${opt?.name||'multi-family'} project** (${opt?.units||2} units, ~${opt?.sf||2500} SF).
 
-For each comparable project provide:
-1. Project name, location, developer, year completed
-2. Unit mix, stories, total SF, density achieved
-3. Notable green/sustainable innovations actually implemented
-4. Structural system and why it was chosen
-5. Cost per SF and what drove it
-6. Market performance (sold/leased price, time on market)
+Prioritize sources in this order:
+  1. Public permit data portals (data.<city>.gov / Socrata) filed under a recognizable project name within ${z.jurisdiction}
+  2. Recently listed/sold properties visible on Zillow, Redfin, Realtor.com within the 2–5 mile radius
+  3. Published developer / architect project pages, AIA Honor Awards, ULI awards
+  4. Local news coverage of specific completed projects
+
+For each comparable provide:
+1. Project name, specific street/neighborhood, developer, year completed, permit number if known
+2. Distance from ${S.addr} (miles) and WHY it's a relevant comparable (similar lot, use, density, typology)
+3. Unit mix, stories, total SF, density achieved
+4. Notable green/sustainable innovations actually implemented
+5. Structural system and why it was chosen
+6. Cost per SF and what drove it
+7. Market performance (sold/leased price, time on market, source URL or listing ID when possible)
 
 Then recommend:
 **3 specific design innovations we must incorporate** based on what top competitors are doing
