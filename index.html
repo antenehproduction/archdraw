@@ -143,11 +143,22 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--ink);color:var
 .csec{margin-bottom:9px}
 .cshd{font-size:7px;letter-spacing:.6px;color:var(--blue);text-transform:uppercase;padding:3px 0;border-bottom:1px solid var(--brd);margin-bottom:4px;display:flex;align-items:center;justify-content:space-between}
 .ccnt{background:var(--ink3);border:1px solid var(--brd);border-radius:8px;padding:1px 4px;font-size:7px;color:var(--txt3)}
-.cit{display:flex;align-items:flex-start;gap:5px;margin-bottom:3px;padding:3px 5px;border-radius:3px;cursor:pointer;transition:background .1s}.cit:hover{background:var(--ink2)}
-.cck{width:10px;height:10px;border:1.5px solid var(--txt3);border-radius:2px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .18s;margin-top:1px}
+.citw{margin-bottom:3px}
+.cit{display:flex;align-items:flex-start;gap:5px;padding:3px 5px;border-radius:3px;cursor:pointer;transition:background .1s}.cit:hover{background:var(--ink2)}
+.cit.open{background:var(--ink2);border-radius:3px 3px 0 0}
+.cck{width:10px;height:10px;border:1.5px solid var(--txt3);border-radius:2px;flex-shrink:0;display:flex;align-items:center;justify-content:center;transition:all .18s;margin-top:1px;cursor:pointer}
+.cck:hover{border-color:var(--green)}
 .cit.chk .cck{background:var(--green);border-color:var(--green)}
 .cit.chk .ctx{text-decoration:line-through;color:var(--txt3)}
 .ctx{font-size:8px;line-height:1.4;color:var(--txt2);flex:1}.cnote{font-size:7px;color:var(--txt3);display:block;margin-top:1px}.creq{font-size:7px;color:var(--coral);flex-shrink:0}
+.cchev{font-size:8px;color:var(--txt3);transition:transform .18s;flex-shrink:0;margin-top:1px}
+.cit.open .cchev{transform:rotate(90deg);color:var(--blue)}
+.cdetail{display:none;padding:6px 10px 7px 22px;background:var(--ink2);border-radius:0 0 3px 3px;border-left:2px solid var(--blue);font-size:8px;color:var(--txt2);line-height:1.5}
+.cit.open+.cdetail{display:block}
+.cdetail strong{color:var(--txt)}
+.cdetail .cd-src{color:var(--green);font-size:7.5px;margin-top:3px;word-break:break-all}
+.cdetail .cd-act{margin-top:5px;padding-top:4px;border-top:1px solid var(--brd)}
+.cdetail .cd-link{color:var(--blue);text-decoration:none;font-size:7.5px}.cdetail .cd-link:hover{text-decoration:underline}
 .pwrap{padding:7px 10px;border-top:1px solid var(--brd);flex-shrink:0}
 .prow{display:flex;justify-content:space-between;font-size:8px;color:var(--txt3);margin-bottom:3px}
 .ptr{height:2px;background:var(--ink3);border-radius:2px;overflow:hidden}
@@ -432,10 +443,15 @@ async function detectFEMA(){
     const lat=parseFloat(gd[0].lat),lon=parseFloat(gd[0].lon);
     S.lat=lat;S.lon=lon;
     st.innerHTML=`<span style="color:var(--txt3)">Geocoded: ${lat.toFixed(5)}, ${lon.toFixed(5)}. Querying FEMA...</span>`;
-    // FEMA NFHL — may be blocked by CORS in standalone Chrome/artifact context
-    const femaUrl=`https://hazards.fema.gov/gis/nfhl/rest/services/public/NFHL/MapServer/28/query?geometry=${lon},${lat}&geometryType=esriGeometryPoint&spatialRel=esriSpatialRelIntersects&outFields=FLD_ZONE,SFHA_TF&returnGeometry=false&f=json`;
-    const femaFetch=fetch(femaUrl).then(r=>r.json());
-    const femaTimeout=new Promise((_,r)=>setTimeout(()=>r(new Error('fema_timeout')),10000));
+    // FEMA NFHL — may be blocked by CORS in standalone Chrome/artifact context.
+    // Strategy: try direct first (Claude.ai embedded proxy supports it); on failure, fall back
+    // through a public CORS proxy so the app still resolves flood zone without a backend.
+    const femaBase=`hazards.fema.gov/gis/nfhl/rest/services/public/NFHL/MapServer/28/query?geometry=${lon},${lat}&geometryType=esriGeometryPoint&spatialRel=esriSpatialRelIntersects&outFields=FLD_ZONE,SFHA_TF&returnGeometry=false&f=json`;
+    const femaUrl=`https://${femaBase}`;
+    const femaProxy=`https://corsproxy.io/?${encodeURIComponent(femaUrl)}`;
+    const tryFema=async()=>{try{const r=await fetch(femaUrl);return await r.json()}catch(_){const r=await fetch(femaProxy);return await r.json()}};
+    const femaFetch=tryFema();
+    const femaTimeout=new Promise((_,r)=>setTimeout(()=>r(new Error('fema_timeout')),12000));
     const fd=await Promise.race([femaFetch,femaTimeout]);
     const feats=fd?.features||[];
     if(!feats.length){S.femaZone='X';st.innerHTML='<span style="color:var(--green)">✓ FEMA Zone X — minimal flood risk</span>'}
@@ -840,9 +856,15 @@ async function runPhase_zone(){
   try{
     const z=await callJSON([{role:'user',content:`For property "${S.addr}", return ONLY JSON with ACCURATE values for this EXACT address "${S.addr}" — do NOT use placeholder/example values:\n{"lotWidth":0,"lotDepth":0,"frontSetback":0,"rearSetback":0,"leftSetback":0,"rightSetback":0,"maxHeightFt":0,"maxStories":0,"maxFAR":0,"maxLotCoverage":0,"parkingPerUnit":0,"zoningDistrict":"","zoningFullName":"","jurisdiction":"","county":"","state":"","permittedUses":["SFR","ADU","duplex"],"conditionalUses":[],"specialOverlays":[],"aduAllowed":true,"aduMaxSqFt":1200,"densityBonusEligible":true,"sb9Eligible":false,"notes":""}`}],SYS,1500);
     if(!Array.isArray(z.specialOverlays))z.specialOverlays=[];if(!Array.isArray(z.permittedUses))z.permittedUses=[];if(!Array.isArray(z.conditionalUses))z.conditionalUses=[];
-    L.info(`Zone: ${z.zoningDistrict} ${z.jurisdiction} ${z.state} lot=${z.lotWidth}×${z.lotDepth}`);
+    // Initial provenance tag — runPhase_record may recalibrate from OSM after fetch
+    const looksDefault=(!z.lotWidth||!z.lotDepth||(z.lotWidth===60&&z.lotDepth===120));
+    z._lotSource=looksDefault?'AI default (pending OSM calibration)':'AI research';
+    z._lotConfidence=looksDefault?'unverified':'verify-with-plat';
+    L.info(`Zone: ${z.zoningDistrict} ${z.jurisdiction} ${z.state} lot=${z.lotWidth}×${z.lotDepth} src=${z._lotSource}`);
     const zt=await callAIWithRetry([{role:'user',content:`Expert zoning analysis for "${S.addr}" — ${z.zoningDistrict}, ${z.jurisdiction}, ${z.state}.\nCover: by-right vs conditional development options, setbacks front ${z.frontSetback}/rear ${z.rearSetback}/sides ${z.leftSetback}-${z.rightSetback}ft, FAR ${z.maxFAR}, ${z.maxLotCoverage}% coverage, ${z.maxStories} stories, ADU rights: ${z.aduAllowed}. Note any density bonus programs, SB9 rights, or form-based code options.`}],SYS,1000);
-    phSet('zone','done',`${((Date.now()-t)/1000).toFixed(1)}s`);addFind('zone','📋 Zoning',fmt(zt)+buildZT(z));S._z=z;phaseRunners.zone=runPhase_zone;
+    phSet('zone','done',`${((Date.now()-t)/1000).toFixed(1)}s`);
+    const lotNote=z._lotSource?`<div style="margin-top:6px;padding:5px 8px;border:1px dashed var(--brd);border-radius:3px;font-size:9px;color:var(--txt3)">\uD83D\uDCCE Lot dims source: <strong>${z._lotSource}</strong> \u00B7 confidence: <em>${z._lotConfidence}</em></div>`:'';
+    addFind('zone','📋 Zoning',fmt(zt)+buildZT(z)+lotNote);S._z=z;phaseRunners.zone=runPhase_zone;
   }catch(e){phSet('zone','error',`${((Date.now()-t)/1000).toFixed(1)}s`);addFind('zone','📋 Zoning',`<div class="ebox">${e.message}</div>`);throw e}
 }
 
@@ -872,12 +894,13 @@ async function runPhase_record(){
       }else{findings.push('No existing buildings recorded in OpenStreetMap for this parcel.')}
     }catch(e){L.warn('OSM record search failed:',e.message);findings.push('OSM query failed: '+e.message.substring(0,60))}
 
-    // Strategy 2: Try FEMA for flood zone (if not already done)
+    // Strategy 2: Try FEMA for flood zone (if not already done) — direct first, CORS proxy on failure
     if(!S.femaZone){
       try{
-        // FEMA may be CORS-blocked in standalone Chrome — use Promise.race with short timeout
-        const fP=fetch(`https://hazards.fema.gov/gis/nfhl/rest/services/public/NFHL/MapServer/28/query?geometry=${S.lon},${S.lat}&geometryType=esriGeometryPoint&spatialRel=esriSpatialRelIntersects&outFields=FLD_ZONE,SFHA_TF&returnGeometry=false&f=json`).then(r=>r.json());
-        const fT=new Promise((_,r)=>setTimeout(()=>r(new Error('fema_timeout')),8000));
+        const femaBase=`hazards.fema.gov/gis/nfhl/rest/services/public/NFHL/MapServer/28/query?geometry=${S.lon},${S.lat}&geometryType=esriGeometryPoint&spatialRel=esriSpatialRelIntersects&outFields=FLD_ZONE,SFHA_TF&returnGeometry=false&f=json`;
+        const direct=`https://${femaBase}`;const proxy=`https://corsproxy.io/?${encodeURIComponent(direct)}`;
+        const fP=(async()=>{try{const r=await fetch(direct);return await r.json()}catch(_){L.info('FEMA direct blocked \u2014 falling back to corsproxy.io');const r=await fetch(proxy);return await r.json()}})();
+        const fT=new Promise((_,r)=>setTimeout(()=>r(new Error('fema_timeout')),10000));
         const fd=await Promise.race([fP,fT]);
         const feats=fd?.features||[];
         if(feats.length){const fz=feats[0].attributes.FLD_ZONE||'X';S.femaZone=fz;const sfha=['A','AE','AO','AH','V','VE','A99'].includes(fz);if(sfha){S.overlays.flood=true;toggleOv('flood')};findings.push(`• **FEMA Flood Zone:** ${fz} — ${sfha?'SPECIAL FLOOD HAZARD AREA (affects design)':'Outside SFHA (minimal risk)'}`)}
@@ -907,6 +930,19 @@ async function runPhase_record(){
   }else{findings.push('Address geocoding required to query site records. Enter address with city/state.')}
 
   const summary=osmFound?`**Existing Site Survey — ${S.osmBuildings.filter(e=>e.tags?.building).length} structure(s) identified** via OpenStreetMap (community-maintained survey data). Use as reference; verify with licensed surveyor.\n\n`:`**No existing buildings found** in public OpenStreetMap records for this parcel — lot may be vacant or structures not yet mapped.\n\n`;
+  // ── Lot dimension calibration — re-run now that OSM data is fetched ──
+  if(S._z&&S.lat&&S.lon&&(S._z._lotConfidence==='unverified'||S._z._lotSource?.includes('pending'))){
+    const cal=calibrateLotFromOSM(S.lat,S.lon);
+    if(cal){
+      const oldW=S._z.lotWidth,oldD=S._z.lotDepth;
+      S._z.lotWidth=cal.lotWidth;S._z.lotDepth=cal.lotDepth;
+      S._z._lotSource=cal.source;S._z._lotConfidence=cal.confidence;
+      L.info(`Lot dims recalibrated from OSM: ${oldW}\u00D7${oldD}\u2192${cal.lotWidth}\u00D7${cal.lotDepth} (${cal.fromBuildings} buildings, ${cal.confidence} confidence)`);
+      findings.push(`**Lot dimensions calibrated:** ${cal.lotWidth}'\u00D7${cal.lotDepth}' based on ${cal.fromBuildings} neighboring building footprints (was AI default ${oldW}'\u00D7${oldD}'). ${cal.confidence} confidence \u2014 verify with plat/survey.`);
+    }else if(S._z._lotSource?.includes('pending')){
+      S._z._lotSource='AI default (OSM insufficient \u2014 VERIFY with plat/survey before design)';
+    }
+  }
   // site-intel: record provenance trail for auditability
   S._sitePackProvenance={
     nominatim:S.lat?`lat=${S.lat.toFixed(5)} lon=${S.lon.toFixed(5)}`:'MISSING',
@@ -924,6 +960,44 @@ function calcOSMArea(geometry){// rough footprint SF from OSM geometry lat/lon p
   if(!geometry||geometry.length<3)return null;
   let area=0;for(let i=0;i<geometry.length;i++){const j=(i+1)%geometry.length;area+=geometry[i].lon*geometry[j].lat;area-=geometry[j].lon*geometry[i].lat}
   const areaDeg=Math.abs(area)/2;const areaSF=areaDeg*(364000*364000*Math.cos(geometry[0].lat*Math.PI/180));return areaSF;
+}
+
+// ── LOT DIMENSION CALIBRATION (used when county ArcGIS is blocked) ──
+// Reads OSM building/parcel shapes near the site, estimates lot width × depth
+// from typical neighborhood proportions. Returns null when data insufficient.
+function calibrateLotFromOSM(lat,lon){
+  if(!S.osmBuildings?.length)return null;
+  const bldgs=S.osmBuildings.filter(b=>b.tags?.building&&b.geometry&&b.geometry.length>=3);
+  if(!bldgs.length)return null;
+  // Building bounding boxes in feet (approx)
+  const ftLat=364000,ftLon=364000*Math.cos(lat*Math.PI/180);
+  const bboxes=bldgs.map(b=>{
+    const lats=b.geometry.map(p=>p.lat),lons=b.geometry.map(p=>p.lon);
+    const w=(Math.max(...lons)-Math.min(...lons))*ftLon;
+    const d=(Math.max(...lats)-Math.min(...lats))*ftLat;
+    const cx=(Math.max(...lons)+Math.min(...lons))/2,cy=(Math.max(...lats)+Math.min(...lats))/2;
+    const distFt=Math.sqrt(((cx-lon)*ftLon)**2+((cy-lat)*ftLat)**2);
+    return {w,d,dist:distFt,area:w*d};
+  }).filter(b=>b.area>200&&b.area<12000);
+  if(!bboxes.length)return null;
+  // Typical US SFR footprint is 25-40% of lot. Infer lot dims from nearest 3-5 buildings.
+  bboxes.sort((a,b)=>a.dist-b.dist);
+  const nearest=bboxes.slice(0,Math.min(5,bboxes.length));
+  const avgW=nearest.reduce((s,b)=>s+b.w,0)/nearest.length;
+  const avgD=nearest.reduce((s,b)=>s+b.d,0)/nearest.length;
+  // Typical suburban lot: footprint ~30% of lot. Commercial urban: ~60%. Default 32%.
+  const covRatio=0.32;
+  const estLotArea=(avgW*avgD)/covRatio;
+  // Preserve building aspect ratio when inferring lot aspect ratio
+  const aspectB=avgW/avgD;
+  const estLotD=Math.round(Math.sqrt(estLotArea/aspectB));
+  const estLotW=Math.round(estLotArea/estLotD);
+  return {
+    lotWidth:estLotW,lotDepth:estLotD,
+    source:`OSM neighborhood calibration (${nearest.length} buildings, avg ${Math.round(avgW)}'×${Math.round(avgD)}' footprint, assumed 32% coverage)`,
+    confidence:nearest.length>=4?'medium':'low',
+    fromBuildings:nearest.length,
+  };
 }
 
 // ── DEVELOPMENT OPTIONS GENERATION (local, instant) ──
@@ -1060,17 +1134,24 @@ async function runPhase_comp(){
   const z=S._z;const opt=S.selectedOption;
   try{
     const res=await callAI([{role:'user',content:
-      `As a PhD architect with 50 years of experience, research 3-4 comparable residential developments completed 2019-2024 near ${S.addr} in ${z.jurisdiction}, ${z.state}.
+      `As a PhD architect with 50 years of experience, research 3-5 SPECIFIC, NAMED comparable residential developments completed 2019-2024 within a 2–5 MILE RADIUS of ${S.addr} (${z.jurisdiction}, ${z.state}).
 
 We are designing a **${opt?.name||'multi-family'} project** (${opt?.units||2} units, ~${opt?.sf||2500} SF).
 
-For each comparable project provide:
-1. Project name, location, developer, year completed
-2. Unit mix, stories, total SF, density achieved
-3. Notable green/sustainable innovations actually implemented
-4. Structural system and why it was chosen
-5. Cost per SF and what drove it
-6. Market performance (sold/leased price, time on market)
+Prioritize sources in this order:
+  1. Public permit data portals (data.<city>.gov / Socrata) filed under a recognizable project name within ${z.jurisdiction}
+  2. Recently listed/sold properties visible on Zillow, Redfin, Realtor.com within the 2–5 mile radius
+  3. Published developer / architect project pages, AIA Honor Awards, ULI awards
+  4. Local news coverage of specific completed projects
+
+For each comparable provide:
+1. Project name, specific street/neighborhood, developer, year completed, permit number if known
+2. Distance from ${S.addr} (miles) and WHY it's a relevant comparable (similar lot, use, density, typology)
+3. Unit mix, stories, total SF, density achieved
+4. Notable green/sustainable innovations actually implemented
+5. Structural system and why it was chosen
+6. Cost per SF and what drove it
+7. Market performance (sold/leased price, time on market, source URL or listing ID when possible)
 
 Then recommend:
 **3 specific design innovations we must incorporate** based on what top competitors are doing
@@ -1258,13 +1339,39 @@ function buildChecklist(data){
   s.innerHTML=`<div class="cshd">${cat.name}<span style="font-size:6.5px;color:var(--txt3);margin-left:4px">${Object.entries(TL_MAP).find(([k])=>cat.name.includes(k))?.[1]||''}</span><span class="ccnt">${cat.items?.length||0}</span></div>`+(cat.items||[]).map(it=>{
       const srcAttr=it.source?` data-source="${(it.source+'').replace(/"/g,'&quot;')}"`:'';
       const preCheck=it.autoCheck?' chk':'';
-      const srcBadge=it.source?`<span class="cnote" style="color:var(--green);margin-top:2px">\uD83D\uDCCE ${(it.source+'').substring(0,90)}</span>`:'';
-      return `<div class="cit${preCheck}"${srcAttr} onclick="tCL(this)"><div class="cck"><svg width="7" height="7" viewBox="0 0 8 8" fill="none" style="display:${it.autoCheck?'block':'none'}"><path d="M1 4l2 2.5L7 1.5" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg></div><div class="ctx">${it.label}${it.note?`<span class="cnote">${it.note}</span>`:''}${srcBadge}</div>${it.required?'<span class="creq">REQ</span>':''}</div>`;
+      const escape=s=>String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      // Inline detail panel content: source + extended note + action links
+      const sourceBlock=it.source?`<div class="cd-src">\uD83D\uDCCE <strong>Source:</strong> ${escape(it.source).substring(0,160)}</div>`:'';
+      const noteBlock=it.note?`<div><strong>Scope / notes:</strong> ${escape(it.note)}</div>`:'';
+      // Action links based on category context
+      const actions=[];
+      if(/permit application|building permit/i.test(it.label))actions.push(`<a class="cd-link" href="https://www.google.com/search?q=${encodeURIComponent((data?.jurisdiction||'')+' building permit application')}" target="_blank">\u2192 Search ${data?.jurisdiction||'jurisdiction'} permit portal</a>`);
+      if(/FEMA/i.test(it.label))actions.push(`<a class="cd-link" href="https://msc.fema.gov/portal/search" target="_blank">\u2192 Check FEMA flood map</a>`);
+      if(/survey|plat|topograph/i.test(it.label))actions.push(`<a class="cd-link" href="https://www.google.com/search?q=${encodeURIComponent('licensed land surveyor '+(data?.jurisdiction||''))}" target="_blank">\u2192 Find local surveyor</a>`);
+      if(/historic|COA/i.test(it.label))actions.push(`<a class="cd-link" href="https://www.google.com/search?q=${encodeURIComponent((data?.jurisdiction||'')+' historic preservation certificate of appropriateness')}" target="_blank">\u2192 Historic board info</a>`);
+      if(/title 24|CALGreen/i.test(it.label))actions.push(`<a class="cd-link" href="https://www.energy.ca.gov/programs-and-topics/programs/building-energy-efficiency-standards" target="_blank">\u2192 CEC Title 24 reference</a>`);
+      if(/WSEC/i.test(it.label))actions.push(`<a class="cd-link" href="https://sbcc.wa.gov/page/energy-code" target="_blank">\u2192 WA Energy Code</a>`);
+      if(/structural|PE-stamped/i.test(it.label))actions.push(`<a class="cd-link" href="https://www.google.com/search?q=${encodeURIComponent('licensed structural engineer '+(data?.jurisdiction||''))}" target="_blank">\u2192 Find structural PE</a>`);
+      if(/architect|RA|RDP/i.test(it.label))actions.push(`<a class="cd-link" href="https://www.ncarb.org/licensees" target="_blank">\u2192 NCARB licensee directory</a>`);
+      const statusLbl=it.autoCheck?'<span style="color:var(--green)">\u2713 Auto-completed from upstream data</span>':'<span style="color:var(--amber)">\u25CB Pending \u2014 click the checkbox when complete</span>';
+      const actionBlock=actions.length?`<div class="cd-act"><strong>Next steps:</strong><br>${actions.join('<br>')}</div>`:'';
+      const detail=`<div class="cdetail"><div><strong>Status:</strong> ${statusLbl}</div>${sourceBlock?`<div style="margin-top:4px">${sourceBlock}</div>`:''}${noteBlock?`<div style="margin-top:4px">${noteBlock}</div>`:''}${actionBlock}</div>`;
+      const srcInline=it.source?`<span class="cnote" style="color:var(--green);margin-top:2px">\uD83D\uDCCE ${escape(it.source).substring(0,80)}</span>`:'';
+      const row=`<div class="cit${preCheck}"${srcAttr} onclick="tCD(this,event)"><div class="cck" onclick="event.stopPropagation();tCL(this.parentElement)"><svg width="7" height="7" viewBox="0 0 8 8" fill="none" style="display:${it.autoCheck?'block':'none'}"><path d="M1 4l2 2.5L7 1.5" stroke="white" stroke-width="1.5" stroke-linecap="round"/></svg></div><div class="ctx">${escape(it.label)}${it.note?`<span class="cnote">${escape(it.note)}</span>`:''}${srcInline}</div>${it.required?'<span class="creq">REQ</span>':''}<span class="cchev">\u25B8</span></div>`;
+      return `<div class="citw">${row}${detail}</div>`;
     }).join('');
     sc.appendChild(s);
   });pUp();
 }
 function tCL(el){el.classList.toggle('chk');const s=el.querySelector('.cck svg');if(s)s.style.display=el.classList.contains('chk')?'block':'none';pUp()}
+// Toggle checklist-card detail panel (inline expand/collapse)
+function tCD(el,ev){
+  // If the click originated from the checkbox, tCL handles it via stopPropagation.
+  // Close any other open card in the same panel (single-open behavior).
+  const panel=el.closest('#cl-scroll');
+  if(panel){panel.querySelectorAll('.cit.open').forEach(o=>{if(o!==el)o.classList.remove('open')})}
+  el.classList.toggle('open');
+}
 function pUp(){const a=document.querySelectorAll('.cit').length,d=document.querySelectorAll('.cit.chk').length,p=a>0?Math.round(d/a*100):0;document.getElementById('ppct').textContent=p+'%';document.getElementById('pf').style.width=p+'%'}
 
 // ═══ DRAWING ENGINE (24"×36" permit sheets) ═══
