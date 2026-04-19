@@ -1876,6 +1876,220 @@ function drawStairLShape(ctx,x,y,w,d,ft,opts={}){
   ctx.fillText('UP 14R',x+landingSize/2,y+landingSize/2);
   ctx.restore();
 }
+// ── ANNOTATION SYMBOLS (sheet key marks) ──
+function drawDoorTag(ctx,cx,cy,num){
+  // Circle with number — door schedule reference. AIA standard 3/16" dia circle.
+  ctx.save();
+  const r=8;
+  ctx.fillStyle='rgba(11,14,21,.85)';ctx.strokeStyle='rgba(210,225,244,.8)';ctx.lineWidth=0.7;
+  ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fill();ctx.stroke();
+  ctx.fillStyle='rgba(210,225,244,.95)';ctx.font=ARCH_STANDARDS.typography.callout;ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(String(num),cx,cy);
+  ctx.restore();
+}
+function drawWindowTag(ctx,cx,cy,letter){
+  // Hexagon with letter — window schedule reference.
+  ctx.save();
+  const r=8;
+  ctx.fillStyle='rgba(11,14,21,.85)';ctx.strokeStyle=ARCH_STANDARDS.symbols.windowGlazing;ctx.lineWidth=0.7;
+  ctx.beginPath();
+  for(let i=0;i<6;i++){const a=Math.PI/3*i+Math.PI/6;const x=cx+r*Math.cos(a),y=cy+r*Math.sin(a);if(i===0)ctx.moveTo(x,y);else ctx.lineTo(x,y)}
+  ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.fillStyle='rgba(100,170,255,.95)';ctx.font=ARCH_STANDARDS.typography.callout;ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(String(letter),cx,cy);
+  ctx.restore();
+}
+function drawRoomTag(ctx,cx,cy,name,areaSqFt){
+  // Room tag: name line + area SF line in a compact bordered block
+  ctx.save();
+  const text=name.toUpperCase();const area=areaSqFt?`${Math.round(areaSqFt)} SF`:'';
+  ctx.font='500 7px JetBrains Mono,monospace';
+  const w=Math.max(ctx.measureText(text).width,ctx.measureText(area).width)+10;const h=area?22:14;
+  ctx.fillStyle='rgba(11,14,21,.75)';ctx.strokeStyle='rgba(210,225,244,.4)';ctx.lineWidth=.5;
+  ctx.fillRect(cx-w/2,cy-h/2,w,h);ctx.strokeRect(cx-w/2,cy-h/2,w,h);
+  ctx.fillStyle='rgba(210,225,244,.95)';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(text,cx,cy-(area?4:0));
+  if(area){ctx.font='6px JetBrains Mono,monospace';ctx.fillStyle='rgba(122,154,184,.8)';ctx.fillText(area,cx,cy+6)}
+  ctx.restore();
+}
+function drawSectionCut(ctx,x1,y1,x2,y2,letter){
+  // Section cut line with arrows + lettered bubble at each end
+  ctx.save();
+  ctx.strokeStyle='rgba(245,200,66,.85)';ctx.fillStyle='rgba(245,200,66,.85)';ctx.lineWidth=1.4;
+  // Main dashed section line
+  ctx.setLineDash([8,4]);ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.setLineDash([]);
+  // Arrow head at each end pointing across the section
+  const dx=x2-x1,dy=y2-y1,len=Math.sqrt(dx*dx+dy*dy);const nx=dx/len,ny=dy/len;const px=-ny,py=nx;// perpendicular
+  const al=12;// arrow length
+  [[x1,y1,-1],[x2,y2,1]].forEach(([ex,ey,dir])=>{
+    const ax=ex+px*al*dir,ay=ey+py*al*dir;
+    ctx.beginPath();ctx.moveTo(ex,ey);ctx.lineTo(ax,ay);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(ax-nx*4+px*3*dir,ay-ny*4+py*3*dir);ctx.lineTo(ax+nx*4+px*3*dir,ay+ny*4+py*3*dir);ctx.closePath();ctx.fill();
+  });
+  // Letter bubble at start
+  ctx.fillStyle='rgba(11,14,21,.9)';ctx.beginPath();ctx.arc(x1-nx*14,y1-ny*14,10,0,Math.PI*2);ctx.fill();
+  ctx.strokeStyle='rgba(245,200,66,.85)';ctx.lineWidth=1;ctx.stroke();
+  ctx.fillStyle='rgba(245,200,66,.95)';ctx.font='500 9px JetBrains Mono,monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(letter,x1-nx*14,y1-ny*14);
+  ctx.restore();
+}
+function drawDetailCallout(ctx,cx,cy,detailNum,sheetNum){
+  // Circle bubble split horizontally: top = detail number, bottom = sheet number
+  ctx.save();
+  const r=11;
+  ctx.fillStyle='rgba(11,14,21,.9)';ctx.strokeStyle='rgba(167,139,250,.85)';ctx.lineWidth=0.8;
+  ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fill();ctx.stroke();
+  // Horizontal divider
+  ctx.beginPath();ctx.moveTo(cx-r,cy);ctx.lineTo(cx+r,cy);ctx.stroke();
+  ctx.fillStyle='rgba(210,225,244,.95)';ctx.font='500 7.5px JetBrains Mono,monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(String(detailNum),cx,cy-5);
+  ctx.font='6.5px JetBrains Mono,monospace';ctx.fillStyle='rgba(167,139,250,.9)';
+  ctx.fillText(sheetNum,cx,cy+5);
+  ctx.restore();
+}
+function drawElevationKey(ctx,cx,cy,letter,rotation=0){
+  // Triangle with letter — points in elevation direction
+  ctx.save();ctx.translate(cx,cy);ctx.rotate(rotation*Math.PI/180);
+  const r=10;
+  ctx.fillStyle='rgba(11,14,21,.9)';ctx.strokeStyle='rgba(34,224,138,.85)';ctx.lineWidth=0.8;
+  ctx.beginPath();ctx.moveTo(0,-r);ctx.lineTo(r*.9,r*.6);ctx.lineTo(-r*.9,r*.6);ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.fillStyle='rgba(34,224,138,.95)';ctx.font='500 8px JetBrains Mono,monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(letter,0,1);
+  ctx.restore();
+}
+function drawRevisionCloud(ctx,cx,cy,w,h){
+  // Cloud outline using connected arcs — marks changed areas
+  ctx.save();
+  ctx.strokeStyle='rgba(255,101,85,.85)';ctx.lineWidth=0.9;
+  const r=Math.min(w,h)*.12;const steps=Math.max(8,Math.round((w+h)/r/2));
+  ctx.beginPath();
+  const pts=[];const n=Math.max(6,Math.round((2*(w+h))/r));
+  for(let i=0;i<n;i++){
+    const t=i/n;const angle=t*Math.PI*2;
+    const px=cx+(w/2)*Math.cos(angle);const py=cy+(h/2)*Math.sin(angle);
+    pts.push([px,py]);
+  }
+  pts.forEach((p,i)=>{
+    if(i===0){ctx.moveTo(p[0],p[1])}
+    else{const prev=pts[i-1];const mx=(prev[0]+p[0])/2,my=(prev[1]+p[1])/2;
+      ctx.arc(mx,my,r,0,Math.PI*1.8)}
+  });
+  ctx.stroke();
+  ctx.restore();
+}
+function drawNoteLeader(ctx,fromX,fromY,toX,toY,text,textAlign='left'){
+  // Leader line from note text to feature. Small dot at target, text at origin.
+  ctx.save();
+  ctx.strokeStyle='rgba(210,225,244,.65)';ctx.fillStyle='rgba(210,225,244,.65)';ctx.lineWidth=0.5;
+  ctx.beginPath();ctx.moveTo(fromX,fromY);ctx.lineTo(toX,toY);ctx.stroke();
+  // Dot at target
+  ctx.beginPath();ctx.arc(toX,toY,1.5,0,Math.PI*2);ctx.fill();
+  // Text at leader origin
+  ctx.font=ARCH_STANDARDS.typography.fixture;ctx.textAlign=textAlign;ctx.textBaseline='middle';
+  ctx.fillText(text,fromX,fromY-4);
+  ctx.restore();
+}
+
+// ── HVAC ──
+function drawWaterHeater(ctx,cx,cy,ft,opts={}){
+  const r=ft(0.83);// 20" dia
+  ctx.save();
+  ctx.fillStyle='rgba(100,170,255,.15)';ctx.strokeStyle=ARCH_STANDARDS.symbols.waterFixture;ctx.lineWidth=ARCH_STANDARDS.lineWeights.fixture;
+  ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fill();ctx.stroke();
+  ctx.fillStyle='rgba(100,170,255,.75)';ctx.font=ARCH_STANDARDS.typography.fixture;ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('WH',cx,cy);
+  ctx.restore();
+}
+function drawFurnace(ctx,cx,cy,ft,opts={}){
+  const w=ft(2),d=ft(2);
+  ctx.save();
+  ctx.fillStyle='rgba(90,100,115,.4)';ctx.strokeStyle=ARCH_STANDARDS.symbols.fixtureStroke;ctx.lineWidth=ARCH_STANDARDS.lineWeights.fixtureHeavy;
+  ctx.fillRect(cx-w/2,cy-d/2,w,d);ctx.strokeRect(cx-w/2,cy-d/2,w,d);
+  // Flame icon
+  ctx.fillStyle='rgba(245,150,85,.8)';
+  ctx.beginPath();ctx.arc(cx,cy,Math.min(w,d)*.15,0,Math.PI*2);ctx.fill();
+  ctx.fillStyle='rgba(210,225,244,.8)';ctx.font=ARCH_STANDARDS.typography.fixture;ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('FURN',cx,cy+d*.3);
+  ctx.restore();
+}
+function drawMiniSplit(ctx,cx,cy,ft,opts={}){
+  // Wall-mounted indoor head (slim horizontal unit)
+  const w=ft(3),d=ft(0.83);
+  ctx.save();ctx.translate(cx,cy);if(opts.orient)ctx.rotate(opts.orient*Math.PI/180);
+  ctx.fillStyle='rgba(200,215,235,.45)';ctx.strokeStyle=ARCH_STANDARDS.symbols.fixtureStroke;ctx.lineWidth=ARCH_STANDARDS.lineWeights.fixture;
+  ctx.fillRect(-w/2,-d/2,w,d);ctx.strokeRect(-w/2,-d/2,w,d);
+  // Louver lines
+  ctx.strokeStyle='rgba(100,170,255,.55)';ctx.lineWidth=0.3;
+  for(let i=1;i<4;i++){const y=-d/2+d*(i/4);ctx.beginPath();ctx.moveTo(-w*.45,y);ctx.lineTo(w*.45,y);ctx.stroke()}
+  ctx.fillStyle='rgba(100,170,255,.8)';ctx.font=ARCH_STANDARDS.typography.fixture;ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('A/C',0,d);
+  ctx.restore();
+}
+function drawERV(ctx,cx,cy,ft,opts={}){
+  // Energy recovery ventilator — small box w/ air arrows
+  const w=ft(2),d=ft(1.5);
+  ctx.save();
+  ctx.fillStyle='rgba(34,224,138,.2)';ctx.strokeStyle='rgba(34,224,138,.7)';ctx.lineWidth=ARCH_STANDARDS.lineWeights.fixture;
+  ctx.fillRect(cx-w/2,cy-d/2,w,d);ctx.strokeRect(cx-w/2,cy-d/2,w,d);
+  ctx.fillStyle='rgba(34,224,138,.85)';ctx.font=ARCH_STANDARDS.typography.fixture;ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText('ERV',cx,cy);
+  ctx.restore();
+}
+
+// ── ELECTRICAL ──
+function drawElectricalPanel(ctx,cx,cy,ft,opts={}){
+  const w=ft(1.5),d=ft(0.5);
+  ctx.save();ctx.translate(cx,cy);if(opts.orient)ctx.rotate(opts.orient*Math.PI/180);
+  ctx.fillStyle='rgba(70,80,95,.5)';ctx.strokeStyle=ARCH_STANDARDS.symbols.fixtureStroke;ctx.lineWidth=ARCH_STANDARDS.lineWeights.fixtureHeavy;
+  ctx.fillRect(-w/2,-d/2,w,d);ctx.strokeRect(-w/2,-d/2,w,d);
+  ctx.fillStyle='rgba(245,200,66,.85)';ctx.font=ARCH_STANDARDS.typography.fixture;ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(`${opts.amps||200}A`,0,0);
+  ctx.restore();
+}
+
+// ── STRUCTURAL ──
+function drawColumnBubble(ctx,cx,cy,letter,number){
+  // AIA structural grid reference — intersecting lines + labeled circle
+  ctx.save();
+  const r=12;
+  ctx.strokeStyle='rgba(245,200,66,.45)';ctx.lineWidth=0.6;ctx.setLineDash([6,4]);
+  ctx.beginPath();ctx.moveTo(cx-40,cy);ctx.lineTo(cx+40,cy);ctx.moveTo(cx,cy-40);ctx.lineTo(cx,cy+40);ctx.stroke();ctx.setLineDash([]);
+  // Bubble
+  ctx.fillStyle='rgba(11,14,21,.9)';ctx.strokeStyle='rgba(245,200,66,.85)';ctx.lineWidth=0.9;
+  ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.fill();ctx.stroke();
+  // Letter on top, number on bottom (per AIA)
+  ctx.fillStyle='rgba(245,200,66,.95)';ctx.font='500 8px JetBrains Mono,monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(`${letter}${number}`,cx,cy);
+  ctx.restore();
+}
+function drawBeamOverhead(ctx,x1,y1,x2,y2,label='B-1'){
+  // Beam shown dashed (hidden above) with size label
+  ctx.save();
+  ctx.strokeStyle='rgba(245,200,66,.6)';ctx.lineWidth=1.5;ctx.setLineDash([10,4,2,4]);
+  ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.setLineDash([]);
+  // Label in middle with background
+  const mx=(x1+x2)/2,my=(y1+y2)/2;
+  ctx.fillStyle='rgba(11,14,21,.8)';ctx.fillRect(mx-15,my-6,30,12);
+  ctx.fillStyle='rgba(245,200,66,.9)';ctx.font='500 7px JetBrains Mono,monospace';ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(label,mx,my);
+  ctx.restore();
+}
+function drawShearWallHatch(ctx,x,y,w,h,label='SW-1'){
+  // Shear wall — crosshatch pattern
+  ctx.save();
+  ctx.fillStyle='rgba(255,101,85,.12)';ctx.strokeStyle='rgba(255,101,85,.75)';ctx.lineWidth=ARCH_STANDARDS.lineWeights.wallExt;
+  ctx.fillRect(x,y,w,h);ctx.strokeRect(x,y,w,h);
+  // 45° hatching
+  ctx.strokeStyle='rgba(255,101,85,.4)';ctx.lineWidth=0.4;
+  ctx.save();ctx.beginPath();ctx.rect(x,y,w,h);ctx.clip();
+  for(let d=-h;d<w+h;d+=6){ctx.beginPath();ctx.moveTo(x+d,y);ctx.lineTo(x+d+h,y+h);ctx.stroke()}
+  ctx.restore();
+  // Label
+  ctx.fillStyle='rgba(255,101,85,.9)';ctx.font=ARCH_STANDARDS.typography.fixture;ctx.textAlign='center';ctx.textBaseline='middle';
+  ctx.fillText(label,x+w/2,y+h/2);
+  ctx.restore();
+}
+
 function drawStairUShape(ctx,x,y,w,d,ft,opts={}){
   // U-shape with landing at top. Two parallel runs with landing connecting them.
   const midW=w/2;
