@@ -133,7 +133,7 @@ async function handleFema(params, origin) {
 async function handleArcgis(params, origin) {
   const url = params.get('url');
   if (!url) return jsonResponse({ error: 'url required' }, origin, 400);
-  if (!/arcgis|services\.arcgisonline|gismaps|portlandmaps|hazards\.fema|dpw\.gis\.lacounty|sfplanninggis|acgov/i.test(url))
+  if (!/arcgis|services\.arcgisonline|gismaps|portlandmaps|hazards\.fema|dpw\.gis\.lacounty|sfplanninggis|acgov|hazards\.usgs|coast\.noaa|apps\.fs\.usda|fortress\.wa\.gov|gis\.dnr\.wa\.gov|gis\.conservation\.ca\.gov|services1\.arcgis|services6\.arcgis|fdot|saccounty|kingcounty|mcassessor|clarkcountynv|colorado\.gov|jeffco|miamidade|hillsborough|ocpafl|fultoncountyga|cobbcountyga|dekalbcountyga|wakegov|charlottenc|fairfaxcounty|franklincountyohio|cuyahogacounty|pasda\.psu|alleghenycounty|hennepin|webgis\.sccgov|gis-public\.sandiegocounty|countyofriverside|mapservices\.gis\.saccounty|gisportal\.jeffco|maps\.hillsboroughcounty|vgispublic\.ocpafl|gismaps\.fultoncountyga|geo-cobbcountyga|dcgis\.dekalbcountyga|maps\.wakegov|gis\.charlottenc|fairfaxcounty|gis\.franklincountyohio|gis\.cuyahogacounty|gisdata\.alleghenycounty|gis\.hennepin|www\.ocgis|clvgis|denvergov\.org|mapdata\.lasvegasnevada|sandiegocounty/i.test(url))
     return jsonResponse({ error: 'url must be an ArcGIS REST endpoint' }, origin, 400);
   const resp = await fetch(url, { headers: PROXY_HEADERS });
   return jsonPassthrough(resp, origin, 'arcgis');
