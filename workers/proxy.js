@@ -54,30 +54,52 @@ function corsResponse(body, origin, status = 200, extraHeaders = {}) {
   });
 }
 
+// Passes upstream response through as JSON only if it actually IS JSON.
+// If upstream returned HTML or an error status, wrap it in a structured JSON error
+// so the client can JSON.parse() without choking on "<html>..." bodies.
+async function jsonPassthrough(resp, origin, label, extraHeaders = {}) {
+  const contentType = resp.headers.get('content-type') || '';
+  const text = await resp.text();
+  const looksJson = contentType.includes('json') || /^\s*[\{\[]/.test(text);
+  if (!resp.ok || !looksJson) {
+    const bodyPreview = text.substring(0, 200).replace(/\s+/g, ' ').trim();
+    return corsResponse({
+      error: 'upstream_non_json',
+      label,
+      upstreamStatus: resp.status,
+      upstreamContentType: contentType,
+      preview: bodyPreview,
+      hint: 'The upstream service returned HTML or an error. Retry in a moment or check the upstream status directly.',
+    }, origin, 502, extraHeaders);
+  }
+  return new Response(text, {
+    status: 200,
+    headers: { ...CORS_HEADERS(origin), 'Content-Type': 'application/json', ...extraHeaders },
+  });
+}
+
 async function handleFema(params, origin) {
   const lat = params.get('lat'), lon = params.get('lon');
   if (!lat || !lon) return corsResponse({ error: 'lat + lon required' }, origin, 400);
   const upstream = `https://hazards.fema.gov/gis/nfhl/rest/services/public/NFHL/MapServer/28/query?geometry=${lon},${lat}&geometryType=esriGeometryPoint&spatialRel=esriSpatialRelIntersects&outFields=FLD_ZONE,SFHA_TF&returnGeometry=false&f=json`;
-  const resp = await fetch(upstream, { cf: { cacheTtl: 3600, cacheEverything: true } });
-  const text = await resp.text();
-  return corsResponse(text, origin, 200, {
-    'Content-Type': 'application/json',
-    'Cache-Control': 'public, max-age=3600',
+  const resp = await fetch(upstream, {
+    cf: { cacheTtl: 3600, cacheEverything: true },
+    headers: { 'User-Agent': 'ArchDrawIntel-Proxy/1.0', 'Accept': 'application/json' },
   });
+  return jsonPassthrough(resp, origin, 'fema', { 'Cache-Control': 'public, max-age=3600' });
 }
 
 async function handleArcgis(params, origin) {
   const url = params.get('url');
   if (!url) return corsResponse({ error: 'url required' }, origin, 400);
   // Safety: only allow ArcGIS REST endpoints
-  if (!/arcgis|services\.arcgisonline|gismaps/i.test(url))
+  if (!/arcgis|services\.arcgisonline|gismaps|portlandmaps|hazards\.fema/i.test(url))
     return corsResponse({ error: 'url must be an ArcGIS REST endpoint' }, origin, 400);
-  const resp = await fetch(url, { cf: { cacheTtl: 1800, cacheEverything: true } });
-  const text = await resp.text();
-  return corsResponse(text, origin, 200, {
-    'Content-Type': 'application/json',
-    'Cache-Control': 'public, max-age=1800',
+  const resp = await fetch(url, {
+    cf: { cacheTtl: 1800, cacheEverything: true },
+    headers: { 'User-Agent': 'ArchDrawIntel-Proxy/1.0', 'Accept': 'application/json' },
   });
+  return jsonPassthrough(resp, origin, 'arcgis', { 'Cache-Control': 'public, max-age=1800' });
 }
 
 async function handleMunicode(params, origin) {
@@ -105,9 +127,11 @@ async function handlePermits(path, params, origin) {
   if (!endpoint) return corsResponse({ error: `unknown city '${city}'. Supported: ${Object.keys(PERMIT_ENDPOINTS).join(', ')}` }, origin, 400);
   const q = params.toString();
   const url = `${endpoint}${endpoint.includes('?') ? '&' : '?'}${q}`;
-  const resp = await fetch(url, { cf: { cacheTtl: 600, cacheEverything: true } });
-  const text = await resp.text();
-  return corsResponse(text, origin, 200, { 'Cache-Control': 'public, max-age=600' });
+  const resp = await fetch(url, {
+    cf: { cacheTtl: 600, cacheEverything: true },
+    headers: { 'User-Agent': 'ArchDrawIntel-Proxy/1.0', 'Accept': 'application/json' },
+  });
+  return jsonPassthrough(resp, origin, `permits:${city}`, { 'Cache-Control': 'public, max-age=600' });
 }
 
 export default {
