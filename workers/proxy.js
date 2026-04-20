@@ -30,11 +30,14 @@ const ALLOWED_ORIGINS = [
   'http://127.0.0.1:8080',
 ];
 
+const PROXY_VERSION = '3'; // bumped whenever cache behavior or validation changes
+
 const CORS_HEADERS = (origin) => ({
   'Access-Control-Allow-Origin': ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0],
   'Access-Control-Allow-Methods': 'GET, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
   'Access-Control-Max-Age': '86400',
+  'X-Adi-Proxy-Version': PROXY_VERSION,
 });
 
 const PERMIT_ENDPOINTS = {
@@ -78,28 +81,30 @@ async function jsonPassthrough(resp, origin, label, extraHeaders = {}) {
   });
 }
 
+// Cache strategy: only cache 2xx responses. Cloudflare's cacheTtlByStatus
+// does NOT cache 4xx/5xx unless explicitly configured, so HTML error pages
+// from upstream (served as HTTP 200 with text/html) are the one edge case we
+// must guard against — jsonPassthrough below re-validates and returns 502
+// for those, and 502 is NOT cached at the edge.
+const CACHE_OK = { cacheTtlByStatus: { '200-299': 3600, '404': 60, '500-599': 0 } };
+const PROXY_HEADERS = { 'User-Agent': 'ArchDrawIntel-Proxy/1.0', 'Accept': 'application/json' };
+
 async function handleFema(params, origin) {
   const lat = params.get('lat'), lon = params.get('lon');
   if (!lat || !lon) return corsResponse({ error: 'lat + lon required' }, origin, 400);
   const upstream = `https://hazards.fema.gov/gis/nfhl/rest/services/public/NFHL/MapServer/28/query?geometry=${lon},${lat}&geometryType=esriGeometryPoint&spatialRel=esriSpatialRelIntersects&outFields=FLD_ZONE,SFHA_TF&returnGeometry=false&f=json`;
-  const resp = await fetch(upstream, {
-    cf: { cacheTtl: 3600, cacheEverything: true },
-    headers: { 'User-Agent': 'ArchDrawIntel-Proxy/1.0', 'Accept': 'application/json' },
-  });
-  return jsonPassthrough(resp, origin, 'fema', { 'Cache-Control': 'public, max-age=3600' });
+  const resp = await fetch(upstream, { cf: CACHE_OK, headers: PROXY_HEADERS });
+  return jsonPassthrough(resp, origin, 'fema');
 }
 
 async function handleArcgis(params, origin) {
   const url = params.get('url');
   if (!url) return corsResponse({ error: 'url required' }, origin, 400);
   // Safety: only allow ArcGIS REST endpoints
-  if (!/arcgis|services\.arcgisonline|gismaps|portlandmaps|hazards\.fema/i.test(url))
+  if (!/arcgis|services\.arcgisonline|gismaps|portlandmaps|hazards\.fema|dpw\.gis\.lacounty|sfplanninggis|acgov/i.test(url))
     return corsResponse({ error: 'url must be an ArcGIS REST endpoint' }, origin, 400);
-  const resp = await fetch(url, {
-    cf: { cacheTtl: 1800, cacheEverything: true },
-    headers: { 'User-Agent': 'ArchDrawIntel-Proxy/1.0', 'Accept': 'application/json' },
-  });
-  return jsonPassthrough(resp, origin, 'arcgis', { 'Cache-Control': 'public, max-age=1800' });
+  const resp = await fetch(url, { cf: CACHE_OK, headers: PROXY_HEADERS });
+  return jsonPassthrough(resp, origin, 'arcgis');
 }
 
 async function handleMunicode(params, origin) {
@@ -108,16 +113,15 @@ async function handleMunicode(params, origin) {
   // Only allow known municipal-code domains
   if (!/municode|ecode360|codepublishing|legistar|amlegal/i.test(url))
     return corsResponse({ error: 'url must be a recognized municipal-code domain' }, origin, 400);
-  const resp = await fetch(url, { cf: { cacheTtl: 86400, cacheEverything: true } });
+  const resp = await fetch(url, { cf: { cacheTtlByStatus: { '200-299': 86400, '500-599': 0 } } });
+  if (!resp.ok) {
+    return corsResponse({ error: 'upstream_failed', upstreamStatus: resp.status }, origin, 502);
+  }
   const text = await resp.text();
-  // Return text (HTML) as-is; client will extract what it needs
+  // Return municipal code text as-is (it's expected HTML/text); client extracts what it needs.
   return new Response(text, {
     status: 200,
-    headers: {
-      ...CORS_HEADERS(origin),
-      'Content-Type': 'text/plain; charset=utf-8',
-      'Cache-Control': 'public, max-age=86400',
-    },
+    headers: { ...CORS_HEADERS(origin), 'Content-Type': 'text/plain; charset=utf-8', 'Cache-Control': 'public, max-age=86400' },
   });
 }
 
@@ -127,11 +131,8 @@ async function handlePermits(path, params, origin) {
   if (!endpoint) return corsResponse({ error: `unknown city '${city}'. Supported: ${Object.keys(PERMIT_ENDPOINTS).join(', ')}` }, origin, 400);
   const q = params.toString();
   const url = `${endpoint}${endpoint.includes('?') ? '&' : '?'}${q}`;
-  const resp = await fetch(url, {
-    cf: { cacheTtl: 600, cacheEverything: true },
-    headers: { 'User-Agent': 'ArchDrawIntel-Proxy/1.0', 'Accept': 'application/json' },
-  });
-  return jsonPassthrough(resp, origin, `permits:${city}`, { 'Cache-Control': 'public, max-age=600' });
+  const resp = await fetch(url, { cf: CACHE_OK, headers: PROXY_HEADERS });
+  return jsonPassthrough(resp, origin, `permits:${city}`);
 }
 
 export default {
