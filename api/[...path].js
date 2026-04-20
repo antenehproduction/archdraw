@@ -27,7 +27,7 @@
 //   GET /api/permits/<city>?... → Socrata permit search
 //   GET /api/diag?url=      → upstream debugging passthrough
 
-const PROXY_VERSION = '5-vercel';
+const PROXY_VERSION = '6-vercel'; // v6 — FEMA endpoint fallback chain (old /gis/nfhl path retired by FEMA)
 
 // v5: permissive CORS for public data. Reflect the requesting origin so the
 // proxy works from any deployment target (github.io, vercel.app, custom
@@ -81,12 +81,53 @@ async function jsonPassthrough(resp, origin, label) {
   });
 }
 
+// FEMA NFHL endpoint candidates. The agency has restructured GIS paths several
+// times; we try each in order and use whichever returns valid JSON. New paths
+// can be added at the TOP of this array when discovered.
+const FEMA_ENDPOINTS = [
+  // 2024+ layout (most likely current)
+  'https://hazards.fema.gov/arcgis/rest/services/public/NFHL/MapServer/28/query',
+  'https://hazards.fema.gov/arcgis/rest/services/FEMA/NFHL/MapServer/28/query',
+  // Historical ArcGIS Server REST path
+  'https://msc.fema.gov/arcgis/rest/services/NFHL/MapServer/28/query',
+  // Legacy (now returns 404 — kept last so it still works if FEMA restores it)
+  'https://hazards.fema.gov/gis/nfhl/rest/services/public/NFHL/MapServer/28/query',
+];
+
 async function handleFema(params, origin) {
   const lat = params.get('lat'), lon = params.get('lon');
   if (!lat || !lon) return jsonResponse({ error: 'lat + lon required' }, origin, 400);
-  const upstream = `https://hazards.fema.gov/gis/nfhl/rest/services/public/NFHL/MapServer/28/query?geometry=${lon},${lat}&geometryType=esriGeometryPoint&spatialRel=esriSpatialRelIntersects&outFields=FLD_ZONE,SFHA_TF&returnGeometry=false&f=json`;
-  const resp = await fetch(upstream, { headers: PROXY_HEADERS });
-  return jsonPassthrough(resp, origin, 'fema');
+  const qs = `?geometry=${lon},${lat}&geometryType=esriGeometryPoint&spatialRel=esriSpatialRelIntersects&outFields=FLD_ZONE,SFHA_TF&returnGeometry=false&f=json`;
+  const failures = [];
+  for (const base of FEMA_ENDPOINTS) {
+    try {
+      const resp = await fetch(`${base}${qs}`, { headers: PROXY_HEADERS });
+      const ct = resp.headers.get('content-type') || '';
+      const text = await resp.text();
+      const looksJson = ct.includes('json') || /^\s*[\{\[]/.test(text);
+      // Accept: 2xx with valid JSON body that has a features array (even if empty)
+      if (resp.ok && looksJson) {
+        let parsed;
+        try { parsed = JSON.parse(text); } catch (_) { parsed = null; }
+        if (parsed && (parsed.features !== undefined || parsed.error === undefined)) {
+          return new Response(text, {
+            status: 200,
+            headers: { ...corsHeaders(origin), 'Content-Type': 'application/json', 'Cache-Control': 'public, max-age=300, s-maxage=300' },
+          });
+        }
+      }
+      failures.push({ base, status: resp.status, contentType: ct, preview: text.substring(0, 120) });
+    } catch (e) {
+      failures.push({ base, error: e.message });
+    }
+  }
+  // All candidates failed
+  return jsonResponse({
+    error: 'fema_all_endpoints_failed',
+    label: 'fema',
+    tried: failures,
+    hint: 'All known FEMA NFHL REST endpoints returned errors. FEMA may have moved their service again — check https://msc.fema.gov/portal/search manually and add the new URL to FEMA_ENDPOINTS in proxy source.',
+  }, origin, 502, 'no-store');
 }
 
 async function handleArcgis(params, origin) {
