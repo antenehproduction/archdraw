@@ -480,9 +480,10 @@ async function detectFEMA(){
     // through ADI_PROXY if set, else a public CORS proxy, so flood zone resolves without a backend.
     const femaBase=`hazards.fema.gov/gis/nfhl/rest/services/public/NFHL/MapServer/28/query?geometry=${lon},${lat}&geometryType=esriGeometryPoint&spatialRel=esriSpatialRelIntersects&outFields=FLD_ZONE,SFHA_TF&returnGeometry=false&f=json`;
     const femaUrl=`https://${femaBase}`;
-    const femaFetch=(async()=>{const r=await proxyFetch(`/fema?lat=${lat}&lon=${lon}`,femaUrl);return r.json()})();
+    const femaFetch=(async()=>{const r=await proxyFetch(`/fema?lat=${lat}&lon=${lon}`,femaUrl);const t=await r.text();try{return JSON.parse(t)}catch(_){throw new Error('Non-JSON response from FEMA proxy: '+t.substring(0,120))}})();
     const femaTimeout=new Promise((_,r)=>setTimeout(()=>r(new Error('fema_timeout')),12000));
     const fd=await Promise.race([femaFetch,femaTimeout]);
+    if(fd?.error==='upstream_non_json'){throw new Error(`Proxy reports upstream failure (${fd.label} @ status ${fd.upstreamStatus}): ${(fd.preview||'').substring(0,80)}`)}
     const feats=fd?.features||[];
     if(!feats.length){S.femaZone='X';st.innerHTML='<span style="color:var(--green)">✓ FEMA Zone X — minimal flood risk</span>'}
     else{const z=feats[0].attributes.FLD_ZONE||'X';S.femaZone=z;const sfha=['A','AE','AO','AH','V','VE','A99'].includes(z);if(sfha){S.overlays.flood=true;toggleOv('flood');st.innerHTML=`<span style="color:var(--coral)">⚠ FEMA Zone ${z} — SFHA. Flood items added to checklist.</span>`;L.warn(`FEMA Zone ${z} — SFHA`)}else{st.innerHTML=`<span style="color:var(--green)">✓ FEMA Zone ${z} — not SFHA</span>`}}
@@ -973,9 +974,10 @@ async function runPhase_record(){
       try{
         const femaBase=`hazards.fema.gov/gis/nfhl/rest/services/public/NFHL/MapServer/28/query?geometry=${S.lon},${S.lat}&geometryType=esriGeometryPoint&spatialRel=esriSpatialRelIntersects&outFields=FLD_ZONE,SFHA_TF&returnGeometry=false&f=json`;
         const direct=`https://${femaBase}`;
-        const fP=(async()=>{const r=await proxyFetch(`/fema?lat=${S.lat}&lon=${S.lon}`,direct);return r.json()})();
+        const fP=(async()=>{const r=await proxyFetch(`/fema?lat=${S.lat}&lon=${S.lon}`,direct);const t=await r.text();try{return JSON.parse(t)}catch(_){throw new Error('Non-JSON from FEMA proxy: '+t.substring(0,100))}})();
         const fT=new Promise((_,r)=>setTimeout(()=>r(new Error('fema_timeout')),10000));
         const fd=await Promise.race([fP,fT]);
+        if(fd?.error==='upstream_non_json')throw new Error(`FEMA upstream failed (status ${fd.upstreamStatus})`);
         const feats=fd?.features||[];
         if(feats.length){const fz=feats[0].attributes.FLD_ZONE||'X';S.femaZone=fz;const sfha=['A','AE','AO','AH','V','VE','A99'].includes(fz);if(sfha){S.overlays.flood=true;toggleOv('flood')};findings.push(`• **FEMA Flood Zone:** ${fz} — ${sfha?'SPECIAL FLOOD HAZARD AREA (affects design)':'Outside SFHA (minimal risk)'}`)}
         else{S.femaZone='X';findings.push('• FEMA: No mapped flood zone data at this location (Zone X assumed)')}
