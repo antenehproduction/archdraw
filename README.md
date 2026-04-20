@@ -52,6 +52,15 @@ Cost: ~$0.03–$0.08 per full analysis.
 
 ---
 
+## Optional backend proxy
+
+For full data access (FEMA, county GIS, municipal codes, permit portals) deploy the proxy on either platform — pick one:
+
+- **Cloudflare Workers** → see [`workers/README.md`](workers/README.md). CLI deploy in 5 min, free tier 100K req/day.
+- **Vercel Edge Functions** → see [`api/README.md`](api/README.md). Git-deploy via web UI, no CLI required, free tier 100K invocations/day.
+
+The client uses `localStorage.ADI_PROXY` to point at whichever URL you deployed; falls back to `corsproxy.io` when unset.
+
 ## Stack
 
 - **Single HTML file** — zero build step, zero dependencies to install
