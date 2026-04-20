@@ -28,12 +28,16 @@ const ALLOWED_ORIGINS = [
   'https://antenehproduction.github.io',
   'http://localhost:8080', // local dev
   'http://127.0.0.1:8080',
-];
+]; // retained for documentation; v5 CORS policy is permissive (see below)
 
-const PROXY_VERSION = '4'; // v4 — no edge-side cache of upstream; only worker output caches successful JSON
+const PROXY_VERSION = '5'; // v5 — permissive CORS for public data, same-origin-friendly
 
+// CORS policy: public data (FEMA, county GIS, Socrata permits) is non-sensitive.
+// Reflect the requesting origin so the proxy works from any deployment target
+// (github.io, vercel.app, custom domains, localhost). When we add paid-API
+// secrets in the future, tighten this to an allowlist again.
 const CORS_HEADERS = (origin) => ({
-  'Access-Control-Allow-Origin': ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0],
+  'Access-Control-Allow-Origin': origin || '*',
   'Access-Control-Allow-Methods': 'GET, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
   'Access-Control-Max-Age': '86400',

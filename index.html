@@ -396,15 +396,26 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--ink);color:var
 // When unset, the app falls back to direct fetch + public corsproxy.io.
 window.ADI_PROXY_DEFAULT=window.ADI_PROXY_DEFAULT||null;
 function getProxyBase(){
-  try{return localStorage.getItem('ADI_PROXY')||window.ADI_PROXY_DEFAULT||null}
-  catch(_){return window.ADI_PROXY_DEFAULT||null}
+  try{
+    const explicit=localStorage.getItem('ADI_PROXY')||window.ADI_PROXY_DEFAULT;
+    if(explicit)return explicit;
+    // Zero-config fallback: if the app is served from a host likely to have
+    // /api/* available (Vercel deployment, custom domain with a same-origin
+    // proxy), use a relative path. The /api route either works (no CORS
+    // needed — same origin) or fails quickly and we fall through.
+    if(typeof location!=='undefined'&&(/\.vercel\.app$/.test(location.hostname)||location.hostname==='localhost'||location.hostname==='127.0.0.1')){
+      return '/api';
+    }
+    return null;
+  }catch(_){return window.ADI_PROXY_DEFAULT||null}
 }
-// Proxy-aware fetch: when ADI_PROXY is set, routes through our worker;
-// otherwise uses direct fetch with corsproxy.io fallback on failure.
+// Proxy-aware fetch: when ADI_PROXY is set (or we're on a Vercel deployment),
+// routes through our worker; otherwise uses direct fetch with corsproxy.io
+// fallback on failure.
 async function proxyFetch(route,upstreamUrl){
   const base=getProxyBase();
   if(base){
-    // Route through our worker. "route" is like '/fema?lat=X&lon=Y' or '/arcgis?url=...'
+    // Route through our proxy. "route" is like '/fema?lat=X&lon=Y'
     return fetch(`${base}${route}`);
   }
   if(upstreamUrl){
