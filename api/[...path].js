@@ -27,13 +27,12 @@
 //   GET /api/permits/<city>?... → Socrata permit search
 //   GET /api/diag?url=      → upstream debugging passthrough
 
-const PROXY_VERSION = '4-vercel';
+const PROXY_VERSION = '5-vercel';
 
-const ALLOWED_ORIGINS = [
-  'https://antenehproduction.github.io',
-  'http://localhost:8080',
-  'http://127.0.0.1:8080',
-];
+// v5: permissive CORS for public data. Reflect the requesting origin so the
+// proxy works from any deployment target (github.io, vercel.app, custom
+// domains, localhost). Tighten again when we add paid-API secrets.
+const ALLOWED_ORIGINS = null; // unused; kept for doc
 
 const PERMIT_ENDPOINTS = {
   seattle:  'https://data.seattle.gov/resource/76t5-zqzr.json',
@@ -48,7 +47,7 @@ const PERMIT_ENDPOINTS = {
 const PROXY_HEADERS = { 'User-Agent': 'ArchDrawIntel-Proxy/1.0', 'Accept': 'application/json' };
 
 const corsHeaders = (origin) => ({
-  'Access-Control-Allow-Origin': ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0],
+  'Access-Control-Allow-Origin': origin || '*',
   'Access-Control-Allow-Methods': 'GET, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
   'Access-Control-Max-Age': '86400',
