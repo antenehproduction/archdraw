@@ -73,7 +73,9 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--ink);color:var
 #rp-addr{font-size:9px;color:var(--txt2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .bbtn{font-size:9px;color:var(--txt3);background:none;border:none;cursor:pointer;padding:2px 5px;border-radius:3px;transition:color .12s;flex-shrink:0}.bbtn:hover{color:var(--txt)}
 #phases{flex-shrink:0;padding:7px}
-.ph{display:flex;gap:7px;margin-bottom:3px;align-items:flex-start;padding:5px 7px;border-radius:4px;border:1px solid transparent;transition:all .2s}
+.ph{display:flex;gap:7px;margin-bottom:3px;align-items:flex-start;padding:5px 7px;border-radius:4px;border:1px solid transparent;transition:all .2s;cursor:pointer}
+.ph.done:hover{background:rgba(34,224,138,.06);border-color:rgba(34,224,138,.25)}
+.ph.active:hover{background:var(--ink2)}
 .ph.active{background:var(--ink2);border-color:var(--brd2)}.ph.pending{opacity:.28}
 .pdot{width:16px;height:16px;border-radius:50%;border:1.5px solid var(--txt3);display:flex;align-items:center;justify-content:center;font-size:7px;flex-shrink:0;margin-top:1px;transition:all .2s;font-weight:700}
 .ph.done .pdot{background:var(--green);border-color:var(--green);color:#0b0e15}
@@ -683,7 +685,24 @@ function handleImage(inp){const f=inp.files[0];if(!f)return;const r=new FileRead
 function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('hidden',s.id!==id))}
 function setOvl(ph,tx){document.getElementById('ovl').style.display='flex';document.getElementById('ophs').textContent=ph;document.getElementById('otxt').innerHTML=tx+'<span class="df"></span>'}
 function hideOvl(){document.getElementById('ovl').style.display='none'}
-function buildPhases(){document.getElementById('phases').innerHTML=PHASES.map((p,i)=>`<div class="ph pending" id="ph-${p.id}"><div class="pdot" id="pd-${p.id}">${i+1}</div><div style="flex:1;min-width:0"><div class="ph-name">${p.lbl}</div><div class="ph-st" id="ps-${p.id}">Waiting</div></div><div class="ph-t" id="pt-${p.id}"></div><button class="ph-retry" onclick="retryPhase('${p.id}')">↺</button></div>`).join('')}
+function buildPhases(){document.getElementById('phases').innerHTML=PHASES.map((p,i)=>`<div class="ph pending" id="ph-${p.id}" onclick="scrollToFinding('${p.id}')" title="Click to view ${p.lbl} results"><div class="pdot" id="pd-${p.id}">${i+1}</div><div style="flex:1;min-width:0"><div class="ph-name">${p.lbl}</div><div class="ph-st" id="ps-${p.id}">Waiting</div></div><div class="ph-t" id="pt-${p.id}"></div><button class="ph-retry" onclick="event.stopPropagation();retryPhase('${p.id}')" title="Re-run this phase">↺</button></div>`).join('')}
+// Click a phase row → scroll its finding card into view + briefly highlight it.
+// Falls through to a no-op alert when the phase hasn't produced findings yet
+// (e.g. user clicks while the pipeline is still running phases earlier in the chain).
+function scrollToFinding(id){
+  const el=document.getElementById(`f-${id}`);
+  if(!el){
+    const ph=document.getElementById(`ph-${id}`);
+    const isPending=ph?.classList.contains('pending')||ph?.classList.contains('active');
+    if(isPending)L.info(`scrollToFinding: phase '${id}' has not produced findings yet`);
+    return;
+  }
+  el.scrollIntoView({behavior:'smooth',block:'start'});
+  // Brief flash to draw the eye
+  el.style.transition='box-shadow .25s';
+  el.style.boxShadow='0 0 0 2px var(--blue)';
+  setTimeout(()=>{el.style.boxShadow=''},700);
+}
 function phSet(id,state,time=''){const el=document.getElementById(`ph-${id}`);const dot=document.getElementById(`pd-${id}`);const st=document.getElementById(`ps-${id}`);const tm=document.getElementById(`pt-${id}`);if(!el)return;el.className=`ph ${state}`;dot.textContent=state==='done'?'✓':state==='error'?'✗':PHASES.findIndex(p=>p.id===id)+1;st.className=`ph-st ${state==='active'?'run':state}`;if(state==='active')st.innerHTML='Running<span class="df"></span>';else if(state==='done')st.textContent='Done';else if(state==='error')st.textContent='Error — ↺ retry';if(time)tm.textContent=time}
 function addFind(id,lbl,html){const ex=document.getElementById(`f-${id}`);if(ex)ex.remove();const el=document.createElement('div');el.className='fb';el.id=`f-${id}`;el.innerHTML=`<div class="fblbl">${lbl}</div><div class="fbbody">${html}</div>`;document.getElementById('findings').appendChild(el);el.scrollIntoView({behavior:'smooth',block:'start'})}
 function fmt(t){return t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>')}
@@ -1006,12 +1025,18 @@ async function runPhase_record(){
         const reg=window.COUNTY_REGISTRY[key];
         if(reg){
           L.info(`County registry hit: ${key}`);
-          // Build the query URL — include spatial filter for point lookup
-          const q=`?geometry=${S.lon},${S.lat}&geometryType=esriGeometryPoint&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=true&f=geojson`;
+          // Build the query URL — request Esri JSON (more universally supported than
+          // f=geojson on older ArcGIS Server installations like King Co WA).
+          // Geometry comes back as Esri rings; we normalize to GeoJSON-style below.
+          const q=`?geometry=${S.lon},${S.lat}&geometryType=esriGeometryPoint&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=true&f=json`;
           const url=reg.parcelQuery+(reg.parcelQuery.includes('?')?q.replace(/^\?/,'&'):q);
           try{
             const rr=await Promise.race([proxyFetch(`/arcgis?url=${encodeURIComponent(url)}`,url),new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),8000))]);
-            const dd=await rr.json();
+            // Read body as text first so we can give a useful error if it's not JSON
+            const txt=await rr.text();
+            let dd;try{dd=JSON.parse(txt)}catch(_){throw new Error(`non-JSON response (status ${rr.status}): ${txt.substring(0,80)}`)}
+            // Handle our proxy's structured upstream errors gracefully
+            if(dd?.error){throw new Error(`proxy_${dd.error}: ${dd.upstreamStatus||rr.status} ${(dd.preview||'').substring(0,60)}`)}
             const f=dd.features?.[0];
             if(f){
               const attrs=f.properties||f.attributes||{};
@@ -1021,9 +1046,10 @@ async function runPhase_record(){
               const yr=attrs[fmap.yearBuilt]||attrs.YearBuilt;
               findings.push(`\u2705 **Verified County Assessor Record** (${reg.county} Co, ${reg.state}): APN ${apn||'—'}, Use: ${use||'—'}${yr?`, Year Built: ${yr}`:''}`);
               S.countyRecord={...(S.countyRecord||{}),esri:attrs,verified:true,source:`${reg.county} Co ArcGIS`,assessorURL:reg.assessorURL};
-              // If geometry returned, use it to compute exact lot dimensions
-              if(f.geometry?.coordinates&&S._z&&(S._z._lotConfidence==='unverified'||S._z._lotConfidence==='low')){
-                const ring=f.geometry.coordinates[0]||f.geometry.coordinates;
+              // Normalize geometry: Esri returns {rings:[[[x,y],...]]}, GeoJSON returns {coordinates:[[[x,y],...]]}
+              const rings=f.geometry?.rings||(f.geometry?.coordinates?[f.geometry.coordinates[0]||f.geometry.coordinates]:null);
+              if(rings&&S._z&&(S._z._lotConfidence==='unverified'||S._z._lotConfidence==='low')){
+                const ring=rings[0]||rings;
                 if(Array.isArray(ring)&&ring.length>=3){
                   const lats=ring.map(p=>p[1]),lons=ring.map(p=>p[0]);
                   const ftLat=364000,ftLon=364000*Math.cos(S.lat*Math.PI/180);
@@ -1039,7 +1065,7 @@ async function runPhase_record(){
                 }
               }
             }
-          }catch(e){L.warn(`County registry fetch failed for ${key}: ${e.message}`)}
+          }catch(e){L.warn(`County registry fetch failed for ${key}: ${e.message.substring(0,100)}`)}
         }else{
           L.info(`County registry miss: ${key||'(no county)'} \u2014 generic ArcGIS fallback not attempted to avoid false positives`);
         }
@@ -1336,7 +1362,7 @@ Then recommend:
 **Optimal unit mix** for current market demand
 **2 structural improvements** over typical code minimum (with specific member sizes)
 **1 green technology** with proven market ROI in this market`
-    }],SYS,1000);
+    }],SYS,1000,120000); // 120s timeout — comp phase often hits 90s due to expanded prompt and source-citation requirement
     phSet('comp','done',`${((Date.now()-t)/1000).toFixed(1)}s`);
     if(S._compInterval){clearInterval(S._compInterval);S._compInterval=null;}addFind('comp','🏆 Competitor Analysis & Market Intelligence',fmt(res));S.competitors=res;phaseRunners.comp=runPhase_comp;
     // ── Cross-check with permit-portal registry (public permit data) ──
