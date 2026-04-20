@@ -1048,8 +1048,12 @@ async function runPhase_record(){
   }else{findings.push('Address geocoding required to query site records. Enter address with city/state.')}
 
   const summary=osmFound?`**Existing Site Survey — ${S.osmBuildings.filter(e=>e.tags?.building).length} structure(s) identified** via OpenStreetMap (community-maintained survey data). Use as reference; verify with licensed surveyor.\n\n`:`**No existing buildings found** in public OpenStreetMap records for this parcel — lot may be vacant or structures not yet mapped.\n\n`;
-  // ── Lot dimension calibration — re-run now that OSM data is fetched ──
+  // ── Lot dimension calibration — escalating fallback chain ──
+  // Tier 1 (best): county registry polygon — already attempted earlier in this phase
+  // Tier 2: OSM neighborhood building footprints
+  // Tier 3 (last resort): Claude-vision parcel tracing on Esri imagery
   if(S._z&&S.lat&&S.lon&&(S._z._lotConfidence==='unverified'||S._z._lotSource?.includes('pending'))){
+    // Tier 2: OSM
     const cal=calibrateLotFromOSM(S.lat,S.lon);
     if(cal){
       const oldW=S._z.lotWidth,oldD=S._z.lotDepth;
@@ -1057,8 +1061,19 @@ async function runPhase_record(){
       S._z._lotSource=cal.source;S._z._lotConfidence=cal.confidence;
       L.info(`Lot dims recalibrated from OSM: ${oldW}\u00D7${oldD}\u2192${cal.lotWidth}\u00D7${cal.lotDepth} (${cal.fromBuildings} buildings, ${cal.confidence} confidence)`);
       findings.push(`**Lot dimensions calibrated:** ${cal.lotWidth}'\u00D7${cal.lotDepth}' based on ${cal.fromBuildings} neighboring building footprints (was AI default ${oldW}'\u00D7${oldD}'). ${cal.confidence} confidence \u2014 verify with plat/survey.`);
-    }else if(S._z._lotSource?.includes('pending')){
-      S._z._lotSource='AI default (OSM insufficient \u2014 VERIFY with plat/survey before design)';
+    }else{
+      // Tier 3: vision trace (only if API key present and OSM had nothing)
+      L.info('OSM calibration unavailable \u2014 falling through to Claude-vision parcel trace');
+      const vision=await traceParcelFromImagery(S.lat,S.lon);
+      if(vision){
+        const oldW=S._z.lotWidth,oldD=S._z.lotDepth;
+        S._z.lotWidth=vision.lotWidth;S._z.lotDepth=vision.lotDepth;
+        S._z._lotSource=vision.source;S._z._lotConfidence=vision.confidence;
+        L.info(`Lot dims from vision: ${oldW}\u00D7${oldD}\u2192${vision.lotWidth}\u00D7${vision.lotDepth} (low confidence)`);
+        findings.push(`\uD83D\uDC41\uFE0F **Lot dimensions estimated from satellite imagery:** ${vision.lotWidth}'\u00D7${vision.lotDepth}' \u2014 ${vision.source}. Low confidence; verify with plat/survey before design.`);
+      }else if(S._z._lotSource?.includes('pending')){
+        S._z._lotSource='AI default (OSM + vision both unavailable \u2014 VERIFY with plat/survey before design)';
+      }
     }
   }
   // site-intel: record provenance trail for auditability
@@ -1116,6 +1131,51 @@ function calibrateLotFromOSM(lat,lon){
     confidence:nearest.length>=4?'medium':'low',
     fromBuildings:nearest.length,
   };
+}
+
+// ── Claude-vision parcel tracing (last-resort fallback for lot dims) ──
+// Used when both county registry AND OSM calibration fail to yield lot dims.
+// Fetches an Esri satellite tile centered on lat/lon at zoom 19, base64-encodes
+// it, and asks the vision model to identify the property boundary visible at
+// the image center. Returns {lotWidth, lotDepth, source, confidence} or null.
+// Costs an API call (~$0.01) and ~5-10s; only invoke when other paths failed.
+const _visionLotCache=new Map();
+async function traceParcelFromImagery(lat,lon){
+  const cacheKey=`${lat.toFixed(5)},${lon.toFixed(5)}`;
+  if(_visionLotCache.has(cacheKey))return _visionLotCache.get(cacheKey);
+  if(!S.apiReady){L.info('Vision parcel trace skipped: no API key');return null}
+  // Convert lat/lon to Esri tile coordinates at zoom 19 (≈150m / tile).
+  const z=19;
+  const tileX=Math.floor((lon+180)/360*Math.pow(2,z));
+  const tileY=Math.floor((1-Math.log(Math.tan(lat*Math.PI/180)+1/Math.cos(lat*Math.PI/180))/Math.PI)/2*Math.pow(2,z));
+  const tileURL=`https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${tileY}/${tileX}`;
+  L.info(`Vision parcel trace: fetching Esri tile z=${z} x=${tileX} y=${tileY}`);
+  let b64=null;
+  try{
+    const r=await fetch(tileURL);
+    if(!r.ok)throw new Error('tile_fetch_'+r.status);
+    const blob=await r.blob();
+    b64=await new Promise((res,rej)=>{const fr=new FileReader();fr.onload=()=>res(fr.result.split(',')[1]);fr.onerror=rej;fr.readAsDataURL(blob)});
+  }catch(e){L.warn('Vision parcel trace: tile fetch failed:',e.message);return null}
+  // Ask Claude vision to estimate lot dimensions
+  const prompt=`This is a ~150m x 150m aerial satellite image (Esri World Imagery, zoom 19) of a US residential property. The center of the image is the target parcel.\n\nIdentify the boundary of the property at the image center. Look for: driveways, fence lines, vegetation transitions, neighboring building lines, sidewalks defining the lot frontage.\n\nReturn ONLY a JSON object with the parcel's estimated dimensions in feet:\n{\n  "widthFt": <number>,    // street-facing dimension (along the road)\n  "depthFt": <number>,    // perpendicular (away from the road)\n  "confidence": "low"|"medium"|"high",\n  "rationale": "<one sentence explaining what visual cues you used>"\n}\n\nIf you cannot identify the parcel boundary at the center, return {"widthFt":null,"depthFt":null,"confidence":"low","rationale":"unable to identify boundary"}.`;
+  try{
+    const res=await callAIWithImg(prompt,b64,'image/png',null,400);
+    const m=res.match(/\{[\s\S]*\}/);
+    if(!m){L.warn('Vision parcel trace: no JSON in response');return null}
+    const parsed=JSON.parse(m[0]);
+    if(!parsed.widthFt||!parsed.depthFt){L.info('Vision parcel trace: model could not identify boundary');return null}
+    const out={
+      lotWidth:Math.round(parsed.widthFt),
+      lotDepth:Math.round(parsed.depthFt),
+      source:`Claude vision parcel trace from Esri imagery (z19) — ${parsed.rationale||'visual estimate'}`,
+      confidence:'low (vision-traced — verify with plat/survey)',
+      method:'vision',
+    };
+    _visionLotCache.set(cacheKey,out);
+    L.info(`Vision parcel trace: ${out.lotWidth}'\u00D7${out.lotDepth}' (${parsed.confidence||'low'} per model)`);
+    return out;
+  }catch(e){L.warn('Vision parcel trace failed:',e.message.substring(0,80));return null}
 }
 
 // ── DEVELOPMENT OPTIONS GENERATION (local, instant) ──
