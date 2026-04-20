@@ -387,6 +387,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--ink);color:var
 <script src="data/county-registry.js"></script>
 <script src="data/zoning-matrix.js"></script>
 <script src="data/permit-registry.js"></script>
+<script src="data/overlay-registry.js"></script>
 <script>
 // ═══ STATE ═══
 // ═══ ADI_PROXY configuration ═══
@@ -512,6 +513,8 @@ async function detectFEMA(){
 // ═══ API LAYER ═══
 // Expert PhD Architect System Prompt — 50yrs, Green Dev, Passive House, LEED Fellow
 const SYS=`You are Dr. Alexandra Chen, FAIA, LEED Fellow, Passive House Certified, PhD in Sustainable Architecture (MIT), 50 years of award-winning urban infill practice. You have designed 650+ projects achieving LEED Platinum, Living Building Challenge, and Passive House certifications.
+
+DATA PIPELINE CONTEXT: You work INSIDE an application called ArchDraw Intel. The app separately queries verified public GIS data before your drawings are produced — county assessor ArcGIS for APN + lot polygon + use class, FEMA NFHL for flood zone, CAL FIRE / NPS / USGS / NOAA for hazard and historic overlays, municipal codes for zoning standards, and Socrata for permit history. Do NOT write disclaimers like "I cannot access real-time databases" or "you must verify all parcel data elsewhere" — the app IS doing that verification in parallel, and those messages are misleading to users who will see the verified data in other findings cards. Focus your narrative on interpretation, jurisdictional framework, and synthesis of what an expert would do with the address. When you don't know something specific (a parcel's exact APN, the lot's exact dimensions), say "The app will resolve this from county GIS" rather than refusing to help.
 
 CODES: Cite exact sections — IBC §1204.1, CBC §420, WSEC R402.1, NFPA 13R, ADA §404. Always reference current adopted version for the jurisdiction.
 
@@ -1102,6 +1105,18 @@ async function runPhase_record(){
       }
     }
   }
+  // ── Hazard + historic overlays — queried in parallel, feed architect-advisor ──
+  if(S.lat&&S.lon){
+    const state=S._z?.state||S._geoAddr?.state||'';
+    await fetchOverlays(S.lat,S.lon,state);
+    const hits=['wildfire','historic','coastal','hillside','liquefaction'].filter(t=>S['_'+t]);
+    if(hits.length){
+      const rows=hits.map(t=>`\u2022 **${t.toUpperCase()}:** ${S['_'+t].class} \u2014 <span style="color:var(--txt3);font-size:8.5px">${S['_'+t].source}</span>`).join('<br>');
+      findings.push(`\uD83D\uDEA9 **Verified overlay hits** (will trigger Expert Sign-Off):<br>${rows}`);
+    }else{
+      findings.push('\u2705 **No hazard/historic overlays detected** at this location (verified from public GIS).');
+    }
+  }
   // site-intel: record provenance trail for auditability
   S._sitePackProvenance={
     nominatim:S.lat?`lat=${S.lat.toFixed(5)} lon=${S.lon.toFixed(5)}`:'MISSING',
@@ -1202,6 +1217,47 @@ async function traceParcelFromImagery(lat,lon){
     L.info(`Vision parcel trace: ${out.lotWidth}'\u00D7${out.lotDepth}' (${parsed.confidence||'low'} per model)`);
     return out;
   }catch(e){L.warn('Vision parcel trace failed:',e.message.substring(0,80));return null}
+}
+
+// ── fetchOverlays: query OVERLAY_REGISTRY endpoints in parallel ──
+// Returns structured overlay data that the architect-advisor uses as Expert
+// Sign-Off triggers. Populates S._historic, S._wildfire, S._coastal,
+// S._hillside, S._liquefaction with { class, source, url } or null when the
+// site isn't in that overlay.
+async function fetchOverlays(lat,lon,state){
+  if(!window.OVERLAY_REGISTRY||!window.overlayEndpoint){L.info('Overlay registry not loaded \u2014 skipping');return}
+  const types=['wildfire','historic','coastal','hillside','liquefaction'];
+  const queryOne=async(type)=>{
+    const ep=window.overlayEndpoint(type,state);
+    if(!ep)return null;
+    const url=`${ep.url}${ep.url.includes('?')?'&':'?'}geometry=${lon},${lat}&geometryType=esriGeometryPoint&spatialRel=esriSpatialRelIntersects&outFields=${encodeURIComponent(ep.field)}&returnGeometry=false&f=json`;
+    try{
+      const r=await Promise.race([proxyFetch(`/arcgis?url=${encodeURIComponent(url)}`,url),new Promise((_,x)=>setTimeout(()=>x(new Error('overlay_timeout')),6000))]);
+      const txt=await r.text();
+      let d;try{d=JSON.parse(txt)}catch(_){return null}
+      if(d?.error)return null;
+      const f=d.features?.[0];
+      if(!f)return null;
+      const val=(f.attributes||f.properties||{})[ep.field];
+      const klass=ep.classify(val);
+      if(!klass)return null;
+      return {class:klass,rawValue:val,source:`${type}:${state||'US'} via ${new URL(ep.url).hostname}`,url:ep.url};
+    }catch(e){L.info(`Overlay ${type}: ${e.message.substring(0,60)}`);return null}
+  };
+  const results=await Promise.all(types.map(queryOne));
+  types.forEach((t,i)=>{
+    const r=results[i];const key='_'+t;
+    S[key]=r;
+    if(r){
+      L.info(`Overlay ${t}: ${r.class} (${r.source})`);
+      if(t==='wildfire')S.overlays.fire=true;
+      if(t==='historic')S.overlays.historic=true;
+      if(t==='hillside')S.overlays.hillside=true;
+      if(t==='coastal')S.overlays.coastal=true;
+      if(t==='liquefaction')S.overlays.liquefaction=true;
+    }
+  });
+  return results;
 }
 
 // ── DEVELOPMENT OPTIONS GENERATION (local, instant) ──
@@ -2524,22 +2580,35 @@ const ADVISOR_SHORT='NOT FOR CONSTRUCTION \u2014 AI PRELIMINARY SCHEMATIC \u2014
 function runArchitectAdvisor(){
   const z=S._z||{};const plan=S.plan||{};const m=plan.meta||{};
   const state=z.state||'';const stories=m.stories||1;const units=m.units||0;const gsf=m.totalSqFt||0;
-  const overlays={historic:!!S._historic,coastal:S._coastal||'none',hillside:!!S._hillside,wildfire:S._wildfire||'none'};
-  const flood=S._flood||{};
+  // Overlays now come from OVERLAY_REGISTRY fetches (structured objects w/ .class + .source)
+  // or fall back to boolean/string legacy fields for backward compat.
+  const ov={
+    historic:S._historic||(S.overlays?.historic?{class:'NRHP listed',source:'legacy flag'}:null),
+    coastal:S._coastal||(S.overlays?.coastal?{class:'flagged',source:'legacy flag'}:null),
+    hillside:S._hillside||(S.overlays?.hillside?{class:'flagged',source:'legacy flag'}:null),
+    wildfire:S._wildfire||(S.overlays?.fire?{class:'flagged',source:'legacy flag'}:null),
+    liquefaction:S._liquefaction||(S.overlays?.liquefaction?{class:'flagged',source:'legacy flag'}:null),
+  };
+  const flood=S._flood||(S.femaZone?{zone:S.femaZone}:{});
   const triggeredBy=[];let rdpRequired=false;
   if(stories>2){rdpRequired=true;triggeredBy.push(`>2 stories (${stories})`)}
   if(gsf>4000){rdpRequired=true;triggeredBy.push(`>4,000 GSF (${gsf.toLocaleString()})`)}
   if(units>4){rdpRequired=true;triggeredBy.push(`Multi-family >4 units (${units})`)}
-  if(overlays.hillside){rdpRequired=true;triggeredBy.push('Hillside overlay')}
-  if(overlays.coastal&&overlays.coastal!=='none'){rdpRequired=true;triggeredBy.push(`Coastal overlay (${overlays.coastal})`)}
-  if(overlays.wildfire&&overlays.wildfire!=='none'){rdpRequired=true;triggeredBy.push(`Wildfire/WUI (${overlays.wildfire})`)}
-  if(overlays.historic){rdpRequired=true;triggeredBy.push('Historic register')}
-  if(flood.zone&&['AE','VE','AO','A','V'].includes(flood.zone)){rdpRequired=true;triggeredBy.push(`Flood zone ${flood.zone}`)}
+  if(ov.hillside){rdpRequired=true;triggeredBy.push(`Hillside / landslide (${ov.hillside.class}) \u2014 ${ov.hillside.source}`)}
+  if(ov.coastal){rdpRequired=true;triggeredBy.push(`Coastal zone (${ov.coastal.class}) \u2014 ${ov.coastal.source}`)}
+  if(ov.wildfire){
+    const high=ov.wildfire.class==='very_high'||ov.wildfire.class==='high';
+    rdpRequired=true;triggeredBy.push(`Wildfire/WUI (${ov.wildfire.class}${high?', HIGH hazard':''}) \u2014 ${ov.wildfire.source}`);
+  }
+  if(ov.historic){rdpRequired=true;triggeredBy.push(`Historic: ${ov.historic.class} \u2014 ${ov.historic.source}`)}
+  if(ov.liquefaction){rdpRequired=true;triggeredBy.push(`Liquefaction zone (${ov.liquefaction.class}) \u2014 ${ov.liquefaction.source}`)}
+  if(flood.zone&&['AE','VE','AO','A','V'].includes(flood.zone)){rdpRequired=true;triggeredBy.push(`Flood zone ${flood.zone} (FEMA NFHL)`)}
   const sealsRequired=[];
   if(rdpRequired)sealsRequired.push('Architect (RA)');
-  if(stories>2||units>4||overlays.hillside||(flood.zone&&flood.zone!=='X'))sealsRequired.push('Structural PE');
+  if(stories>2||units>4||ov.hillside||ov.liquefaction||(flood.zone&&flood.zone!=='X'))sealsRequired.push('Structural PE');
   if(units>4)sealsRequired.push('MEP PE');
-  if(overlays.hillside||(overlays.coastal&&overlays.coastal!=='none')||units>4)sealsRequired.push('Civil PE');
+  if(ov.hillside||ov.coastal||units>4)sealsRequired.push('Civil PE');
+  if(ov.historic)sealsRequired.push('Historic Preservation Specialist');
   return{
     disclosure:ADVISOR_DISCLOSURE,shortDisclosure:ADVISOR_SHORT,
     rdpRequired,triggeredBy,sealsRequired:[...new Set(sealsRequired)],
