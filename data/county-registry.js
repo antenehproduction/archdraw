@@ -34,6 +34,16 @@ window.COUNTY_REGISTRY = {
     fields: { apn: 'PARCEL_NBR', lotArea: 'LandArea', useClass: 'USE_CODE', yearBuilt: 'YearBuilt' },
     corsOk: true,
   },
+  'WA:Snohomish': {
+    state: 'WA', county: 'Snohomish',
+    assessorURL: 'https://snohomishcountywa.gov/5167/Assessor',
+    parcelQuery: 'https://gis.snoco.org/sis/rest/services/Cadastral/Tax_Parcels/MapServer/0/query',
+    fields: { apn: 'PARCEL_ID', lotArea: 'TAB_ACRES', useClass: 'USECODE', yearBuilt: null },
+    corsOk: true,
+    notes: 'Snohomish Co SIS Cadastral/Tax_Parcels layer 0. PARCEL_ID = 14-char string. TAB_ACRES is ACRES (Double) — multiply by 43560 for sq ft; WA:King SHAPEAREA is sq ft natively, so consumer must branch on unit. yearBuilt lives on separate Improvement Records CAMA table (not this layer). AGO mirror fallback if SIS blocks CORS: https://services8.arcgis.com/7YUdLQ8pDBKU1XYI/arcgis/rest/services/Parcels/FeatureServer/0',
+    verifiedDate: '2026-04-23',
+    _unverified: ['corsOk', 'yearBuilt'],
+  },
 
   // ── California ──
   'CA:Los_Angeles': {
