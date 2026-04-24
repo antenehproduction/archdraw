@@ -123,6 +123,63 @@ window.ZONING_MATRIX_DB = {
     ],
   },
 
+  // ── Tacoma, WA ──
+  // NOTE: Tacoma abolished R-1/R-2/R-3 districts effective 2025-02-01 via Ord. 28986
+  // (Home in Tacoma Phase 2). All parcels remapped to UR-1/UR-2/UR-3.
+  // Site-intel SiteRecords from current sources will return "UR-X" — old "R-X"
+  // codes will not appear except in pre-2025 cached data.
+  'tacoma,wa:UR-1': {
+    jurisdiction: 'Tacoma', state: 'WA', district: 'UR-1',
+    fullName: 'Urban Residential District 1 (low-scale middle housing)',
+    codeURL: 'https://cms.cityoftacoma.org/cityclerk/Files/MunicipalCode/Title13-LandUseRegulatoryCode.PDF',
+    frontSetback: 15, rearSetback: 25, leftSetback: 5, rightSetback: 5,
+    maxHeightFt: 35, maxStories: null,
+    maxFAR: 0.6,
+    maxLotCoverage: null,
+    parkingPerUnit: 0,
+    aduAllowed: true, aduMaxSqFt: 1000,
+    densityBonus: 'UR Bonus 1: 1 du / 1,000 sf; UR Bonus 2: 1 du / 750 sf (vs base 1 du / 1,500 sf). Affordability or building-retention dedication required (TMC 13.06.020.F.1).',
+    sb9Eligible: false,
+    notes: 'Ord. 28986 (Home in Tacoma Phase 2, eff. 2025-02-01) abolished prior R-1 and remapped all parcels to UR-1. Tacoma is HB 1110 Tier 1 (pop. >75k) — 4 du by right citywide, 6 within 0.25mi major transit; UR-1 satisfies and exceeds the Tier 1 mandate. FAR 0.6 (1–2 units) / 0.8 (3+ units) — matrix carries the lower; consumers must branch on unit count. Rear-25-ft of lot capped at 25ft height. Garage door facing street setback min 20ft. Amenity yard 5% of lot per dwelling. WA HB 1337 (eff. 2025-07-23) sets statewide ADU floor of 1,000 sf (matches local). WA SB 5184 (2025) constrains parking minimums.',
+    verifiedDate: '2026-04-24',
+    _legacy_key: 'tacoma,wa:R-1',
+    _unverified: ['maxStories', 'maxLotCoverage'],
+  },
+  'tacoma,wa:UR-2': {
+    jurisdiction: 'Tacoma', state: 'WA', district: 'UR-2',
+    fullName: 'Urban Residential District 2 (mid-low middle housing; near transit / parks / schools)',
+    codeURL: 'https://cms.cityoftacoma.org/cityclerk/Files/MunicipalCode/Title13-LandUseRegulatoryCode.PDF',
+    frontSetback: 15, rearSetback: 25, leftSetback: 5, rightSetback: 5,
+    maxHeightFt: 35, maxStories: null,
+    maxFAR: 0.8,
+    maxLotCoverage: null,
+    parkingPerUnit: 0,
+    aduAllowed: true, aduMaxSqFt: 1000,
+    densityBonus: 'UR Bonus 1: 1 du / 750 sf; UR Bonus 2: 1 du / 500 sf (vs base 1 du / 1,000 sf). Affordability or building-retention dedication required (TMC 13.06.020.F.1).',
+    sb9Eligible: false,
+    notes: 'Ord. 28986 (Home in Tacoma Phase 2, eff. 2025-02-01) abolished prior R-2 and remapped all parcels to UR-2. UR-2 is Tacoma\'s primary near-transit upzone, satisfying the HB 1110 Tier 1 6-du-within-0.25mi-transit requirement. FAR 0.8 (1–2 units) / 1.0 (3+ units) — matrix carries the lower. Rear-25-ft of lot capped at 25ft height. Side setback reducible with tree-retention credit. WA HB 1337 + SB 5184 statewide overrides apply.',
+    verifiedDate: '2026-04-24',
+    _legacy_key: 'tacoma,wa:R-2',
+    _unverified: ['maxStories', 'maxLotCoverage'],
+  },
+  'tacoma,wa:UR-3': {
+    jurisdiction: 'Tacoma', state: 'WA', district: 'UR-3',
+    fullName: 'Urban Residential District 3 (mid-scale; commercial-edge / transit corridors)',
+    codeURL: 'https://cms.cityoftacoma.org/cityclerk/Files/MunicipalCode/Title13-LandUseRegulatoryCode.PDF',
+    frontSetback: 10, rearSetback: 25, leftSetback: 5, rightSetback: 5,
+    maxHeightFt: 35, maxStories: null,
+    maxFAR: 1.0,
+    maxLotCoverage: null,
+    parkingPerUnit: 0,
+    aduAllowed: true, aduMaxSqFt: 1000,
+    densityBonus: 'UR Bonus 1: 1 du / 500 sf, height 45ft / 4 stories; UR Bonus 2: 1 du / 375 sf, height 45ft / 5 stories. Affordability or building-retention dedication required (TMC 13.06.020.F.1).',
+    sb9Eligible: false,
+    notes: 'Ord. 28986 (Home in Tacoma Phase 2, eff. 2025-02-01) abolished prior R-3 and remapped all parcels to UR-3. UR-3 is Tacoma\'s highest-intensity residential zone, sited at commercial edges and transit corridors. Multiplex (7+ stacked units) by right ONLY in UR-3 (not UR-1/UR-2). FAR 1.0 (1–2 units) / 1.2 (3+ units) — matrix carries the lower. Bonus front setback path: Bonus 1 = 7.5ft, Bonus 2 = 5ft. Bonus height to 45ft. WA HB 1337 + SB 5184 statewide overrides apply.',
+    verifiedDate: '2026-04-24',
+    _legacy_key: 'tacoma,wa:R-3',
+    _unverified: ['maxStories', 'maxLotCoverage'],
+  },
+
   // ── San Francisco, CA ──
   'san francisco,ca:RH-1': {
     jurisdiction: 'San Francisco', state: 'CA', district: 'RH-1',

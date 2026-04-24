@@ -4,6 +4,51 @@ Daily backlog state per `PROJECT_COORDINATOR.md` §9. Most recent day at the top
 
 ---
 
+## 2026-04-24 — P0-3 Tacoma + permission unblock
+
+### Moved to done today
+- **P0-3 Tacoma** — `tacoma,wa:UR-1`, `UR-2`, `UR-3` registered in `data/zoning-matrix.js` with full primary fields populated. — `zoning-legal`. **Higher quality than Bellevue:** Tacoma's city-side cms.tacoma.gov + cityoftacoma.org sources weren't blocked the way `bellevue.municipal.codes` was, so all four setbacks, height, FAR, parking, and ADU data are confirmed. Only `maxStories` and `maxLotCoverage` are in `_unverified[]` (TMC controls density via FAR + amenity-area, not story count or coverage %).
+- **Permission unblock** — owner removed `Bash(git push:*)` and `Write(.claude/**)` from `.claude/settings.json` deny list (origin/main commits `71d7147`, `8a87f46`, `7aa6598`). Branch sync via `git pull --no-rebase --no-edit`; merge commits `84ee446` and `33024ba`. Yesterday's blocked push (3 commits) finally landed on origin.
+
+### Major finding — manual amendment proposed
+**Tacoma district rename.** `PROJECT_COORDINATOR.md` §P0-3 lists "Tacoma, WA — R-1, R-2, R-3" but Tacoma abolished those codes effective **2025-02-01** via Ordinance 28986 (Home in Tacoma Phase 2) and remapped every parcel to UR-1/UR-2/UR-3. The R-X codes will not appear in any current `site-intel` SiteRecord.
+- **Action taken:** shipped UR-X entries (current TMC). Each entry carries `_legacy_key: 'tacoma,wa:R-X'` for provenance.
+- **Owner decision queued:** amend §P0-3 city list to read "Tacoma, WA — UR-1, UR-2, UR-3" so the manual matches reality. Recommend yes; the manual is owner-edited only (per Appendix A).
+
+### Statewide-WA data items surfaced
+Tacoma research surfaced two statewide laws affecting *every* WA city in P0-3, beyond HB 1110:
+- **WA HB 1337** (eff. 2025-07-23) — statewide ADU floor of 1,000 sf; eliminates owner-occupancy requirement; mandates ≥2 ADUs per residential lot. Currently noted only in Tacoma `notes`.
+- **WA SB 5184** (2025) — constrains local off-street parking minimums. Tacoma already 0; other cities may have stale matrix values.
+
+**Recommendation:** treat HB 1337 + SB 5184 like HB 1110 — model as first-class data in P0-4's `middle-housing.js` (or sibling `wa-statewide.js`) so the renderer applies them uniformly across all WA jurisdictions instead of relying on each city entry's `notes` field. Routing: `zoning-legal` once Bellevue/Tacoma cycle settles.
+
+### Blockers surfaced
+- **P0-1 Hosted-key auth** — blocked on §7-A, §7-C, §8 Q1 (unchanged).
+- **P0-6 Reconcile two Vercel projects** — blocked on §8 Q6 (unchanged).
+- **`.claude/settings.json` JSON validity** — owner moved trailing comma from inside the deny array to after the closing `]`; still rejected by strict JSON parsers (`Expected double-quoted property name`). One-character fix: drop the comma between `]` and `}`. Claude Code's parser tolerated it — push succeeded — but a stricter consumer or a CI lint will fail.
+
+### Decisions awaiting the human owner
+1. §7-A single-file constraint — keep / split data only / migrate to framework (blocks P0-1).
+2. §7-B TypeScript migration — defer OK but needed by P1.
+3. §7-C model routing — Sonnet-for-all vs per-task-class routing (blocks P0-1 cost model).
+4. §8 Q1 pricing — free-trial quota + paid tier price (blocks P1-1 Stripe).
+5. §8 Q6 Vercel canonical — `archdraw` or `production` (blocks P0-6).
+6. §8 Q2–Q5 — branding, geographic expansion order, architect-partnership model, E&O insurance timing.
+7. **Bellevue R-15 tier mismatch** (carried from yesterday) — swap for R-4, keep R-15 as MF placeholder, or ship both?
+8. **Snohomish TAB_ACRES unit conversion** (carried from yesterday) — schema field `lotAreaUnit` or fetch-time normalizer?
+9. **NEW — Tacoma R→UR rename.** Amend `PROJECT_COORDINATOR.md` §P0-3 city list to `UR-1/UR-2/UR-3`?
+10. **NEW — WA statewide laws HB 1337 + SB 5184.** Model as first-class data (sibling to HB 1110 in P0-4) or leave per-city in `notes`?
+
+### Launch checklist (§6) delta
+- Bellevue partial → unchanged.
+- Tacoma → first WA city with **fully populated primary fields** (only stories/coverage in `_unverified`). Counts as 1 of 10 toward "Top 10 WA cities (P0-3) in `zoning-matrix.js` with no missing required fields outside `_unverified[]`."
+
+### Still in progress / next up
+- 8 of 10 P0-3 cities remaining: Everett, Redmond, Kirkland, Renton, Bothell, Auburn, Kent, Federal Way.
+- Recommend: Everett next (third launch county's largest city; aligns with the 3-county WA launch market).
+
+---
+
 ## 2026-04-23 — Step 0 + P0-2 + P0-3 Bellevue partial
 
 ### Moved to done today
