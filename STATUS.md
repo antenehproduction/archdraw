@@ -116,26 +116,48 @@ Owner committed five `.txt` files to `origin/main` containing saved HTML of the 
 - **AGAINST:** Sept 2025 open data portal still returns "R-1" for parcels. Until that layer is updated, deprecating R-1 would misfire lookups.
 - **Middle path:** keep both; flag R-1/R-2 with `_legacyMapping: 'everett,wa:NR-C'` (soft redirect metadata) while preserving their current values as fallback. Do not use `_repealed`.
 
-### Re-upload request — two files needed
+### Manual-copy round 2 — full back-fill (2026-04-24)
 
-To finish the back-fill, owner needs to re-save these two pages as `.txt` in a **new commit** on `main`:
+Owner re-uploaded `Chart 20.20.010.txt` (now 184 KB, was 0) and a new `Table 21.08.147B.txt`. Findings:
 
-1. **Bellevue Chart 20.20.010** (the previous file came through 0 bytes — save failed):
-   - URL: `https://bellevue.municipal.codes/LUC/20.20.010`
-   - Target fields (R-1, R-5, R-7.5): frontSetback, rearSetback, side-setback-rule, maxLotCoverage, parkingPerUnit
-   - Re-upload filename: `Chart 20.20.010.txt`
+**Bellevue** — ANOTHER zone rewrite discovered. Current LUC 20.20.010 chart uses **LL-1, LL-2, SR-1/2/3/4, LDR-1/2/3, MDR-1/2** — not R-1/R-5/R-7.5. Clean mapping by lot-size lineage:
+- R-1 (estate, ≥35,000 sf) → **LL-1**
+- R-5 (7,200 sf min) → **SR-4** (exact match)
+- R-7.5 → **LDR-1** (min lot 4,700 sf)
+- R-15 (multifamily) → **MDR-1** (20 du/acre)
 
-2. **Redmond NR section** (Table 21.08.143B.3 — previous upload was the parent chapter TOC, not the section):
-   - URL: `https://redmond.municipal.codes/RZC/21.08.143`
-   - Target fields (NR): frontSetback, rearSetback, leftSetback, rightSetback, maxHeightFt, maxStories, maxFAR
-   - Re-upload filename: `RZC 21.08.143 NR.txt` (or keep original `Table 21.08.143B.3.txt` and overwrite)
+All four Bellevue entries updated with full chart values (front/rear/side setbacks, height, lot coverage, stories). Only `parkingPerUnit` remains `_unverified` — not in the dimensional-standards chart (lives in a separate Bellevue LUC section).
 
-3. **Redmond NMF section** (Table 21.08.147B):
-   - URL: `https://redmond.municipal.codes/RZC/21.08.147`
-   - Target fields: same as NR
-   - Re-upload filename: `RZC 21.08.147 NMF.txt`
+**Redmond** — file confirmed that §21.08.143 and §21.08.147 don't exist as discrete sections in current code. Redmond re-reorganized: all dimensional standards now live in Ch. 21.08 shared **Table 21.08.200.B** (density/height/coverage) and **Table 21.08.300.A** (setbacks). Both tables present in the uploaded file. NR and NMF updated with full chart values:
+- **NR:** front 10, rear 5, side-interior 3, height 38, coverage 50/60%, 6 du base / 8 with affordable
+- **NMF:** front 30, rear 10, side-interior 15, height 60, FAR 1.1 base / 1.5 with incentives, coverage 60%
 
-**Save method that works:** in Firefox/Chrome, after page renders, `Ctrl+S` (or Cmd+S) → save as "Webpage, HTML only" (NOT "complete") → rename `.html` to `.txt` if your GitHub UI prefers. The critical thing: the table rendered inside `<figure class="type-Table">` elements must be in the saved file.
+All 6 updated entries carry `_sourceMethod: 'manual'` + `_sourceSnapshot: '2026-04-24'` per Layer-1 freshness discipline.
+
+**Cleanup performed:**
+- `git rm Snapshot` (1-byte stray from GitHub "Create" UI)
+- `git rm "Table 21.08.143B.3.txt"` (md5-different from 147B but content-equivalent — both show Ch. 21.08 overview with the same 3 tables; 147B is newer and includes the informative "could not be found" banner)
+
+**4 kept snapshot files** (serve as audit trail for `_sourceSnapshot` fields):
+- `Chart 20.20.010.txt` (Bellevue)
+- `Table 6-2.txt` (Everett setbacks)
+- `Table 34-1.txt` (Everett parking)
+- `Table 21.08.147B.txt` (Redmond Ch. 21.08 with .200.B + .300.A tables)
+
+### Coverage across 6 WA cities with the new zone-rename pattern established
+
+**Pattern is unambiguous:** Every WA Tier 1 city that went through HB 1110 compliance also restructured its dimensional-standards schema with new zone names:
+- **Tacoma** R-1/R-2/R-3 → **UR-1/UR-2/UR-3** (Ord 28986, eff. 2025-02-01)
+- **Redmond** R-4/R-6/R-8 → **NR** (Ord 3186, eff. 2025-01-01) — further reorg into Ch. 21.08 shared tables
+- **Everett** R-1/R-2 → **NR-C / NR / UR4 / UR7 / MU\* / LI / HI / AG** (Ord 4102-25, eff. 2025-07-08)
+- **Bellevue** R-1/R-5/R-7.5/R-15 → **LL-1/2 / SR-1..4 / LDR-1..3 / MDR-1..2** (date TBD — chart is current)
+
+Owner decision #15 updated: NOT just Everett — same question applies across all 4 cities. Options:
+- **(A) Deprecate all legacy keys via `_repealed` stubs** (Redmond R-4/R-6/R-8 already done). Clean but requires GIS layer parity.
+- **(B) Keep legacy keys as live entries with updated values** (current approach for Bellevue R-1/R-5/R-7.5/R-15 and Everett R-1/R-2). Parcel data from GIS still tagged with old codes works; new chart-name codes (LL-1, NR-C, etc.) don't yet have entries.
+- **(C) Dual-entry approach:** keep legacy + add new-code entries. Doubles the matrix for these cities but makes site-intel lookup unambiguous regardless of which name the parcel-data layer returns.
+
+Recommend **(C)** for next cycle — pairs with the GIS-layer-drift reality. Current commit ships (B) as pragmatic intermediate.
 
 ---
 
