@@ -63,7 +63,23 @@ These overlay-checks are a **schema gap** in `data/zoning-matrix.js`: the matrix
 ### Still in progress / next up
 - 6 of 10 P0-3 cities remaining: Kirkland, Renton, Bothell, Auburn, Kent, Federal Way.
 - Recommend: **Kirkland next** (5th-largest King Co city; East Link light rail terminus by 2025; HB 1110 Tier 1).
-- **Strong recommendation:** unblock chart-fetch (decision item #12) before pushing further into the priority list. Bellevue, Everett, and Redmond all have setback/height fields nulled because of `*.municipal.codes` 403. Without an unblock spike, every remaining city likely repeats the same pattern. A site-intel proxy-fetch task should land 4 of 4 of those nulls back as confirmed values.
+- **Blocked on chart-fetch decision** — see next section. Continuing the sweep without an unblock will ship every remaining General-Code-hosted city with the same partial-quality nulls.
+
+### Hypothesis test — `*.municipal.codes` unblock (site-intel, 2026-04-24)
+**Result: hypothesis FAILED.** The 403 is not UA or egress-reputation-based. It's a **structural CDN-layer block** at General Code (the platform hosting all three cities' codes). Every public proxy tested returned 403: `corsproxy.io`, `api.allorigins.win` (both `/raw` and `/get`), `thingproxy.freeboard.io` (ECONNREFUSED), and `r.jina.ai`. The Jina reader's failure matters because it uses cloud egress — which suggests Vercel's cloud IPs may be in General Code's blocklist too. The block also catches city-government storage (`bellevuewaprod.blob.core.windows.net`, `everettwa.gov/DocumentCenter`).
+
+**What this rules out:**
+- Applying the one-line `handleMunicode` whitelist extension and hoping it works → would be a gamble without a test from the production Vercel URL.
+- `corsproxy.io` as a permanent fallback → same 403, and §P1-2 already flags it as third-party risk.
+- Routing through public rotating proxies in general.
+
+**What's still viable (4 paths forward, pending owner direction):**
+1. **Test the Vercel proxy specifically.** Owner provides the current production Vercel URL (ties back to P0-6 Vercel-canonical decision). I curl `https://<deployment>/api/diag?url=https%3A%2F%2Fbellevue.municipal.codes%2FLUC%2F20.20.010` — if that returns 200 with HTML, extend the `handleMunicode` whitelist and we're unblocked. Cost: ~10 minutes once URL is known.
+2. **Alternative hosts for each city.** Tacoma's `codepublishing.com/WA/Tacoma/` and city-site docs worked fine. Bellevue / Everett / Redmond may also have Code Publishing mirrors or accessible city-site HTML that the current research missed. Cost: 30–60 min of targeted site-intel digging per city.
+3. **Internet Archive Wayback Machine.** `web.archive.org/web/2024/<municipal.codes URL>` likely holds snapshots from before the CDN block tightened. Cost: 30 min to confirm snapshot coverage + build a fetcher, then reusable for all blocked cities.
+4. **Owner manual copy.** You open the LUC / EMC / RZC chart pages in your browser (which the block doesn't affect), paste the ~10 chart-cell values per city into a file or chat message, and I integrate in minutes. Cost: ~5 min per city; total <30 min owner time for all three back-fills.
+
+**Recommendation:** #4 for immediate back-fill of Bellevue + Everett + Redmond, plus #1 for permanent infrastructure so the remaining 6 cities aren't gated. #2 (alternative hosts) is worth trying first for each new city before falling back to #4. #3 (Wayback) as a last-resort automated tier.
 
 ---
 
