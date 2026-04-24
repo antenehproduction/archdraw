@@ -92,6 +92,53 @@ Path #1 is simpler; path #2 scales better for the remaining 6 P0-3 cities. Await
 
 ---
 
+### Manual-copy round 1 — owner uploaded 5 chart files (2026-04-24)
+
+Owner committed five `.txt` files to `origin/main` containing saved HTML of the code chart pages (commits `fcd0614` "Add files via upload", `2b6b78c` "Create Snapshot"). Post-audit:
+
+| File | Size | Outcome |
+|---|---|---|
+| `Chart 20.20.010.txt` (Bellevue) | 0 bytes | **Upload failed — needs retry.** No content saved. |
+| `Table 6-2.txt` (Everett setbacks) | 144 KB | **Integrated.** Full HTML of EMC 19.06.020. |
+| `Table 34-1.txt` (Everett parking) | 250 KB | **Integrated.** Full HTML of EMC 19.34.020. |
+| `Table 21.08.143B.3.txt` (Redmond NR) | 91 KB | **Duplicate of .147B and wrong page.** md5-identical content; Ch. 21.08 table-of-contents, not the NR section. |
+| `Table 21.08.147B.txt` (Redmond NMF) | 91 KB | Same as above. |
+| `Snapshot` | 1 byte | Stray empty file from GitHub UI "Create" action — safe to delete. |
+
+**MAJOR FINDING — Everett zone rewrite.** The owner-uploaded Table 6-2 confirms Everett 2044 (Ord 4102-25) did a **Redmond-style full zone rewrite** — the current code uses zones **NR-C, NR, UR4, UR7, MU4, MU7, MU15, MU25, LI-MU, LI, HI, AG**. There is NO R-1 or R-2 column in the live Table 6-2. `zoning-legal` missed this because the Sept 2025 open data portal still labelled parcels R-1/R-2 (GIS layer drift, common). This changes Everett's launch posture significantly.
+
+**What shipped in commit `<next>`:**
+- **NEW entries** `everett,wa:NR-C` (low-density, front 20 / rear 20 / side-street 10 / side-interior 5, height 28) and `everett,wa:NR` (HB-1110 middle-housing, front 10 / rear 5 / side 5, height 28). Both carry `_sourceMethod: 'manual'` and `_sourceSnapshot: '2026-04-24'` — first matrix entries with audit-trail provenance.
+- **Existing entries updated** `everett,wa:R-1` and `R-2`: `parkingPerUnit: null → 1` (Table 34-1 confirms 1 per dwelling unit citywide — post-SB-5184 compliance already codified). Notes extended with the zone-rewrite finding and a pointer to the new NR-C/NR entries. R-1/R-2 NOT yet deprecated via `_repealed` — see decision item below.
+
+**NEW DECISION (#15):** Deprecate `everett,wa:R-1` and `R-2` to `_repealed` stubs (→ `everett,wa:NR-C` and `NR` respectively)? For / against:
+- **FOR (recommended):** Current authoritative chart uses new zone names; eventually site-intel will match "NR-C" not "R-1". Mirrors Redmond R-4/R-6/R-8 → NR pattern.
+- **AGAINST:** Sept 2025 open data portal still returns "R-1" for parcels. Until that layer is updated, deprecating R-1 would misfire lookups.
+- **Middle path:** keep both; flag R-1/R-2 with `_legacyMapping: 'everett,wa:NR-C'` (soft redirect metadata) while preserving their current values as fallback. Do not use `_repealed`.
+
+### Re-upload request — two files needed
+
+To finish the back-fill, owner needs to re-save these two pages as `.txt` in a **new commit** on `main`:
+
+1. **Bellevue Chart 20.20.010** (the previous file came through 0 bytes — save failed):
+   - URL: `https://bellevue.municipal.codes/LUC/20.20.010`
+   - Target fields (R-1, R-5, R-7.5): frontSetback, rearSetback, side-setback-rule, maxLotCoverage, parkingPerUnit
+   - Re-upload filename: `Chart 20.20.010.txt`
+
+2. **Redmond NR section** (Table 21.08.143B.3 — previous upload was the parent chapter TOC, not the section):
+   - URL: `https://redmond.municipal.codes/RZC/21.08.143`
+   - Target fields (NR): frontSetback, rearSetback, leftSetback, rightSetback, maxHeightFt, maxStories, maxFAR
+   - Re-upload filename: `RZC 21.08.143 NR.txt` (or keep original `Table 21.08.143B.3.txt` and overwrite)
+
+3. **Redmond NMF section** (Table 21.08.147B):
+   - URL: `https://redmond.municipal.codes/RZC/21.08.147`
+   - Target fields: same as NR
+   - Re-upload filename: `RZC 21.08.147 NMF.txt`
+
+**Save method that works:** in Firefox/Chrome, after page renders, `Ctrl+S` (or Cmd+S) → save as "Webpage, HTML only" (NOT "complete") → rename `.html` to `.txt` if your GitHub UI prefers. The critical thing: the table rendered inside `<figure class="type-Table">` elements must be in the saved file.
+
+---
+
 ## 2026-04-23 — Step 0 + P0-2 + P0-3 Bellevue partial
 
 ### Moved to done today
