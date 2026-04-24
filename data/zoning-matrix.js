@@ -429,6 +429,44 @@ window.ZONING_MATRIX_DB = {
     _replacedBy: 'redmond,wa:NR',
   },
 
+  // ── Kirkland, WA ──
+  // District codes UNCHANGED (no rename). First Tier-1 WA city in the P0-3 sweep
+  // that kept its legacy zone names through HB 1110 compliance. Ord O-4905
+  // (adopted 2025-06-17) implements HB 1110 / HB 1337 / SB 5184 without
+  // restructuring the RSA-family (RSA 1 / RSA 4 / RSA 6 / RSA 8) codes.
+  'kirkland,wa:RSA 6': {
+    jurisdiction: 'Kirkland', state: 'WA', district: 'RSA 6',
+    fullName: 'Single-Family Residential — 6 units per acre',
+    codeURL: 'https://www.codepublishing.com/WA/Kirkland/html/KirklandZ15/KirklandZ15.html',
+    frontSetback: 20, rearSetback: 10, leftSetback: 5, rightSetback: 5,
+    maxHeightFt: 30, maxStories: null,
+    maxFAR: 0.50,
+    maxLotCoverage: 50,
+    parkingPerUnit: 2,
+    aduAllowed: true, aduMaxSqFt: 1000,
+    densityBonus: 'WA HB 1110 (Tier 1, Ord. O-4905, adopted 2025-06-17): 4 units by right citywide; 6 units by right within 0.25 mi of major transit stop. KZC ch. 112 Multifamily Affordable Housing Incentives may provide additional FAR for affordable set-aside projects. Peaked-roof bonus: FAR rises to 0.60 when ridge roof is used (KZC 15.30).',
+    sb9Eligible: false,
+    notes: 'Kirkland RETAINED zone names through HB 1110 compliance (unlike Tacoma/Redmond/Everett/Bellevue). Ord O-4905 (adopted 2025-06-17) amends KZC chs. 113 and 115 to allow 4-unit middle housing citywide and 6-unit near major transit via the "Multiplex" and cottage/carriage framework — RSA 6 label preserved. Side-yard rule: per-side min 5ft + combined min 15ft (Bellevue-style per-side-plus-combined rule; drawing-engine must satisfy both). Rear 10ft confirmed for through-lot / two-parallel-fronts condition; standard single-front-lot rear not independently confirmed. Min lot 5,100 sf. Height 30ft ABE (above-building-elevation). FAR tiered: 0.50 flat / 0.60 peaked roof. Lot coverage 50%. parkingPerUnit=2 reflects CURRENT KZC 15.40 (2 spaces/SFR); WA SB 5184 (ESSB, May 2025) caps SFR parking at 1/unit for cities >50k — Kirkland local amendment pending (~early 2027 deadline). ADU per KZC ch. 115 + WA HB 1337 (RCW 36.70A.680, eff. 2025-07-01): 2 ADUs/lot, ≥1,000 sf, no owner-occupancy, no parking within 0.5mi transit. aduMaxSqFt set to state-floor 1,000 (local cap pre-O-4905 was 1,200; post-O-4905 cap not confirmed from live code). UNCAPTURED OVERLAYS: Totem Lake Urban Center (KZC 40–50), Rose Hill Business District, NE 85th St Station Form-Based Code (KZC ch. 57, East Link terminus — supersedes RSA for parcels in the station-area boundary), Carillon Woods overlay (PLA 6E), Shoreline overlay (KZC ch. 83), Pipeline Corridor overlay (KZC ch. 118). Do NOT use RSA 6 for parcels inside these overlays. FETCH NOTE: both codepublishing.com and kirkland.municipal.codes returned 403; dimensional data recovered via cross-referenced WebSearch snippets, not direct chart read.',
+    verifiedDate: '2026-04-24',
+    _unverified: ['maxStories', 'rearSetback', 'aduMaxSqFt'],
+  },
+  'kirkland,wa:RSA 8': {
+    jurisdiction: 'Kirkland', state: 'WA', district: 'RSA 8',
+    fullName: 'Single-Family Residential — 8 units per acre',
+    codeURL: 'https://www.codepublishing.com/WA/Kirkland/html/KirklandZ15/KirklandZ15.html',
+    frontSetback: 20, rearSetback: 10, leftSetback: 5, rightSetback: 5,
+    maxHeightFt: 30, maxStories: null,
+    maxFAR: 0.50,
+    maxLotCoverage: 50,
+    parkingPerUnit: 2,
+    aduAllowed: true, aduMaxSqFt: 1000,
+    densityBonus: 'WA HB 1110 (Tier 1, Ord. O-4905, adopted 2025-06-17): 4 units by right citywide; 6 units by right within 0.25 mi of major transit stop. KZC ch. 112 Multifamily Affordable Housing Incentives may provide additional FAR for affordable set-aside projects. Peaked-roof bonus: FAR rises to 0.60 with ridge roof for first 5,000 sf of lot area.',
+    sb9Eligible: false,
+    notes: 'Same RSA-family structure as RSA 6 — zone names retained. RSA 8 min lot 3,800 sf (smaller than RSA 6 at 5,100 sf), typically Finn Hill and Cross Kirkland areas. Setbacks, height, FAR, coverage, parking, ADU rules all identical to RSA 6 per KZC 15.30. Above 25 ft ABE, structures must be below existing grade and screened by vegetative earthen berm (KZC 15.30 special regulation). Same HB 1110 / HB 1337 / SB 5184 framework as RSA 6. Same uncaptured overlays: Totem Lake, Rose Hill, NE 85th St Station Form-Based Code (KZC ch. 57), Carillon Woods (PLA 6E), Shoreline (KZC 83), Pipeline Corridor (KZC 118). Do NOT use RSA 8 for parcels inside overlays. Same fetch caveat as RSA 6 (both code hosts returned 403; values via search snippets).',
+    verifiedDate: '2026-04-24',
+    _unverified: ['maxStories', 'rearSetback', 'aduMaxSqFt'],
+  },
+
   // ── San Francisco, CA ──
   'san francisco,ca:RH-1': {
     jurisdiction: 'San Francisco', state: 'CA', district: 'RH-1',

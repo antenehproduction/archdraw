@@ -157,13 +157,31 @@ Owner decision #15 updated: NOT just Everett — same question applies across al
 - **(B) Keep legacy keys as live entries with updated values** (current approach for Bellevue R-1/R-5/R-7.5/R-15 and Everett R-1/R-2). Parcel data from GIS still tagged with old codes works; new chart-name codes (LL-1, NR-C, etc.) don't yet have entries.
 - **(C) Dual-entry approach:** keep legacy + add new-code entries. Doubles the matrix for these cities but makes site-intel lookup unambiguous regardless of which name the parcel-data layer returns.
 
-**OWNER DECISION (2026-04-24): C adopted.** Implementation:
+### Kirkland shipped (2026-04-24) — rename pattern corrected
+`kirkland,wa:RSA 6` + `kirkland,wa:RSA 8` registered. **First WA Tier-1 city in the P0-3 sweep that did NOT rename its residential zones** through HB 1110 compliance — the RSA-family (RSA 1 / RSA 4 / RSA 6 / RSA 8) was preserved through Ord O-4905 (adopted 2025-06-17). This contradicts the pattern I had declared "unambiguous" two commits ago. Revised finding:
+
+**Zone-rename is common but NOT universal** across WA Tier-1 HB-1110 implementations. Score so far: **4 of 5** with rename (Tacoma, Redmond, Everett, Bellevue); **1 of 5** without (Kirkland). Future cities in the sweep (Renton, Bothell, Auburn, Kent, Federal Way) need per-city verification — no assumption either way.
+
+Kirkland values (full primary data, 3 items in `_unverified[]`): front 20, rear 10, side 5+5 (combined ≥15), height 30ft ABE, FAR 0.50 flat / 0.60 peaked, coverage 50%, parking 2 (pre-SB-5184), ADU 1,000 sf (state floor). Parking=2 is the current KZC 15.40; will drop to 1 once Kirkland codifies SB 5184 (~early 2027 deadline).
+
+**Kirkland fetch-source surprise:** both `codepublishing.com/WA/Kirkland` AND `kirkland.municipal.codes` returned 403. This contradicts my earlier working assumption that codepublishing.com was safe (Tacoma was via codepublishing). Codepublishing's CDN behavior varies per tenant. For the remaining 5 cities, assume neither host is guaranteed — plan manual-copy fallback from the start.
+
+### Kirkland-specific uncaptured overlays (schema gap decision #11 grows)
+Six Kirkland overlays the matrix can't represent: Totem Lake Urban Center (KZC 40–50), Rose Hill Business District, NE 85th Street Station Form-Based Code (KZC ch. 57, East Link terminus — key overlay), Carillon Woods (PLA 6E), Shoreline (KZC ch. 83), Pipeline Corridor (KZC ch. 118). Each mandates different dimensional standards than base RSA. `zoning-overlays.js` sibling file (decision #11) continues to grow in value.
+
+### OWNER DECISION #15 (2026-04-24): C adopted. Implementation summary
 - **Bellevue:** 4 legacy R-X entries retained with updated values + 4 new-code entries added (LL-1, SR-4, LDR-1, MDR-1) carrying the same dimensional data with `_legacy_key` back-references.
 - **Tacoma:** 3 UR-X primaries retained + 3 legacy R-1/R-2/R-3 `_repealed` stubs added (mirror of the Redmond stub pattern — clean for a full 1:1 rename).
 - **Redmond:** already dual-form (NR + NMF + R-4/R-6/R-8 stubs). No change.
 - **Everett:** already dual-form (NR-C + NR + R-1 + R-2 live entries). No change.
+- **Kirkland:** NO rename (RSA 6 + RSA 8 retained through Ord O-4905). No dual-entry work required.
 
-Matrix count: 42 entries (up from 35). Any Tier-1 WA city added going forward should ship both naming forms where a rename is detected.
+Matrix count: 44 entries. Any Tier-1 WA city added going forward needs per-city rename verification; dual-entry only where a rename is detected.
+
+### P0-3 progress: 7 of 10 WA cities shipped
+Done: Seattle + Shoreline (pre-existing) + Bellevue + Tacoma + Everett + Redmond + Kirkland. Remaining: **Renton, Bothell, Auburn, Kent, Federal Way**.
+
+Recommend: **Renton next** (6th-largest King Co; HB 1110 Tier 1; Stride BRT terminus at Renton Landing; pairs with already-shipped King Co county registry).
 
 ---
 
