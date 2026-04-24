@@ -180,6 +180,46 @@ window.ZONING_MATRIX_DB = {
     _unverified: ['maxStories', 'maxLotCoverage'],
   },
 
+  // ── Everett, WA ──
+  // District codes unchanged (no Tacoma-style rename). HB 1110 compliance via
+  // Ord 4101-25 (comp plan) + Ord 4102-25 (dev regs), eff. 2025-07-08.
+  // Setbacks via Table 6-2 (EMC 19.06.020) — table not retrievable (everett.municipal.codes
+  // and everettwa.gov DocumentCenter both 403'd WebFetch).
+  'everett,wa:R-1': {
+    jurisdiction: 'Everett', state: 'WA', district: 'R-1',
+    fullName: 'Single-Family Detached Low Density Residential Zone',
+    codeURL: 'https://everett.municipal.codes/EMC/19.06',
+    frontSetback: null, rearSetback: null,
+    leftSetback: 5, rightSetback: 5,
+    maxHeightFt: 28, maxStories: null,
+    maxFAR: null,
+    maxLotCoverage: 35,
+    parkingPerUnit: null,
+    aduAllowed: true, aduMaxSqFt: 1000,
+    densityBonus: 'HB 1110 (Tier 1, Ord 4102-25 eff. 2025-07-08): 4 du by right citywide; 6 du within 0.25mi of major transit. No separate local density-bonus overlay for R-1 as of April 2026.',
+    sb9Eligible: false,
+    notes: 'EMC 19.22.020 height 28ft confirmed. EMC 19.06.010 lot coverage 35% confirmed. EMC 19.06.020 Table 6-2 (front/rear setbacks) not directly readable — front ~20ft inferred from staff memos but unverified. Side 5ft confirmed via ADU ordinance cross-references. Everett uses lot coverage + height envelope, not FAR. ADU per EMC 19.08.100 (as amended by Ord 4102-25): max 1,000 sf, 2 ADUs/lot, no owner-occupancy, no parking required for buildings <1,200 sf — aligned with WA HB 1337 (eff. 2025-07-01, RCW 35A.21.314). WA SB 5184 (May 2025): caps SFR parking at 1/unit; Everett (>50k pop) has ~18 months to codify (~early 2027); EMC 19.34 may still show higher minimums in transition. UNCAPTURED OVERLAYS: R-2(A) variant zone (alley access, 4,500sf min); Metro Everett overlay (EMC 19.20, downtown — substantially different rules); Historic (H) overlay (24ft eave-to-side cap, design review). Parcels in mapped overlays must be cross-checked.',
+    verifiedDate: '2026-04-24',
+    _unverified: ['frontSetback', 'rearSetback', 'maxStories', 'maxFAR', 'parkingPerUnit'],
+  },
+  'everett,wa:R-2': {
+    jurisdiction: 'Everett', state: 'WA', district: 'R-2',
+    fullName: 'Single-Family Medium Density Residential Zone',
+    codeURL: 'https://everett.municipal.codes/EMC/19.06',
+    frontSetback: null, rearSetback: null,
+    leftSetback: 5, rightSetback: 5,
+    maxHeightFt: 28, maxStories: null,
+    maxFAR: null,
+    maxLotCoverage: 40,
+    parkingPerUnit: null,
+    aduAllowed: true, aduMaxSqFt: 1000,
+    densityBonus: 'HB 1110 (Tier 1, Ord 4102-25 eff. 2025-07-08): 4 du by right citywide; 6 du within 0.25mi of major transit. Duplex permitted by right in R-2 (EMC 19.05); duplex min lot 7,500sf (EMC 19.06.010).',
+    sb9Eligible: false,
+    notes: 'R-2 permits duplex by right (EMC 19.05); R-1 does not pre-HB 1110, but HB 1110 requires up to 4 du by right in both. Min lot area: 4,500 sf with alley, 5,000 sf standard (EMC 19.06.010). Duplex min lot: 7,500 sf. EMC 19.22.020 height 28ft confirmed; lot coverage 40% confirmed (EMC 19.06.010). Front/rear setbacks via Table 6-2 not directly readable — ~20ft inferred. Side 5ft confirmed via ADU ordinance. ADU rules and statewide overlays match R-1: HB 1337 (max 1,000sf, no owner-occ, ≥2/lot), SB 5184 (parking transition until ~early 2027). UNCAPTURED OVERLAYS: R-2(A) alley-access variant; Metro Everett (EMC 19.20); Historic (H) overlay. Parcel-level overlay check required.',
+    verifiedDate: '2026-04-24',
+    _unverified: ['frontSetback', 'rearSetback', 'maxStories', 'maxFAR', 'parkingPerUnit'],
+  },
+
   // ── San Francisco, CA ──
   'san francisco,ca:RH-1': {
     jurisdiction: 'San Francisco', state: 'CA', district: 'RH-1',
