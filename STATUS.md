@@ -65,21 +65,30 @@ These overlay-checks are a **schema gap** in `data/zoning-matrix.js`: the matrix
 - Recommend: **Kirkland next** (5th-largest King Co city; East Link light rail terminus by 2025; HB 1110 Tier 1).
 - **Blocked on chart-fetch decision** — see next section. Continuing the sweep without an unblock will ship every remaining General-Code-hosted city with the same partial-quality nulls.
 
-### Hypothesis test — `*.municipal.codes` unblock (site-intel, 2026-04-24)
-**Result: hypothesis FAILED.** The 403 is not UA or egress-reputation-based. It's a **structural CDN-layer block** at General Code (the platform hosting all three cities' codes). Every public proxy tested returned 403: `corsproxy.io`, `api.allorigins.win` (both `/raw` and `/get`), `thingproxy.freeboard.io` (ECONNREFUSED), and `r.jina.ai`. The Jina reader's failure matters because it uses cloud egress — which suggests Vercel's cloud IPs may be in General Code's blocklist too. The block also catches city-government storage (`bellevuewaprod.blob.core.windows.net`, `everettwa.gov/DocumentCenter`).
+### Hypothesis tests — `*.municipal.codes` unblock (site-intel × 2, 2026-04-24)
 
-**What this rules out:**
-- Applying the one-line `handleMunicode` whitelist extension and hoping it works → would be a gamble without a test from the production Vercel URL.
-- `corsproxy.io` as a permanent fallback → same 403, and §P1-2 already flags it as third-party risk.
-- Routing through public rotating proxies in general.
+**Round 1 result: FAILED.** Public proxies (`corsproxy.io`, `api.allorigins.win`, `thingproxy.freeboard.io`, `r.jina.ai`) all returned 403. Owner's browser diag probe through the Vercel proxy revealed the actual block mechanism: **Cloudflare Turnstile** (`<title>Just a moment...</title>` + `challenges.cloudflare.com`). Requires JS execution to pass; no HTTP-layer proxy can defeat it. Path #1 (Vercel-whitelist extension) is confirmed dead.
 
-**What's still viable (4 paths forward, pending owner direction):**
-1. **Test the Vercel proxy specifically.** Owner provides the current production Vercel URL (ties back to P0-6 Vercel-canonical decision). I curl `https://<deployment>/api/diag?url=https%3A%2F%2Fbellevue.municipal.codes%2FLUC%2F20.20.010` — if that returns 200 with HTML, extend the `handleMunicode` whitelist and we're unblocked. Cost: ~10 minutes once URL is known.
-2. **Alternative hosts for each city.** Tacoma's `codepublishing.com/WA/Tacoma/` and city-site docs worked fine. Bellevue / Everett / Redmond may also have Code Publishing mirrors or accessible city-site HTML that the current research missed. Cost: 30–60 min of targeted site-intel digging per city.
-3. **Internet Archive Wayback Machine.** `web.archive.org/web/2024/<municipal.codes URL>` likely holds snapshots from before the CDN block tightened. Cost: 30 min to confirm snapshot coverage + build a fetcher, then reusable for all blocked cities.
-4. **Owner manual copy.** You open the LUC / EMC / RZC chart pages in your browser (which the block doesn't affect), paste the ~10 chart-cell values per city into a file or chat message, and I integrate in minutes. Cost: ~5 min per city; total <30 min owner time for all three back-fills.
+**Round 2 result: Wayback path viable for owner only.** Owner's browser probe of `web.archive.org` through the Vercel proxy returned 200 with 124 KB body → Wayback has a usable snapshot for Bellevue LUC 20.20.010 and is reachable from owner's authenticated browser session. BUT a second site-intel dispatch confirmed the **agent's own egress is blocked from `archive.org`** (Claude Code execution-context level) AND blocked from our Vercel deployment (deployment-protection allowlist). **Only the owner can drive Wayback fetches.** Full-HTML via `/api/municode?url=<wayback>` would require whitelisting `web.archive.org` / `archive.org` in the proxy regex (one-line edit).
 
-**Recommendation:** #4 for immediate back-fill of Bellevue + Everett + Redmond, plus #1 for permanent infrastructure so the remaining 6 cities aren't gated. #2 (alternative hosts) is worth trying first for each new city before falling back to #4. #3 (Wayback) as a last-resort automated tier.
+**Net data recovered despite blocks:**
+- Redmond NR: side-yard sharing rule (min 3 ft/side, 6 ft total between structures) — added to NR notes.
+- Redmond ADU: AADU (attached) up to 1,500 sf; DADU 1,000 sf — matrix carries conservative DADU value, notes now flag the attached-ADU ceiling.
+
+### Freshness strategy (adopted 2026-04-24)
+To avoid stale data from Wayback snapshots or ageing manual copies, we commit to a layered approach documented here and proposed for inclusion in `PROJECT_COORDINATOR.md` §P2-8:
+- **Layer 1 — snapshot-date gating.** Any Wayback-sourced value must be from a snapshot dated AFTER the city's most recent compliance ordinance. Schema add: `_sourceSnapshot: '<ISO>'` and `_sourceMethod: 'wayback' | 'live' | 'manual' | 'city-site'`.
+- **Layer 2 — staleness surfacing.** `verifiedDate > 12 months` → UI banner "verify with jurisdiction before relying." Already in manual §P2-8; no code yet.
+- **Layer 3 — change detection.** Periodic site-intel scan of each city's ordinance-list page (usually city-`.gov`, NOT Cloudflare-gated) vs. our `verifiedDate`. If newer ordinance appears → flag for re-research.
+- **Layer 4 — permanent fix (P1.5).** Options: (a) Vercel Serverless Function running puppeteer-core + chrome-aws-lambda to solve Turnstile; (b) General Code API subscription; (c) commercial scraping browser (Bright Data / ScrapingBee).
+
+### Remaining options for the current back-fill (blocked cells)
+After both hypothesis tests, only two paths still work:
+
+1. **Owner browser manual copy** — guide exists in conversation. ~15–25 min total for Bellevue + Everett + Redmond.
+2. **Owner browser → Vercel → Wayback HTML** — requires proxy whitelist extension to include `web.archive.org|archive.org` (one-line edit to `handleMunicode`). Owner then hits `https://<vercel>/api/municode?url=<wayback-id_-URL>` from their browser for each of 7 targets; pastes HTML blocks; I extract. Same owner-time as path #1, but automates provenance tracking once the snippet lands.
+
+Path #1 is simpler; path #2 scales better for the remaining 6 P0-3 cities. Awaiting owner direction.
 
 ---
 
