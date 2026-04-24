@@ -157,7 +157,13 @@ Owner decision #15 updated: NOT just Everett — same question applies across al
 - **(B) Keep legacy keys as live entries with updated values** (current approach for Bellevue R-1/R-5/R-7.5/R-15 and Everett R-1/R-2). Parcel data from GIS still tagged with old codes works; new chart-name codes (LL-1, NR-C, etc.) don't yet have entries.
 - **(C) Dual-entry approach:** keep legacy + add new-code entries. Doubles the matrix for these cities but makes site-intel lookup unambiguous regardless of which name the parcel-data layer returns.
 
-Recommend **(C)** for next cycle — pairs with the GIS-layer-drift reality. Current commit ships (B) as pragmatic intermediate.
+**OWNER DECISION (2026-04-24): C adopted.** Implementation:
+- **Bellevue:** 4 legacy R-X entries retained with updated values + 4 new-code entries added (LL-1, SR-4, LDR-1, MDR-1) carrying the same dimensional data with `_legacy_key` back-references.
+- **Tacoma:** 3 UR-X primaries retained + 3 legacy R-1/R-2/R-3 `_repealed` stubs added (mirror of the Redmond stub pattern — clean for a full 1:1 rename).
+- **Redmond:** already dual-form (NR + NMF + R-4/R-6/R-8 stubs). No change.
+- **Everett:** already dual-form (NR-C + NR + R-1 + R-2 live entries). No change.
+
+Matrix count: 42 entries (up from 35). Any Tier-1 WA city added going forward should ship both naming forms where a rename is detected.
 
 ---
 
