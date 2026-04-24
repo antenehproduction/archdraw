@@ -220,6 +220,74 @@ window.ZONING_MATRIX_DB = {
     _unverified: ['frontSetback', 'rearSetback', 'maxStories', 'maxFAR', 'parkingPerUnit'],
   },
 
+  // ── Redmond, WA ──
+  // MAJOR STRUCTURAL RENAME: Ord 3186 (adopted 2024-11-19, eff. 2025-01-01)
+  // consolidated 11 residential zones into 2 — NR (Neighborhood Residential)
+  // and NMF (Neighborhood Multifamily). R-4, R-6, R-8 are all REPEALED and
+  // remapped to NR. Legacy keys ship as repealed-stub entries below for
+  // graceful resolution of stale parcel data.
+  'redmond,wa:NR': {
+    jurisdiction: 'Redmond', state: 'WA', district: 'NR',
+    fullName: 'Neighborhood Residential',
+    codeURL: 'https://redmond.municipal.codes/RZC/21.08.143',
+    frontSetback: null, rearSetback: null, leftSetback: null, rightSetback: null,
+    maxHeightFt: null, maxStories: null,
+    maxFAR: null,
+    maxLotCoverage: 60,
+    parkingPerUnit: 0,
+    aduAllowed: true, aduMaxSqFt: 1000,
+    densityBonus: 'HB 1110 (Tier 1, eff. 2023-07-23): 4 du citywide by right; 6 du within 0.25mi major transit. Redmond went further via Ord 3186 (eff. 2025-01-01): NR allows 6 du/lot citywide by right; 8 du/lot with affordable-housing path per RZC 21.20.060.A.1.b.ii (2 bonus units at affordability threshold).',
+    sb9Eligible: false,
+    notes: 'DISTRICT RENAME: Ord 3186 (adopted 2024-11-19, eff. 2025-01-01) repealed R-4, R-6, R-8 and 8 other residential codes; consolidated into NR + NMF. NR is a single envelope citywide — no lot-size tiering. Lot coverage 60% confirmed (RZC 21.08.143B.4); setbacks/height/stories live in Table 21.08.143B.3, which is 403-blocked on both redmond.municipal.codes and redmond.gov. Light-rail major-transit stations for HB 1110 0.25mi bonus: Overlake Village + Redmond Technology (opened 2024-04-27) and Downtown Redmond (opened 2025); citywide 6-du baseline subsumes the transit bonus in practice. WA HB 1337 (eff. 2025-07-01): 2 ADUs/lot, no owner-occ, no ADU parking, min ADU 1,000 sf — Ord 3186 amended RZC 21.08.220 to align; detached ADU may abut alley/ROW lot line. WA SB 5184 (May 2025): caps multifamily parking at 0.5/unit; Redmond already eliminated minimums Jan 2025; codification deadline 2027-01-27. URBAN CENTERS — DO NOT USE NR FOR: Overlake (RZC Ch. 21.12, OV-1..OV-7, towers up to 200+ft); Downtown (RZC Ch. 21.10, DT zones); Marymoor Village (RZC Ch. 21.13). Parcels inside those overlays use independent zone codes.',
+    verifiedDate: '2026-04-24',
+    _legacy_key: ['redmond,wa:R-4', 'redmond,wa:R-6', 'redmond,wa:R-8'],
+    _unverified: ['frontSetback', 'rearSetback', 'leftSetback', 'rightSetback', 'maxHeightFt', 'maxStories', 'maxFAR'],
+  },
+  'redmond,wa:NMF': {
+    jurisdiction: 'Redmond', state: 'WA', district: 'NMF',
+    fullName: 'Neighborhood Multifamily',
+    codeURL: 'https://redmond.municipal.codes/RZC/21.08.147',
+    frontSetback: null, rearSetback: null, leftSetback: null, rightSetback: null,
+    maxHeightFt: null, maxStories: null,
+    maxFAR: null,
+    maxLotCoverage: 60,
+    parkingPerUnit: 0,
+    aduAllowed: true, aduMaxSqFt: 1000,
+    densityBonus: 'HB 1110 (Tier 1): same citywide 6-du baseline as NR; NMF allows higher density measured by FAR. Parcels within 0.25mi of Overlake Village / Redmond Technology / Downtown Redmond Link stations qualify for transit-area maximums under RZC 21.20.060.',
+    sb9Eligible: false,
+    notes: 'NEW ZONE created by Ord 3186 (eff. 2025-01-01) as part of 11-zone consolidation. Replaces higher-density predecessors (R-10 and above) — not a direct successor to R-4/R-6/R-8. Uses FAR-based density: min FAR 0.44 confirmed (RZC 21.08.147), max FAR not retrievable (403 on chart). Lot coverage 60% confirmed. Parking eliminated 2025-01-01. Same HB 1110 / HB 1337 / SB 5184 statewide overlays apply as NR. Same urban-center exclusions: do NOT use NMF for parcels inside Overlake (Ch. 21.12), Downtown (Ch. 21.10), or Marymoor Village (Ch. 21.13). Estimated NMF height range pre-confirmation 40–60ft but unverified.',
+    verifiedDate: '2026-04-24',
+    _unverified: ['frontSetback', 'rearSetback', 'leftSetback', 'rightSetback', 'maxHeightFt', 'maxStories', 'maxFAR'],
+  },
+  // Legacy stubs — resolve gracefully when stale parcel data tags an old code
+  'redmond,wa:R-4': {
+    jurisdiction: 'Redmond', state: 'WA', district: 'R-4',
+    fullName: 'R-4 (REPEALED 2025-01-01 — see redmond,wa:NR)',
+    codeURL: 'https://redmond.municipal.codes/RZC/21.08.060',
+    notes: 'Repealed by Ordinance 3186, eff. 2025-01-01. Successor: redmond,wa:NR.',
+    verifiedDate: '2026-04-24',
+    _repealed: true,
+    _replacedBy: 'redmond,wa:NR',
+  },
+  'redmond,wa:R-6': {
+    jurisdiction: 'Redmond', state: 'WA', district: 'R-6',
+    fullName: 'R-6 (REPEALED 2025-01-01 — see redmond,wa:NR)',
+    codeURL: 'https://redmond.municipal.codes/RZC/21.08.090',
+    notes: 'Repealed by Ordinance 3186, eff. 2025-01-01. Successor: redmond,wa:NR.',
+    verifiedDate: '2026-04-24',
+    _repealed: true,
+    _replacedBy: 'redmond,wa:NR',
+  },
+  'redmond,wa:R-8': {
+    jurisdiction: 'Redmond', state: 'WA', district: 'R-8',
+    fullName: 'R-8 (REPEALED 2025-01-01 — see redmond,wa:NR)',
+    codeURL: 'https://redmond.municipal.codes/RZC/21.08.100',
+    notes: 'Repealed by Ordinance 3186, eff. 2025-01-01. Successor: redmond,wa:NR.',
+    verifiedDate: '2026-04-24',
+    _repealed: true,
+    _replacedBy: 'redmond,wa:NR',
+  },
+
   // ── San Francisco, CA ──
   'san francisco,ca:RH-1': {
     jurisdiction: 'San Francisco', state: 'CA', district: 'RH-1',

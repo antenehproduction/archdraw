@@ -4,11 +4,12 @@ Daily backlog state per `PROJECT_COORDINATOR.md` §9. Most recent day at the top
 
 ---
 
-## 2026-04-24 — P0-3 Tacoma + Everett + permission unblock
+## 2026-04-24 — P0-3 Tacoma + Everett + Redmond + permission unblock
 
 ### Moved to done today
 - **P0-3 Tacoma** — `tacoma,wa:UR-1`, `UR-2`, `UR-3` registered in `data/zoning-matrix.js` with full primary fields populated. — `zoning-legal`, commit `42076ae`. **Higher quality than Bellevue:** Tacoma's city-side cms.tacoma.gov + cityoftacoma.org sources weren't blocked the way `bellevue.municipal.codes` was, so all four setbacks, height, FAR, parking, and ADU data are confirmed. Only `maxStories` and `maxLotCoverage` are in `_unverified[]` (TMC controls density via FAR + amenity-area, not story count or coverage %).
-- **P0-3 Everett** — `everett,wa:R-1`, `R-2` registered in `data/zoning-matrix.js`. — `zoning-legal`. **Quality between Tacoma and Bellevue.** Confirmed: 28ft height (EMC 19.22.020), 35% / 40% lot coverage (EMC 19.06.010), 5ft side setbacks, ADU rules aligned with HB 1337, HB 1110 compliance via Ord 4102-25 (eff. 2025-07-08). Unverified: front/rear setbacks (Table 6-2 in EMC 19.06.020 sat behind same 403 wall as Bellevue — `everett.municipal.codes` and `everettwa.gov` DocumentCenter both blocked WebFetch); `maxStories` (code uses height not stories); `maxFAR` (Everett uses lot coverage + height envelope, no FAR); `parkingPerUnit` (Table 34-1 not retrievable; SB 5184 in compliance transition until ~early 2027). District codes unchanged — no Tacoma-style rename.
+- **P0-3 Everett** — `everett,wa:R-1`, `R-2` registered in `data/zoning-matrix.js`. — `zoning-legal`, commit `41e66dc`. **Quality between Tacoma and Bellevue.** Confirmed: 28ft height (EMC 19.22.020), 35% / 40% lot coverage (EMC 19.06.010), 5ft side setbacks, ADU rules aligned with HB 1337, HB 1110 compliance via Ord 4102-25 (eff. 2025-07-08). Unverified: front/rear setbacks (Table 6-2 in EMC 19.06.020 sat behind same 403 wall as Bellevue — `everett.municipal.codes` and `everettwa.gov` DocumentCenter both blocked WebFetch); `maxStories` (code uses height not stories); `maxFAR` (Everett uses lot coverage + height envelope, no FAR); `parkingPerUnit` (Table 34-1 not retrievable; SB 5184 in compliance transition until ~early 2027). District codes unchanged — no Tacoma-style rename.
+- **P0-3 Redmond** — registered as `redmond,wa:NR` + `redmond,wa:NMF` + 3 legacy stub entries (`R-4`, `R-6`, `R-8` with `_repealed: true`, `_replacedBy: 'redmond,wa:NR'`). — `zoning-legal`. **Biggest structural change of the project so far:** Redmond Ord 3186 (adopted 2024-11-19, eff. 2025-01-01) consolidated **11 residential zones into 2** — NR (Neighborhood Residential) + NMF (Neighborhood Multifamily). All R-X codes the manual asked for are abolished; remapped to NR. Confirmed: lot coverage 60%, parking eliminated, NR allows 6 du/lot citywide by right (8 with affordability bonus — exceeds HB 1110's 4-du Tier 1 floor), NMF min FAR 0.44, ADU rules aligned with HB 1337. Unverified: all setbacks + height + stories + maxFAR (Table 21.08.143B.3 sits behind 403 on both `redmond.municipal.codes` and `redmond.gov` — same blocking pattern as Bellevue/Everett). New schema field `_repealed: true` introduced for legacy stubs — additive, no consumer should iterate them.
 - **Permission unblock** — owner removed `Bash(git push:*)` and `Write(.claude/**)` from `.claude/settings.json` deny list (origin/main commits `71d7147`, `8a87f46`, `7aa6598`). Branch sync via `git pull --no-rebase --no-edit`; merge commits `84ee446` and `33024ba`. Yesterday's blocked push (3 commits) finally landed on origin.
 
 ### Major finding — manual amendment proposed
@@ -40,13 +41,16 @@ Tacoma research surfaced two statewide laws affecting *every* WA city in P0-3, b
 9. **Tacoma R→UR rename.** Amend `PROJECT_COORDINATOR.md` §P0-3 city list to `UR-1/UR-2/UR-3`?
 10. **WA statewide laws HB 1337 + SB 5184.** Model as first-class data (sibling to HB 1110 in P0-4) or leave per-city in `notes`?
 11. **NEW — Overlay schema gap.** `zoning-matrix.js` doesn't model overlays (Everett's Metro Everett / Historic / R-2(A); Bellevue's Shoreline; Seattle's MHA). Add `overlays[]` field to entries vs. sibling `data/zoning-overlays.js`? This blocks accurate output for any parcel that sits inside an overlay boundary — not rare in dense WA cities.
-12. **NEW — `everett.municipal.codes` 403 pattern.** Same blocking host as `bellevue.municipal.codes`. Ship a `site-intel` task to fetch chart HTML via the Vercel proxy (which has a different egress IP) instead of WebFetch, so the remaining 7 P0-3 cities can be researched without manual chart-copying. Estimate: <1 day, unblocks Bellevue back-fill + cleaner Everett.
+12. **`everett.municipal.codes` / `bellevue.municipal.codes` / `redmond.municipal.codes` 403 pattern.** Confirmed across 3 cities now. Spike a `site-intel` task to fetch chart HTML via the Vercel proxy (different egress IP) instead of WebFetch. **Strong recommend before further P0-3 cities** — every blocked city has shipped with setback/height nulls and the pattern will repeat. Estimate: <1 day; unblocks Bellevue + Everett + Redmond back-fill plus the remaining 6 cities.
+13. **NEW — Schema field `_repealed` introduced for Redmond legacy stubs.** First time a matrix entry signals "this district no longer exists; route to `_replacedBy`." Decision: should `index.html`'s `runPhase_zone` resolver follow `_replacedBy` automatically (transparent redirect with a UI badge), or should it surface the rename to the user as an explicit migration prompt? Different UX implications.
+14. **NEW — Redmond urban-center exclusions.** NR/NMF entries explicitly say "do NOT use for parcels inside Overlake / Downtown / Marymoor Village." Without overlay-aware geometry checks (decision #11), there's no enforcement — site-intel could match a downtown parcel to NR and the renderer would happily draw a 60%-coverage 6-du SF result on a tower-zone lot. Decisions #11 and #14 are tightly coupled; recommend resolving together.
 
 ### Launch checklist (§6) delta
-- Bellevue partial → unchanged.
-- Tacoma → first WA city with **fully populated primary fields** (only stories/coverage in `_unverified`).
-- Everett → second WA city; partial-quality like Bellevue (front/rear setbacks unverified) but more complete than Bellevue (height, side setbacks, lot coverage, ADU all confirmed).
-- WA city count: **5 of 10 jurisdictions present in matrix** (Seattle + Shoreline pre-existing, Bellevue + Tacoma + Everett added). Only Tacoma fully satisfies the "no missing required fields outside `_unverified[]`" bar.
+- Bellevue partial → unchanged (chart-fetch unblock would back-fill).
+- Tacoma → fully populated primary fields (only stories/coverage in `_unverified`).
+- Everett → partial; height + side + coverage + ADU confirmed; front/rear blocked.
+- Redmond → district-rename + chart-fetch blocked; 11→2 consolidation makes legacy R-4/R-6/R-8 keys obsolete; high-confidence on density/coverage/parking/ADU; setbacks/height blocked.
+- WA city count: **6 of 10 jurisdictions present in matrix** (Seattle + Shoreline pre-existing, Bellevue + Tacoma + Everett + Redmond added). Only Tacoma fully satisfies the "no missing required fields outside `_unverified[]`" bar; the other three are partial.
 
 ### Everett-specific items surfaced (uncaptured by current matrix schema)
 1. **R-2(A) variant zone** — alley-access subset of R-2 with reduced lot sizes (4,500 sf min). Requires parcel-level overlay flag, not a separate matrix entry.
@@ -57,8 +61,9 @@ Tacoma research surfaced two statewide laws affecting *every* WA city in P0-3, b
 These overlay-checks are a **schema gap** in `data/zoning-matrix.js`: the matrix is keyed `<jurisdiction>:<district>` but doesn't model overlays. Either add an `overlays[]` field to entries, or create a sibling `data/zoning-overlays.js` keyed by jurisdiction. Routing: `zoning-legal` + `drawing-engine` (downstream consumer). New decision item below.
 
 ### Still in progress / next up
-- 7 of 10 P0-3 cities remaining: Redmond, Kirkland, Renton, Bothell, Auburn, Kent, Federal Way.
-- Recommend: **Redmond next** (4th-largest tech-corridor city in King Co; pairs naturally with already-shipped Bellevue).
+- 6 of 10 P0-3 cities remaining: Kirkland, Renton, Bothell, Auburn, Kent, Federal Way.
+- Recommend: **Kirkland next** (5th-largest King Co city; East Link light rail terminus by 2025; HB 1110 Tier 1).
+- **Strong recommendation:** unblock chart-fetch (decision item #12) before pushing further into the priority list. Bellevue, Everett, and Redmond all have setback/height fields nulled because of `*.municipal.codes` 403. Without an unblock spike, every remaining city likely repeats the same pattern. A site-intel proxy-fetch task should land 4 of 4 of those nulls back as confirmed values.
 
 ---
 
