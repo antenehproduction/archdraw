@@ -167,20 +167,25 @@ window.PERMIT_PORTAL_REGISTRY = {
     _sourceMethod: 'public-portal-only',
   },
 
-  // Tacoma — ArcGIS Hub dataset "Accela Permit Data (Tacoma)" updated daily.
-  // Dataset item id: a12d6fbf58e4434b8ff5070c09646f19. Underlying FeatureServer
-  // URL not yet confirmed (Hub indirection layer + 403 on direct probe).
+  // Tacoma — VERIFIED via GitHub Actions ArcGIS schema-fetch (round 5l,
+  // 2026-04-25). Hub item a12d6fbf58e4434b8ff5070c09646f19 resolves to
+  // services3.arcgis.com/SCwJH1pD8WSn5T5y/arcgis/rest/services/accela_permit_data/FeatureServer/0
+  // — single layer "Accela Permit Data", 25 cols, point geometry,
+  // address field `address_line_1`. Updated daily.
   tacoma: {
     city: 'Tacoma', state: 'WA',
     portalURL: 'https://www.tacomapermits.org/',
     hubURL: 'https://tacomaopendata-tacoma.hub.arcgis.com/datasets/accela-permit-data-tacoma',
     arcgisItemId: 'a12d6fbf58e4434b8ff5070c09646f19',
+    arcgisServiceURL: 'https://services3.arcgis.com/SCwJH1pD8WSn5T5y/arcgis/rest/services/accela_permit_data/FeatureServer/0',
     landUseHubURL: 'https://geohub.cityoftacoma.org/datasets/d3ec4be073384acbad77a9c51b519130',
-    searchByAddress: null,
-    notes: 'Accela permit data published to Tacoma Open Data Hub daily. Underlying FeatureServer URL has not been verified through agent egress (Hub redirect + 403). Owner-browser test recommended before the searchByAddress builder is wired.',
+    searchByAddress: (addr) =>
+      `https://services3.arcgis.com/SCwJH1pD8WSn5T5y/arcgis/rest/services/accela_permit_data/FeatureServer/0/query?where=upper(address_line_1)+like+upper('%25${encodeURIComponent(addr)}%25')&outFields=*&f=json&resultRecordCount=20`,
+    radiusSearch: (lat, lon, miles = 2) =>
+      `https://services3.arcgis.com/SCwJH1pD8WSn5T5y/arcgis/rest/services/accela_permit_data/FeatureServer/0/query?geometry=${lon},${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&distance=${miles * 1609.34}&units=esriSRUnit_Meter&outFields=*&f=json&resultRecordCount=50`,
+    notes: 'Tacoma "Accela Permit Data" via Tacoma Open Data Hub item a12d6fbf58e4434b8ff5070c09646f19. Schema verified via GitHub Actions workflow 2026-04-25 (round 5l): 25 columns including address_line_1 (address field), point geometry, daily updates. Esri-style address-LIKE query supported on the FeatureServer endpoint.',
     _verifiedDate: '2026-04-25',
-    _sourceMethod: 'public-portal-only',
-    _unverifiedEndpoint: true,
+    _sourceMethod: 'github-actions-schema-fetch',
   },
 
   // Pierce County — VERIFIED via GitHub Actions schema-fetch (round 5h,
@@ -210,18 +215,24 @@ window.PERMIT_PORTAL_REGISTRY = {
     _sourceMethod: 'github-actions-schema-fetch',
   },
 
-  // Snohomish County — Active Permits dataset hosted on the snoco-gis ArcGIS
-  // Online org. The org's services6.arcgis.com host (z6WYi9VRHfgwgtyW) is
-  // confirmed for zoning + parcels; permits service name not yet verified.
+  // Snohomish County — VERIFIED via ArcGIS schema-fetch round 5l (2026-04-25).
+  // Org host services6.arcgis.com/z6WYi9VRHfgwgtyW enumerates 481 services;
+  // 4 permit-relevant: Building_Applications_Under_Review, Building_Permits_
+  // Under_Construction, Issued_Permits, D8_Permits. `Issued_Permits` is the
+  // closest semantic match to the "Permits - <County>" pattern other counties
+  // use; declared as arcgisServiceURL so the next schema-fetch run resolves
+  // its field schema (round 5m). Field-level graduation (searchByAddress)
+  // lands once that run returns column names.
   snohomish_county_unincorp: {
     city: 'Snohomish County (unincorporated)', state: 'WA',
     portalURL: 'https://snohomish-county-open-data-portal-snoco-gis.hub.arcgis.com/datasets/snoco-gis::active-permits-1',
     arcgisOrgHost: 'https://services6.arcgis.com/z6WYi9VRHfgwgtyW',
+    arcgisServiceURL: 'https://services6.arcgis.com/z6WYi9VRHfgwgtyW/arcgis/rest/services/Issued_Permits/FeatureServer/0',
     pdsRecordsURL: 'https://snohomishcountywa.gov/3920/Online-Permitting',
     searchByAddress: null,
-    notes: 'snoco-gis Active Permits FeatureServer URL not yet confirmed; the org host services6.arcgis.com/z6WYi9VRHfgwgtyW is verified for sibling layers (zoning, parcels). Likely path: <orgHost>/arcgis/rest/services/Active_Permits/FeatureServer/0 — pending owner-browser verification. Site-intel can fall back to the PDS Online Records portal until then.',
+    notes: 'snoco-gis Issued_Permits service identified via org-catalog enumeration (481 services). Field schema awaits next fetch-schemas workflow run. Three sibling permit services also exist: Building_Applications_Under_Review, Building_Permits_Under_Construction, D8_Permits — could be added as fallback candidates if Issued_Permits proves wrong.',
     _verifiedDate: '2026-04-25',
-    _sourceMethod: 'partial-discovery',
+    _sourceMethod: 'github-actions-schema-fetch',
     _unverifiedEndpoint: true,
   },
 

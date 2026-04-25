@@ -189,7 +189,68 @@ git push (this commit)
 - ArcGIS endpoints (Tacoma Hub, Snohomish snoco-gis) aren't yet covered by this pipeline — Socrata only. Adding ArcGIS support is a parallel script that hits `<host>/arcgis/rest/services?f=json` to enumerate FeatureServers; planned follow-up.
 - If a host blocks GitHub Actions runners too, fall back to (a) Cloudflare Workers paid tier (different egress) or (b) the existing scripts/extract-viewsource.py + owner manual-copy path.
 
-### Round 5k — DATA-2 fix (last active CLAUDE.md bug closes; this commit)
+### Round 5l — Tacoma GRADUATED, Snohomish narrowed, P0-6 RESOLVED (this commit)
+
+**Owner update:** Vercel project list confirmed — only `archdraw` exists. **Decision #5 (§8-Q6) RESOLVED, P0-6 closed:** `archdraw` is canonical; no second project to delete or merge. The `production` Vercel project mentioned in `PROJECT_COORDINATOR.md` §8-Q6 was a hypothetical based on incomplete inventory.
+
+**P0-5 progress: 5 of 6 entries now live; 1 narrowed to a specific service URL pending field schema.**
+
+#### Tacoma — GRADUATED via ArcGIS schema-fetch
+Bot branch `bot/schema-update-20260425-1952` resolved the Tacoma Hub item:
+- itemName: `'Accela Permit Data (Tacoma)'`
+- serviceURL: `https://services3.arcgis.com/SCwJH1pD8WSn5T5y/arcgis/rest/services/accela_permit_data/FeatureServer/0`
+- 25 columns, point geometry, address field `address_line_1`, daily updates
+
+`data/permit-registry.js` Tacoma entry updates:
+- `arcgisServiceURL` field added (the resolved hosted FeatureServer URL)
+- `searchByAddress` uses Esri-style `where=upper(address_line_1) like '%X%'`
+- `radiusSearch` uses Esri-style geometry buffer at 1609.34 m/mile
+- `_unverifiedEndpoint` REMOVED
+- `_sourceMethod: 'github-actions-schema-fetch'`
+
+#### Snohomish County — narrowed to `Issued_Permits` (still partially unverified)
+Org-catalog enumeration returned 481 services on `services6.arcgis.com/z6WYi9VRHfgwgtyW`. Permit-relevant subset:
+- `Building_Applications_Under_Review`
+- `Building_Permits_Under_Construction`
+- **`Issued_Permits`** — closest semantic match to the "Permits - X County" pattern other counties use
+- `D8_Permits` (development engineering)
+
+Selected `Issued_Permits` and added explicit `arcgisServiceURL` to the entry. The next `fetch-schemas` workflow run (triggered by this commit's `data/permit-registry.js` change) will resolve the field schema. Once columns are known, field-level graduation (`searchByAddress` + `radiusSearch` builders) lands in round 5m.
+
+If `Issued_Permits` turns out to have no address column, the three sibling services are documented as fallback candidates in the entry's notes.
+
+#### Pulled into working tree
+- `data/_arcgis-schemas.json` — Tacoma + Snohomish org-catalog results from bot branch `1952`
+- `data/_socrata-schemas.json` — refreshed metadata (no significant deltas vs round 5h)
+
+### P0-5 final state after this commit
+
+| Entry | State | Live endpoint |
+|---|---|---|
+| seattle | LIVE | data.seattle.gov socrata 76t5-zqzr (originaladdress1, fixed round 5e) |
+| sf, nyc, la, austin, boston, chicago, portland | LIVE pre-existing | (Socrata datasets verified by schema fetch) |
+| denver, lasvegas, sandiego, atlanta, miamidade, minneapolis, dc | LIVE pre-existing | (ArcGIS feature services) |
+| **mybuildingpermit** | LIVE (web-only, decision #22) | permitsearch.mybuildingpermit.com |
+| **tacoma** | **LIVE (this commit)** | services3.arcgis.com/.../accela_permit_data/FeatureServer/0 |
+| **pierce_county_unincorp** | LIVE (round 5h) | internal.open.piercecountywa.gov socrata nhnt-v7ka |
+| **snohomish_county_unincorp** | NARROWED to `Issued_Permits` service (this commit); awaits field schema (round 5m) | services6.arcgis.com/.../Issued_Permits/FeatureServer/0 |
+| **everett** | LIVE (round 5c) | data.everettwa.gov socrata 3w3u-656c |
+
+**P0-5 status:** 5 of 6 WA-launch entries live; Snohomish field-schema graduation pending one workflow cycle. Push of this commit triggers it. Effective full-launch coverage when round 5m lands.
+
+### What's needed to start P0-1 (hosted-key auth)
+
+Owner-decision items still blocking:
+
+| Decision | Question | Recommended path |
+|---|---|---|
+| **§7-A** Single-file vs. split | Should `index.html` (~250 KB inline `<script>`) split into per-concern files (`lib/auth.js`, `lib/proxy.js`, `lib/render.js`) or migrate to Vite + framework? | **Option 2: split data + lib only** — keep `index.html` orchestration shell; add `lib/*.js` for auth + proxy + heavy rendering. Defer Vite/framework migration to P3. Smallest disruption, biggest near-term review-quality win. |
+| **§7-C** Model routing | Sonnet-for-all vs. per-task-class routing (Sonnet for fast deterministic, Opus for high-stakes reasoning)? Per-call cost shifts from user (BYOK) to ArchDraw (hosted-key). | **Per-task-class:** Opus for `architect-advisor` RDP detection + `zoning-legal` matrix authoring; Sonnet for `site-intel`, `use-case-advisor`, `drawing-engine` parameter extraction. Cost upside ~3-5× lower than all-Opus; quality nearly equal. |
+| **§8-Q1** Pricing | Free-trial allowance + paid tier price + quota? | **Suggested:** Free trial = 1 analysis (current single-shot user expectation). Paid tier $X/mo ($29 / $59 / $99 are the standard SaaS slots) with N analyses/mo (e.g., 5 / 25 / 100). Owner decides the X and N. |
+
+When the three above are answered (even tentatively), the P0-1 implementation plan is fully spec'd in `PROJECT_COORDINATOR.md` §P0-1 — Supabase Auth + Edge Functions for `/api/ai/*`, `users`/`analyses`/`usage_events` tables, feature flag `HOSTED_KEY` with BYOK preserved in parallel. Estimate: 5–7 days of focused work. The Supabase connection landed today (round 5j note); the data layer is ready.
+
+### Round 5k — DATA-2 fix (last active CLAUDE.md bug closes)
 
 **DATA-2 RESOLVED — cost-estimate inflation adjustment.** Hard-coded $/SF baselines (`$380` CA/WA, `$220` other) were anchored to 2024-Q1 publication and never adjusted for construction-cost inflation since.
 
