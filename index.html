@@ -1094,7 +1094,12 @@ async function runPhase_record(){
           // Build the query URL — request Esri JSON (more universally supported than
           // f=geojson on older ArcGIS Server installations like King Co WA).
           // Geometry comes back as Esri rings; we normalize to GeoJSON-style below.
-          const q=`?geometry=${S.lon},${S.lat}&geometryType=esriGeometryPoint&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=true&f=json`;
+          // distance=20m buffer snaps geocoded street-centerline points (Nominatim
+          // typically returns ROW points) to the adjacent parcel polygon. 20m is
+          // wider than the typical street ROW (~12m to centerline) and tighter
+          // than residential lot widths so a single parcel matches, not two
+          // adjacent. Same pattern proven by scripts/smoke-snohomish-parcels.py.
+          const q=`?geometry=${S.lon},${S.lat}&geometryType=esriGeometryPoint&spatialRel=esriSpatialRelIntersects&distance=20&units=esriSRUnit_Meter&outFields=*&returnGeometry=true&f=json&inSR=4326&outSR=4326`;
           const url=reg.parcelQuery+(reg.parcelQuery.includes('?')?q.replace(/^\?/,'&'):q);
           try{
             const rr=await Promise.race([proxyFetch(`/arcgis?url=${encodeURIComponent(url)}`,url),new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),8000))]);

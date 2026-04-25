@@ -189,7 +189,37 @@ git push (this commit)
 - ArcGIS endpoints (Tacoma Hub, Snohomish snoco-gis) aren't yet covered by this pipeline — Socrata only. Adding ArcGIS support is a parallel script that hits `<host>/arcgis/rest/services?f=json` to enumerate FeatureServers; planned follow-up.
 - If a host blocks GitHub Actions runners too, fall back to (a) Cloudflare Workers paid tier (different egress) or (b) the existing scripts/extract-viewsource.py + owner manual-copy path.
 
-### Round 5f — §P0-2 ACCEPTANCE MET (this commit)
+### Round 5g — Federal Way GRADUATED + buffer pattern in runPhase_record + Pierce re-trigger (this commit)
+
+**Three tasks completed in one batch:**
+
+#### 1. Federal Way RS 7.2 / RS 9.6 chart-integrated
+Owner-uploaded FWRC 19.200.010 "Detached dwelling unit" chart parsed manually (per-use FWRC layout — different from Bothell's column-per-zone; subdivided header structure with "In RS 35.0 zones:" / "Otherwise:" sub-rows that group RS 15.0 / 9.6 / 7.2 / 5.0 together). Chart-confirmed values for the "Otherwise" group (RS 7.2 + RS 9.6 fall here):
+
+| Field | Value | Source |
+|---|---|---|
+| frontSetback | 20 ft | sub-row value cell |
+| rearSetback | 5 ft | sub-row value cell |
+| leftSetback / rightSetback | 5 ft each | note 3 (10 ft on corner-lot street side) |
+| maxHeightFt | 30 ft above ABE | universal value cell |
+| maxLotCoverage | 60% | note 6c/6d |
+| parkingPerUnit | (chart 2; matrix 1) | chart says 2; matrix carries 1 to reflect SB 5184 cap which `applyWaStatewide` enforces dynamically |
+
+Both `federal way,wa:RS 7.2` and `federal way,wa:RS 9.6` graduated: `_sourceMethod: 'manual'`, `_sourceSnapshot: '2026-04-25'`, `_unverified: ['maxStories', 'maxFAR']` only (FWRC uses height-not-stories and lot-coverage-not-FAR — those nulls are by-design, not gaps).
+
+End-to-end test: `effectiveZoning('Federal Way', 'RS 7.2')` returns `{front:20, rear:5, side:5, height:30, coverage:60, units:4}` (HB 1110 base unit floor applied). Same for RS 9.6.
+
+**Decision #19 — RESOLVED.** Decision #20 (script extension for FWRC layout) deferred — Federal Way is the only city in scope using this layout pattern, so manual integration was higher-leverage than a one-use extractor. Note added to `scripts/integrate-charts.py` for future rounds (when Renton or Kent need re-integration).
+
+#### 2. `runPhase_record` 20m buffer adopted
+`index.html` line 1097 — county parcel query now includes `distance=20&units=esriSRUnit_Meter&inSR=4326&outSR=4326`. Same pattern proven by `scripts/smoke-snohomish-parcels.py` round 5f. Comment cites the smoke-test reference. No regression in tests; inline `<script>` parse-checked.
+
+This means production `runPhase_record` calls will now correctly snap Nominatim street-centerline geocodes to the adjacent parcel polygon (was previously silently returning no parcel for ~2 of 3 typical addresses).
+
+#### 3. Pierce fetch-schemas re-trigger
+Pushed via a comment-bump to `data/permit-registry.js` so the `fetch-schemas` workflow's path filter fires on this commit. New Pierce candidates (`9yt4-rd9g` web-discovered "Permits - Pierce County" + `nhnt-v7ka`) get resolved through GitHub-runner egress. If the workflow opens a `bot/schema-update-*` PR with `9yt4-rd9g` carrying a permit-shaped column set + an address column, `sync-permit-registry.py` will flag for graduation.
+
+### Round 5f — §P0-2 ACCEPTANCE MET
 
 **Snohomish smoke test green: 3 of 3.** GitHub Actions workflow run on commit `3e89539` returned valid parcels for all three addresses:
 

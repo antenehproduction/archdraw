@@ -200,7 +200,8 @@ window.PERMIT_PORTAL_REGISTRY = {
     portalURL: 'https://open.piercecountywa.gov/dataset/Permits-Pierce-County/bg5p-p534',
     socrataDataset: 'https://open.piercecountywa.gov/resource/bg5p-p534.json',
     socrataDatasetCandidates: [
-      // Round 5 promising additions (web-discovered 2026-04-25):
+      // Round 5 promising additions (web-discovered 2026-04-25; round 5g
+      // re-trigger of fetch-schemas workflow to validate via GH-runner egress):
       'https://open.piercecountywa.gov/resource/9yt4-rd9g.json',          // "Permits - Pierce County" (likely the right one)
       'https://internal.open.piercecountywa.gov/resource/nhnt-v7ka.json', // alternate "Permits" feed
       // Round 5 already-checked (kept for provenance — workflow skips dupes):
