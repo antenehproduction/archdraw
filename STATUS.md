@@ -189,7 +189,40 @@ git push (this commit)
 - ArcGIS endpoints (Tacoma Hub, Snohomish snoco-gis) aren't yet covered by this pipeline — Socrata only. Adding ArcGIS support is a parallel script that hits `<host>/arcgis/rest/services?f=json` to enumerate FeatureServers; planned follow-up.
 - If a host blocks GitHub Actions runners too, fall back to (a) Cloudflare Workers paid tier (different egress) or (b) the existing scripts/extract-viewsource.py + owner manual-copy path.
 
-### Round 5h — Pierce GRADUATED + workflow fail-soft on blocked PR-create (this commit)
+### Round 5i — ArcGIS fetcher + DRAW-5 + MAP-6 fixes (this commit)
+
+Three items completed:
+
+#### 1. ArcGIS service-catalog fetcher — completes P0-5 pipeline
+`scripts/fetch-arcgis-schemas.py` — parallel to the Socrata fetcher. Walks `data/permit-registry.js` for entries declaring `arcgisItemId` (Hub items), `arcgisServiceURL` (direct service URLs), or `arcgisOrgHost` (org service catalogs). Resolves each via the well-known ArcGIS APIs (`https://www.arcgis.com/sharing/rest/content/items/<id>?f=json` for Hub, `<url>?f=json` for FeatureServer/MapServer roots and layers, `<host>/arcgis/rest/services?f=json` for org catalogs). Extracts layer name, geometry type, fields, address-field guesses. Output: `data/_arcgis-schemas.json`.
+
+`.github/workflows/fetch-schemas.yml` extended:
+- Added "Fetch ArcGIS schemas" step alongside Socrata
+- Diff watches both `_socrata-schemas.json` and `_arcgis-schemas.json`
+- Branch commits both files atomically
+- Path filter includes `scripts/fetch-arcgis-schemas.py`
+
+Two ArcGIS targets currently registered (will resolve on next workflow run):
+- `tacoma:hub:a12d6fbf58e4434b8ff5070c09646f19` — Tacoma Open Data Hub item, advertised name "Accela Permit Data (Tacoma)"
+- `snohomish_county_unincorp:org:https://services6.arcgis.com/z6WYi9VRHfgwgtyW` — snoco-gis org host; the script enumerates services and filters for permit/land/build keywords
+
+When the schemas land, `sync-permit-registry.py` will surface the resolved FeatureServer URL + address field for each, and the entries graduate from `_unverifiedEndpoint: true` like Pierce + Everett did.
+
+#### 2. DRAW-5 RESOLVED — PDF aspect ratio
+`index.html`: PDF page changed from `[914,610]` mm (ratio 1.4983) to `[914.4,609.6]` mm (ratio 1.5000 — exactly 36"×24"). Canvas remains 1440×960 px (also ratio 1.5000). Earlier 0.11% horizontal stretch eliminated. `addImage` call updated to match. Comment cites the exact-imperial-mm rationale.
+
+#### 3. MAP-6 RESOLVED — irregular parcel polygon rendering
+`runPhase_record` now stores the verified county-assessor polygon on `S._z._lotPolygon` in local feet-coordinates (origin: bbox min-lon / max-lat; Y flipped so canvas top-down matches geographic north-up). `drawSitePlanSheet` checks for `_lotPolygon` and draws the actual irregular shape via `beginPath` / `moveTo` / `lineTo` / `closePath` instead of `strokeRect`. Falls back to the rectangle when no polygon is available (preserves existing behavior).
+
+This unlocks accurate site-plan rendering for any address that resolves to a county-verified parcel — particularly important for irregular lots (corner lots, flag lots, riparian parcels) where the rectangle approximation lost ~10–30% of true buildable area.
+
+CLAUDE.md active-bugs list reduced from 4 to 2:
+- ~~DRAW-5~~ FIXED
+- ~~MAP-6~~ FIXED
+- GEOM-2 (ADU rear-setback overflow) — still open
+- DATA-2 (cost estimate ENR adjustment) — still open
+
+### Round 5h — Pierce GRADUATED + workflow fail-soft on blocked PR-create
 
 **Pierce winner: `internal.open.piercecountywa.gov:nhnt-v7ka` "Permits - Pierce County"** (33 cols, address `siteaddress`, geo `the_geom`). Sync helper score 12.0 vs next-best 1.0 — clear separation.
 

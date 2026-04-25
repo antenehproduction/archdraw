@@ -23,6 +23,7 @@ on:
     paths:
       - '.github/workflows/fetch-schemas.yml'
       - 'scripts/fetch-socrata-schemas.py'
+      - 'scripts/fetch-arcgis-schemas.py'
       - 'scripts/sync-permit-registry.py'
       - 'data/permit-registry.js'
   schedule:
@@ -47,13 +48,16 @@ jobs:
       - name: Fetch Socrata schemas
         run: python3 scripts/fetch-socrata-schemas.py
 
+      - name: Fetch ArcGIS schemas
+        run: python3 scripts/fetch-arcgis-schemas.py
+
       - name: Open PR if schemas changed
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BASE_BRANCH: ${{ github.ref_name }}
         run: |
           set -euo pipefail
-          if git diff --quiet -- data/_socrata-schemas.json; then
+          if git diff --quiet -- data/_socrata-schemas.json data/_arcgis-schemas.json; then
             echo "No schema changes — nothing to do."
             exit 0
           fi
@@ -62,8 +66,8 @@ jobs:
           git config user.name  "archdraw-bot"
           git config user.email "archdraw-bot@users.noreply.github.com"
           git checkout -b "$BRANCH"
-          git add data/_socrata-schemas.json
-          git commit -m "fetch-schemas: refresh Socrata metadata (${DATE})"
+          git add data/_socrata-schemas.json data/_arcgis-schemas.json
+          git commit -m "fetch-schemas: refresh Socrata + ArcGIS metadata (${DATE})"
           git push origin "$BRANCH"
           # Try to open PR; treat failure as a soft warning (the branch is
           # already pushed, so the schemas are not lost — owner can open

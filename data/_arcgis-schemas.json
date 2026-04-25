@@ -1,0 +1,12 @@
+{
+  "_meta": {
+    "datasetCount": 0,
+    "failures": [
+      "tacoma:hub:a12d6fbf58e4434b8ff5070c09646f19 HTTP 403",
+      "snohomish_county_unincorp:org:https://services6.arcgis.com/z6WYi9VRHfgwgtyW HTTP 403"
+    ],
+    "generatedBy": "scripts/fetch-arcgis-schemas.py",
+    "schemaVersion": 1
+  },
+  "schemas": {}
+}

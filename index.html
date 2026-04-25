@@ -1130,6 +1130,12 @@ async function runPhase_record(){
                     S._z.lotWidth=w;S._z.lotDepth=d;
                     S._z._lotSource=`County Assessor (${reg.county} Co ArcGIS) \u2014 verified parcel polygon`;
                     S._z._lotConfidence='verified';
+                    // MAP-6: store polygon in local feet-coords (origin
+                    // bbox min-lon / max-lat; Y flipped so canvas top-down
+                    // matches geographic north-up). drawSitePlanSheet uses
+                    // _lotPolygon instead of a rectangle when present.
+                    const minLon=Math.min(...lons),maxLat=Math.max(...lats);
+                    S._z._lotPolygon=ring.map(p=>[(p[0]-minLon)*ftLon,(maxLat-p[1])*ftLat]);
                     L.info(`Lot dims from county polygon: ${w}\u00D7${d}ft (VERIFIED)`);
                     findings.push(`\u2705 **Lot dimensions from county polygon:** ${w}' \u00D7 ${d}' (verified surveyed data)`);
                   }
@@ -2973,10 +2979,20 @@ function drawSitePlanSheet(ctx,W,H){
   const scl=rawScl;
   const ox=PA.x+(PA.w-z.lotWidth*scl)/2;const oy=PA.y+(PA.h-z.lotDepth*scl)/2;
   const tx=x=>ox+x*scl;const ty=y=>oy+y*scl;const ft=v=>v*scl;
-  // Ground fill
-  ctx.fillStyle='rgba(40,60,30,.3)';ctx.fillRect(ox,oy,ft(z.lotWidth),ft(z.lotDepth));
-  // Property line
-  ctx.strokeStyle='#ff6555';ctx.lineWidth=2;ctx.setLineDash([10,7]);ctx.strokeRect(ox,oy,ft(z.lotWidth),ft(z.lotDepth));ctx.setLineDash([]);
+  // Ground fill + property line. MAP-6: when z._lotPolygon is set
+  // (verified parcel polygon from runPhase_record), draw the actual
+  // irregular shape instead of the bounding-box rectangle.
+  if(z._lotPolygon&&z._lotPolygon.length>=3){
+    const poly=z._lotPolygon;
+    ctx.beginPath();ctx.moveTo(tx(poly[0][0]),ty(poly[0][1]));
+    for(let i=1;i<poly.length;i++)ctx.lineTo(tx(poly[i][0]),ty(poly[i][1]));
+    ctx.closePath();
+    ctx.fillStyle='rgba(40,60,30,.3)';ctx.fill();
+    ctx.strokeStyle='#ff6555';ctx.lineWidth=2;ctx.setLineDash([10,7]);ctx.stroke();ctx.setLineDash([]);
+  }else{
+    ctx.fillStyle='rgba(40,60,30,.3)';ctx.fillRect(ox,oy,ft(z.lotWidth),ft(z.lotDepth));
+    ctx.strokeStyle='#ff6555';ctx.lineWidth=2;ctx.setLineDash([10,7]);ctx.strokeRect(ox,oy,ft(z.lotWidth),ft(z.lotDepth));ctx.setLineDash([]);
+  }
   ctx.fillStyle='rgba(255,101,85,.7)';ctx.font='8px JetBrains Mono,monospace';ctx.textAlign='center';ctx.fillText('PROPERTY LINE',ox+ft(z.lotWidth)/2,oy-10);
   ctx.textAlign='right';ctx.fillStyle='rgba(255,101,85,.5)';ctx.font='7px JetBrains Mono,monospace';
   ctx.fillText(`${z.lotWidth}'-0"`,ox+ft(z.lotWidth),oy+ft(z.lotDepth)+14);
@@ -3495,29 +3511,32 @@ async function exportPermitPDF(){
   const W=1440,H=960;// virtual sheet size in px for rendering
   const offscreen=document.createElement('canvas');offscreen.width=W;offscreen.height=H;
   const ctx=offscreen.getContext('2d');
-  // 36"×24" at 72dpi = 2592×1728pt in jsPDF; we'll use mm: 914×610mm
-  const doc=new jsPDF({orientation:'landscape',unit:'mm',format:[914,610]});
+  // DRAW-5 fix: 36"×24" Architectural D sheet is exactly 914.4×609.6mm
+  // (ratio 1.5000), matching the 1440×960 virtual canvas (ratio 1.5000).
+  // Earlier 914×610mm rounded to integers (ratio 1.4983) caused a 0.11%
+  // horizontal stretch in the rendered image.
+  const doc=new jsPDF({orientation:'landscape',unit:'mm',format:[914.4,609.6]});
   const addSheet=(drawFn,label)=>{
     ctx.clearRect(0,0,W,H);ctx.fillStyle='#ffffff';ctx.fillRect(0,0,W,H);
     // Temporarily set background to white for PDF
     const orig=S.zoom;const origPX=S.panX;const origPY=S.panY;S.zoom=1;S.panX=0;S.panY=0;
     drawFn(ctx,W,H);S.zoom=orig;S.panX=origPX;S.panY=origPY;
     const img=offscreen.toDataURL('image/jpeg',0.95);
-    doc.addImage(img,'JPEG',0,0,914,610);
+    doc.addImage(img,'JPEG',0,0,914.4,609.6);
     L.info(`PDF: added sheet ${label}`);
   };
   try{
     addSheet(drawCoverSheet,'A-0 Cover');
-    doc.addPage([914,610],'landscape');addSheet(drawSitePlanSheet,'A-1 Site Plan');
+    doc.addPage([914.4,609.6],'landscape');addSheet(drawSitePlanSheet,'A-1 Site Plan');
     const savedFloor=S.floor; // DRAW-6: save floor index before PDF loop
     for(let i=0;i<(S.plan.floors||[]).length;i++){
-      const fi=i;doc.addPage([914,610],'landscape');
+      const fi=i;doc.addPage([914.4,609.6],'landscape');
       addSheet((c,w,h)=>{S.floor=fi;drawFloorPlanSheet(c,w,h,fi)},`A-2 Floor ${i+1}`);
     }
     S.floor=savedFloor; // DRAW-6: restore after loop so canvas stays on user's floor
-    doc.addPage([914,610],'landscape');addSheet(drawElevationsSheet,'A-3 Elevations');
-    doc.addPage([914,610],'landscape');addSheet(drawSectionsSheet,'A-4 Sections');
-    doc.addPage([914,610],'landscape');addSheet(drawSchedulesSheet,'A-5 Schedules');
+    doc.addPage([914.4,609.6],'landscape');addSheet(drawElevationsSheet,'A-3 Elevations');
+    doc.addPage([914.4,609.6],'landscape');addSheet(drawSectionsSheet,'A-4 Sections');
+    doc.addPage([914.4,609.6],'landscape');addSheet(drawSchedulesSheet,'A-5 Schedules');
     const fname=`${(S.plan.meta.address||S.addr||'permit').replace(/[^a-z0-9]/gi,'_').substring(0,30)}_PermitSet.pdf`;
     doc.save(fname);L.info(`PDF saved: ${fname} (${doc.internal.pages.length} sheets)`);
     alert(`✓ PDF saved: ${fname}\n\n${doc.internal.pages.length} sheets:\nA-0 Cover · A-1 Site Plan · A-2 Floor Plan(s) · A-3 Elevations · A-4 Sections · A-5 Schedule`);
