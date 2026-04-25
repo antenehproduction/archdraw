@@ -189,6 +189,377 @@ git push (this commit)
 - ArcGIS endpoints (Tacoma Hub, Snohomish snoco-gis) aren't yet covered by this pipeline — Socrata only. Adding ArcGIS support is a parallel script that hits `<host>/arcgis/rest/services?f=json` to enumerate FeatureServers; planned follow-up.
 - If a host blocks GitHub Actions runners too, fall back to (a) Cloudflare Workers paid tier (different egress) or (b) the existing scripts/extract-viewsource.py + owner manual-copy path.
 
+### Round 5m — Vault landing UI + §7-A / §7-C decisions accepted (this commit, FEATURE BRANCH ONLY)
+
+**Owner decisions accepted:**
+- **§7-A** — Option 2 (split data + lib only). Defer Vite/framework migration to P3. ACCEPTED.
+- **§7-C** — Per-task-class model routing (Opus for `architect-advisor` RDP detection + `zoning-legal` matrix authoring; Sonnet elsewhere). ACCEPTED.
+- **§8-Q1** — Pricing deferred. P0-1 implementation will use placeholder paywall copy until pricing is set.
+
+These decisions structurally unblock P0-1 hosted-key auth. Implementation starts on owner go-ahead — UI work is the priority redirect for now.
+
+**Vault landing UI — first build, FEATURE BRANCH ONLY for visual review:**
+
+Goal: dramatic "secret-organization access granted" feel. Blueprint background, unrolling paper that holds the existing form fields, brief "CREDENTIALS VERIFIED" flash. Implementation:
+
+- **CSS** (~140 lines added before `</style>`):
+  - `#landing.vault` background: 5-layer composite — radial center glow + 80px major grid + 16px minor grid + dark navy → ink gradient
+  - `.vault-flash` — fixed-position centered banner, animates in/out 1.6s ease-out (gain letter-spacing + scale)
+  - `.brand` — fade-rise from -14px with 3px blur, 1.1s after flash starts
+  - `.scroll-paper` — wraps the form cards. 1.5s `unroll-paper` keyframe: clip-path inset(0 0 100% 0) → 0, with perspective rotateX(8°) → 0 + scaleY(.78 → 1.02 → 1) for the "unfurl from rolled tube" feel. Paper styled with subtle fiber texture, dashed inset outline, top-edge wood-tone "rolled top" highlight via `::before`, rotating red "CONFIDENTIAL · LICENSED MEMBER · ORDER ADI-#" stamp via `::after`
+  - All form fields re-skinned for paper context: dark navy text on cream, navy-on-cream inputs, brass-accent run button with red-stamp border
+  - `prefers-reduced-motion: reduce` skips animations entirely
+
+- **HTML** wrap inside `<div class="screen" id="landing">`:
+  - New `<div class="vault-flash">CREDENTIALS VERIFIED</div>` above brand
+  - New `<div class="scroll-paper">…</div>` wrapping `#api-card` and `.acard` (all existing form fields preserved verbatim, just re-skinned)
+
+- **JS toggle** at INIT: `if (!URLSearchParams.has('legacy')) document.getElementById('landing').classList.add('vault')`. So vault is the default; `?legacy=1` query string reverts to the original dark-card landing for A/B comparison.
+
+**Static-render check — green:** all 6 overlay items + 6 feature cards present, all critical IDs (#api-card, #addr-inp, #run-btn, etc.) intact, 3 new `@keyframes` registered, no parse errors in the inline `<script>`. File size 281 KB (+1.5 KB CSS).
+
+**Preview instructions for owner:**
+1. **Vercel preview deploy** (cleanest if Vercel is connected) — feature branch `claude/start-p0-4-archdraw-4P1yC` should auto-deploy to a preview URL. Open it; vault is default. Append `?legacy=1` to compare against the old UI.
+2. **Local preview** — `git fetch origin && git checkout claude/start-p0-4-archdraw-4P1yC && open index.html`. Same `?legacy=1` toggle.
+3. **GitHub Pages** — only serves `main`, so won't show this until merge.
+
+Animation choreography (for visual reference):
+- 0ms — page paints (blueprint background visible)
+- 100ms — "CREDENTIALS VERIFIED" flash fades in centered
+- 500ms — brand title rises into place
+- 1050ms — scroll-paper begins unrolling top-down
+- 1700ms — flash fades out, paper settles, form is interactive
+
+If the rendered look needs adjustment (color tone, pacing, less-or-more dramatic), tell me and I'll iterate. **NOT merging to main until you approve.**
+
+### Round 5l — Tacoma GRADUATED, Snohomish narrowed, P0-6 RESOLVED
+
+**Owner update:** Vercel project list confirmed — only `archdraw` exists. **Decision #5 (§8-Q6) RESOLVED, P0-6 closed:** `archdraw` is canonical; no second project to delete or merge. The `production` Vercel project mentioned in `PROJECT_COORDINATOR.md` §8-Q6 was a hypothetical based on incomplete inventory.
+
+**P0-5 progress: 5 of 6 entries now live; 1 narrowed to a specific service URL pending field schema.**
+
+#### Tacoma — GRADUATED via ArcGIS schema-fetch
+Bot branch `bot/schema-update-20260425-1952` resolved the Tacoma Hub item:
+- itemName: `'Accela Permit Data (Tacoma)'`
+- serviceURL: `https://services3.arcgis.com/SCwJH1pD8WSn5T5y/arcgis/rest/services/accela_permit_data/FeatureServer/0`
+- 25 columns, point geometry, address field `address_line_1`, daily updates
+
+`data/permit-registry.js` Tacoma entry updates:
+- `arcgisServiceURL` field added (the resolved hosted FeatureServer URL)
+- `searchByAddress` uses Esri-style `where=upper(address_line_1) like '%X%'`
+- `radiusSearch` uses Esri-style geometry buffer at 1609.34 m/mile
+- `_unverifiedEndpoint` REMOVED
+- `_sourceMethod: 'github-actions-schema-fetch'`
+
+#### Snohomish County — narrowed to `Issued_Permits` (still partially unverified)
+Org-catalog enumeration returned 481 services on `services6.arcgis.com/z6WYi9VRHfgwgtyW`. Permit-relevant subset:
+- `Building_Applications_Under_Review`
+- `Building_Permits_Under_Construction`
+- **`Issued_Permits`** — closest semantic match to the "Permits - X County" pattern other counties use
+- `D8_Permits` (development engineering)
+
+Selected `Issued_Permits` and added explicit `arcgisServiceURL` to the entry. The next `fetch-schemas` workflow run (triggered by this commit's `data/permit-registry.js` change) will resolve the field schema. Once columns are known, field-level graduation (`searchByAddress` + `radiusSearch` builders) lands in round 5m.
+
+If `Issued_Permits` turns out to have no address column, the three sibling services are documented as fallback candidates in the entry's notes.
+
+#### Pulled into working tree
+- `data/_arcgis-schemas.json` — Tacoma + Snohomish org-catalog results from bot branch `1952`
+- `data/_socrata-schemas.json` — refreshed metadata (no significant deltas vs round 5h)
+
+### P0-5 final state after this commit
+
+| Entry | State | Live endpoint |
+|---|---|---|
+| seattle | LIVE | data.seattle.gov socrata 76t5-zqzr (originaladdress1, fixed round 5e) |
+| sf, nyc, la, austin, boston, chicago, portland | LIVE pre-existing | (Socrata datasets verified by schema fetch) |
+| denver, lasvegas, sandiego, atlanta, miamidade, minneapolis, dc | LIVE pre-existing | (ArcGIS feature services) |
+| **mybuildingpermit** | LIVE (web-only, decision #22) | permitsearch.mybuildingpermit.com |
+| **tacoma** | **LIVE (this commit)** | services3.arcgis.com/.../accela_permit_data/FeatureServer/0 |
+| **pierce_county_unincorp** | LIVE (round 5h) | internal.open.piercecountywa.gov socrata nhnt-v7ka |
+| **snohomish_county_unincorp** | NARROWED to `Issued_Permits` service (this commit); awaits field schema (round 5m) | services6.arcgis.com/.../Issued_Permits/FeatureServer/0 |
+| **everett** | LIVE (round 5c) | data.everettwa.gov socrata 3w3u-656c |
+
+**P0-5 status:** 5 of 6 WA-launch entries live; Snohomish field-schema graduation pending one workflow cycle. Push of this commit triggers it. Effective full-launch coverage when round 5m lands.
+
+### What's needed to start P0-1 (hosted-key auth)
+
+Owner-decision items still blocking:
+
+| Decision | Question | Recommended path |
+|---|---|---|
+| **§7-A** Single-file vs. split | Should `index.html` (~250 KB inline `<script>`) split into per-concern files (`lib/auth.js`, `lib/proxy.js`, `lib/render.js`) or migrate to Vite + framework? | **Option 2: split data + lib only** — keep `index.html` orchestration shell; add `lib/*.js` for auth + proxy + heavy rendering. Defer Vite/framework migration to P3. Smallest disruption, biggest near-term review-quality win. |
+| **§7-C** Model routing | Sonnet-for-all vs. per-task-class routing (Sonnet for fast deterministic, Opus for high-stakes reasoning)? Per-call cost shifts from user (BYOK) to ArchDraw (hosted-key). | **Per-task-class:** Opus for `architect-advisor` RDP detection + `zoning-legal` matrix authoring; Sonnet for `site-intel`, `use-case-advisor`, `drawing-engine` parameter extraction. Cost upside ~3-5× lower than all-Opus; quality nearly equal. |
+| **§8-Q1** Pricing | Free-trial allowance + paid tier price + quota? | **Suggested:** Free trial = 1 analysis (current single-shot user expectation). Paid tier $X/mo ($29 / $59 / $99 are the standard SaaS slots) with N analyses/mo (e.g., 5 / 25 / 100). Owner decides the X and N. |
+
+When the three above are answered (even tentatively), the P0-1 implementation plan is fully spec'd in `PROJECT_COORDINATOR.md` §P0-1 — Supabase Auth + Edge Functions for `/api/ai/*`, `users`/`analyses`/`usage_events` tables, feature flag `HOSTED_KEY` with BYOK preserved in parallel. Estimate: 5–7 days of focused work. The Supabase connection landed today (round 5j note); the data layer is ready.
+
+### Round 5k — DATA-2 fix (last active CLAUDE.md bug closes)
+
+**DATA-2 RESOLVED — cost-estimate inflation adjustment.** Hard-coded $/SF baselines (`$380` CA/WA, `$220` other) were anchored to 2024-Q1 publication and never adjusted for construction-cost inflation since.
+
+Fix:
+- `data/cost-index.js` (NEW) — `window.COST_INDEX = { baseline:'2024-Q1', current:1.06, asOf:'2026-04', source:'https://data.bls.gov/timeseries/PCU2361162361162', ... }`. Multiplier tracks BLS PPI for Residential Construction (series PCU236116) — free public analog of the paywalled ENR CCI. Update procedure documented in the file header (manual quarterly bump for now; auto-refresh workflow planned).
+- `index.html` — both cost call sites (the options-panel `costPerSF`/`valuePerUnit` at line 1380 and the permit-fee `costPerSF` at line 1600) now read `window.COST_INDEX.current` with a `1.06` inline fallback for offline/standalone HTML use. Comment cites the BLS series + update path.
+- `<script src="data/cost-index.js"></script>` registered after middle-housing + wa-statewide.
+
+Effect today: `$380/SF` → `$403/SF` (CA/WA), `$220/SF` → `$233/SF` (other). Roughly 6% inflation since Q1-2024, calibrated to the BLS PPI series.
+
+**CLAUDE.md active bugs: 1 → 0.** All four (API-CONN, DRAW-5, GEOM-2, MAP-6, DATA-2) now resolved.
+
+| Bug | Status | Commit |
+|---|---|---|
+| API-CONN | RESOLVED earlier (parse error from unescaped apostrophes) | pre-session |
+| DRAW-5 PDF aspect ratio | RESOLVED — 914.4×609.6mm exact ratio | round 5i (`71e9626`) |
+| MAP-6 parcel rectangle | RESOLVED — irregular polygon path-rendered | round 5i (`71e9626`) |
+| GEOM-2 ADU rear-setback overflow | RESOLVED — `valPlan` drops past-setback rooms | round 5j (`450cdf4`) |
+| DATA-2 fixed $/SF | RESOLVED — `COST_INDEX` multiplier (BLS PPI) | round 5k (this commit) |
+
+Follow-up tracked: a `data/cost-index.js` auto-refresh GitHub Actions workflow (parallel to `fetch-schemas.yml`) that pulls the latest BLS PPI value quarterly and opens a PR. Same security-gate pattern as the schema fetcher. Not blocking; manual bump every 3 months keeps the multiplier current.
+
+### Round 5j — GEOM-2 fix + P1-2 corsproxy.io removal
+
+Owner note: Supabase is now connected (Claude / Vercel / GitHub) — unblocks the Supabase-side of P0-1 hosted-key auth, P1-1 Stripe, P1-3 observability, P1-4 caching. Logged for follow-up; not actioned this commit.
+
+**Two completions in this batch:**
+
+#### 1. GEOM-2 RESOLVED — rooms past rear-setback line
+The actual overflow source: when buildable depth (`mainD = lotDepth - frontSetback - rearSetback - ADU-share`) is shallow, main-building rooms (DINING, BATH, level-2 LAUNDRY) get y-coordinates computed from min-size constants like `max(13, ...)` without checking against `mainD`. CLAUDE.md described it as "ADU rooms" but ADU rooms are bounded by `aduD-8` clamps and don't actually overflow; the offenders are main-building rooms.
+
+Example failure (mainD=20, hasADU=false):
+- DINING placed at `y = bY + livH(=16)`, `h = max(10, ...)` = 10. End = `bY+26`. **6ft past rear setback line** (`bY+mainD = bY+20`).
+- BATH at `y = bY + kitH(=12)`, `h = 9`. End = `bY+21`. **1ft past.**
+- Level 2 LAUNDRY: `y = bY + bedH(>=13)`, `h = 7`. End = `bY+20+`. **Past rear setback whenever `mainD < 20`.**
+
+Fix landed in `valPlan` (the existing room-validation pass that runs after `localFloorPlan`):
+- Drop rooms whose origin already crosses the rear or right setback line (no clip can save them).
+- Clip overhang to the setback envelope (parcel-level rear/right) — was already there, kept.
+- After clipping, drop rooms below per-type minimum dimension (IBC §1208.1: 7ft habitable / 3ft utility) — was implicit, now explicit and runs after the clip so a room clipped to 4ft no longer ships as "habitable."
+
+Comment cites the bug ID (GEOM-2) and the bug-misdescription (ADU vs. main-building) for future maintenance.
+
+CLAUDE.md active bugs: 2 → 1. Only DATA-2 (cost-estimate ENR adjustment) remains.
+
+#### 2. P1-2 RESOLVED — corsproxy.io fallback removed
+`proxyFetch` (line 420 in index.html) had a fallback chain: try ADI_PROXY → direct fetch → **`https://corsproxy.io/?url=...`** as last resort. The third-party hop was a production dependency on a free service ArchDraw doesn't control.
+
+New chain (third-party hop deleted):
+1. `localStorage.ADI_PROXY` (user override)
+2. `window.ADI_PROXY_DEFAULT` (build-time default)
+3. `/api` relative (auto-used on `*.vercel.app` / localhost) — same-origin Vercel Edge function, no CORS needed
+4. `null` → direct fetch only; if it fails, throw with directive: "Set localStorage.ADI_PROXY to a deployed Vercel/Worker proxy URL to enable CORS-blocked endpoints."
+
+Production users (Vercel-hosted) auto-detect `/api` → existing routes (`/api/arcgis`, `/api/fema`, `/api/municode`, `/api/permits/:city`, `/api/diag`) handle every CORS-blocked source. Standalone users (GitHub Pages with no proxy) see a clear error directing them to set `ADI_PROXY` instead of silently routing through `corsproxy.io`.
+
+Audit grep: `grep -nE "corsproxy|cors-anywhere|allorigins|jina\.ai"` returns ONLY the documentation reference in the new comment block. No remaining runtime third-party-proxy calls anywhere in `index.html` / `api/[...path].js` / `workers/proxy.js`.
+
+§P1-2 success criterion ("zero third-party-controlled hops in the production data path") MET for the standalone path. The hosted path (Vercel + Cloudflare Worker) was already first-party.
+
+### Round 5i — ArcGIS fetcher + DRAW-5 + MAP-6 fixes
+
+Three items completed:
+
+#### 1. ArcGIS service-catalog fetcher — completes P0-5 pipeline
+`scripts/fetch-arcgis-schemas.py` — parallel to the Socrata fetcher. Walks `data/permit-registry.js` for entries declaring `arcgisItemId` (Hub items), `arcgisServiceURL` (direct service URLs), or `arcgisOrgHost` (org service catalogs). Resolves each via the well-known ArcGIS APIs (`https://www.arcgis.com/sharing/rest/content/items/<id>?f=json` for Hub, `<url>?f=json` for FeatureServer/MapServer roots and layers, `<host>/arcgis/rest/services?f=json` for org catalogs). Extracts layer name, geometry type, fields, address-field guesses. Output: `data/_arcgis-schemas.json`.
+
+`.github/workflows/fetch-schemas.yml` extended:
+- Added "Fetch ArcGIS schemas" step alongside Socrata
+- Diff watches both `_socrata-schemas.json` and `_arcgis-schemas.json`
+- Branch commits both files atomically
+- Path filter includes `scripts/fetch-arcgis-schemas.py`
+
+Two ArcGIS targets currently registered (will resolve on next workflow run):
+- `tacoma:hub:a12d6fbf58e4434b8ff5070c09646f19` — Tacoma Open Data Hub item, advertised name "Accela Permit Data (Tacoma)"
+- `snohomish_county_unincorp:org:https://services6.arcgis.com/z6WYi9VRHfgwgtyW` — snoco-gis org host; the script enumerates services and filters for permit/land/build keywords
+
+When the schemas land, `sync-permit-registry.py` will surface the resolved FeatureServer URL + address field for each, and the entries graduate from `_unverifiedEndpoint: true` like Pierce + Everett did.
+
+#### 2. DRAW-5 RESOLVED — PDF aspect ratio
+`index.html`: PDF page changed from `[914,610]` mm (ratio 1.4983) to `[914.4,609.6]` mm (ratio 1.5000 — exactly 36"×24"). Canvas remains 1440×960 px (also ratio 1.5000). Earlier 0.11% horizontal stretch eliminated. `addImage` call updated to match. Comment cites the exact-imperial-mm rationale.
+
+#### 3. MAP-6 RESOLVED — irregular parcel polygon rendering
+`runPhase_record` now stores the verified county-assessor polygon on `S._z._lotPolygon` in local feet-coordinates (origin: bbox min-lon / max-lat; Y flipped so canvas top-down matches geographic north-up). `drawSitePlanSheet` checks for `_lotPolygon` and draws the actual irregular shape via `beginPath` / `moveTo` / `lineTo` / `closePath` instead of `strokeRect`. Falls back to the rectangle when no polygon is available (preserves existing behavior).
+
+This unlocks accurate site-plan rendering for any address that resolves to a county-verified parcel — particularly important for irregular lots (corner lots, flag lots, riparian parcels) where the rectangle approximation lost ~10–30% of true buildable area.
+
+CLAUDE.md active-bugs list reduced from 4 to 2:
+- ~~DRAW-5~~ FIXED
+- ~~MAP-6~~ FIXED
+- GEOM-2 (ADU rear-setback overflow) — still open
+- DATA-2 (cost estimate ENR adjustment) — still open
+
+### Round 5h — Pierce GRADUATED + workflow fail-soft on blocked PR-create
+
+**Pierce winner: `internal.open.piercecountywa.gov:nhnt-v7ka` "Permits - Pierce County"** (33 cols, address `siteaddress`, geo `the_geom`). Sync helper score 12.0 vs next-best 1.0 — clear separation.
+
+Round 5g re-trigger workflow ran twice on origin (commits `ff7c779` + cron). Both runs **succeeded at the schema fetch + branch push** (`bot/schema-update-20260425-1819` and `-1900` exist on origin with the new schemas). PR creation step failed with:
+
+```
+pull request create failed: GraphQL: GitHub Actions is not permitted to create or approve pull requests
+```
+
+This is the GitHub repo-setting default: **Settings → Actions → General → Workflow permissions → "Allow GitHub Actions to create and approve pull requests"** is off out of the box. Owner can enable it for full auto-PR; in the meantime we adopt a fail-soft pattern.
+
+**Two updates landed this commit:**
+
+1. `data/permit-registry.js` — Pierce graduated to verified:
+   - `socrataDataset` → `https://internal.open.piercecountywa.gov/resource/nhnt-v7ka.json`
+   - `searchByAddress` builder uses `siteaddress`
+   - `radiusSearch` uses `within_circle(the_geom, ...)`
+   - `_unverifiedEndpoint: true` REMOVED
+   - `socrataDatasetCandidates` collapsed to `[nhnt-v7ka]` only (the 4 wrong-dataset attempts kept in the comment for provenance)
+
+2. `.github/workflows/fetch-schemas.yml` — fail-soft branch around `gh pr create`:
+   - If PR creation fails, branch is already pushed (schemas not lost) — workflow exits 0 with a `::warning::` message including the manual PR URL `https://github.com/{repo}/pull/new/{branch}`.
+   - Owner can either enable the repo setting (one click — recommended) or open PRs manually from the Actions log link. Either way, schemas land.
+
+`data/_socrata-schemas.json` updated from the bot branch — pulled into this commit so we don't depend on a manual PR for the data to land.
+
+**Findings on dataset hosting (worth flagging):**
+- Pierce County has TWO Socrata hosts: `open.piercecountywa.gov` (citizen-facing) AND `internal.open.piercecountywa.gov` (the actual permit data). The "Permits - Pierce County" name is reused between hosts (3 datasets share that name across both); `internal.` is the only one with real columns. The owner round-4 Foundry upload of `internal.open.piercecountywa.gov_hmbh-c3hw.html` correctly identified the host; the round-5c addition of `nhnt-v7ka` as candidate landed on the right id.
+- Same pattern likely exists for other WA counties — when registering future permit endpoints, search both `open.<county>` and `internal.open.<county>` Socrata domains.
+
+### Round 5g — Federal Way GRADUATED + buffer pattern in runPhase_record + Pierce re-trigger
+
+**Three tasks completed in one batch:**
+
+#### 1. Federal Way RS 7.2 / RS 9.6 chart-integrated
+Owner-uploaded FWRC 19.200.010 "Detached dwelling unit" chart parsed manually (per-use FWRC layout — different from Bothell's column-per-zone; subdivided header structure with "In RS 35.0 zones:" / "Otherwise:" sub-rows that group RS 15.0 / 9.6 / 7.2 / 5.0 together). Chart-confirmed values for the "Otherwise" group (RS 7.2 + RS 9.6 fall here):
+
+| Field | Value | Source |
+|---|---|---|
+| frontSetback | 20 ft | sub-row value cell |
+| rearSetback | 5 ft | sub-row value cell |
+| leftSetback / rightSetback | 5 ft each | note 3 (10 ft on corner-lot street side) |
+| maxHeightFt | 30 ft above ABE | universal value cell |
+| maxLotCoverage | 60% | note 6c/6d |
+| parkingPerUnit | (chart 2; matrix 1) | chart says 2; matrix carries 1 to reflect SB 5184 cap which `applyWaStatewide` enforces dynamically |
+
+Both `federal way,wa:RS 7.2` and `federal way,wa:RS 9.6` graduated: `_sourceMethod: 'manual'`, `_sourceSnapshot: '2026-04-25'`, `_unverified: ['maxStories', 'maxFAR']` only (FWRC uses height-not-stories and lot-coverage-not-FAR — those nulls are by-design, not gaps).
+
+End-to-end test: `effectiveZoning('Federal Way', 'RS 7.2')` returns `{front:20, rear:5, side:5, height:30, coverage:60, units:4}` (HB 1110 base unit floor applied). Same for RS 9.6.
+
+**Decision #19 — RESOLVED.** Decision #20 (script extension for FWRC layout) deferred — Federal Way is the only city in scope using this layout pattern, so manual integration was higher-leverage than a one-use extractor. Note added to `scripts/integrate-charts.py` for future rounds (when Renton or Kent need re-integration).
+
+#### 2. `runPhase_record` 20m buffer adopted
+`index.html` line 1097 — county parcel query now includes `distance=20&units=esriSRUnit_Meter&inSR=4326&outSR=4326`. Same pattern proven by `scripts/smoke-snohomish-parcels.py` round 5f. Comment cites the smoke-test reference. No regression in tests; inline `<script>` parse-checked.
+
+This means production `runPhase_record` calls will now correctly snap Nominatim street-centerline geocodes to the adjacent parcel polygon (was previously silently returning no parcel for ~2 of 3 typical addresses).
+
+#### 3. Pierce fetch-schemas re-trigger
+Pushed via a comment-bump to `data/permit-registry.js` so the `fetch-schemas` workflow's path filter fires on this commit. New Pierce candidates (`9yt4-rd9g` web-discovered "Permits - Pierce County" + `nhnt-v7ka`) get resolved through GitHub-runner egress. If the workflow opens a `bot/schema-update-*` PR with `9yt4-rd9g` carrying a permit-shaped column set + an address column, `sync-permit-registry.py` will flag for graduation.
+
+### Round 5f — §P0-2 ACCEPTANCE MET
+
+**Snohomish smoke test green: 3 of 3.** GitHub Actions workflow run on commit `3e89539` returned valid parcels for all three addresses:
+
+| Address | PARCEL_ID | TAB_ACRES | USECODE |
+|---|---|---|---|
+| 3322 Wetmore Ave, Everett (incorporated county seat) | 00436979102500 | 0.14 | 130 Multiple Family 5–7 Units |
+| 21008 Yew Way, Snohomish (Maltby — unincorporated) | 27052400300500 | 0.69 | 910 Undeveloped Vacant Land |
+| 624 5th St, Mukilteo (near-water Puget Sound) | 00459800501000 | 0.10 | 699 Other Misc Services NEC |
+
+**Diagnosis history (for the audit trail):**
+- First run (`30bf29e`) returned 1 of 3. Maltby PASSed; Everett + Mukilteo returned no features.
+- Root cause: Nominatim resolves urban street addresses to street-centerline points (right-of-way), not parcel interiors. Maltby happened to land on a 9-acre Centennial Trail parcel wide enough to catch the off-target point.
+- Fix (`3e89539`): added `distance=20` + `units=esriSRUnit_Meter` to the spatial query — standard Esri buffered-intersect pattern. 20m is wider than typical street ROW (~12m) and tighter than residential lot widths so a single parcel is matched, not two adjacent.
+
+**Updates landed this commit:**
+- `data/county-registry.js` — `WA:Snohomish` cleared `corsOk` from `_unverified[]` (smoke test confirms cross-egress reachability + parcel-shaped response). `yearBuilt` stays in `_unverified` — separate CAMA-table concern not addressed by this test. `verifiedDate: 2026-04-25`. Notes updated with the §P0-2 acceptance line + the buffer pattern recommendation for `runPhase_record`.
+
+**§6 Launch checklist — first ✓:**
+- [x] **`WA:Snohomish` in `county-registry.js` with verified field schemas** — DONE 2026-04-25 via the smoke-test pipeline.
+- [ ] (Same line also covers `WA:King` and `WA:Pierce` — King was pre-existing in registry; Pierce ships with `_unverified` field schemas pending its own smoke-test wiring.)
+
+**Pattern adopted as canonical:** county-registry endpoints can be P0-acceptance-verified via the `smoke-county-parcels` workflow without owner-browser involvement. Adding new counties: register the entry, add the address triplet to `scripts/smoke-snohomish-parcels.py` (or follow-up: parameterize the script to take a county arg), push.
+
+### Round 5e — Seattle latent-bug fix + P0-2 smoke test pipeline
+
+**Seattle bug fix (one-line, low-risk).** `searchByAddress` builder for `seattle` entry was using `upper(address) like '...'`, but `data/_socrata-schemas.json` (verified by GitHub Actions schema-fetch round 5) shows the real address column is `originaladdress1`. Silent zero-results for any Seattle address lookup. Fixed; comment documents the verification source.
+
+**P0-2 acceptance smoke test wired.** New script + new workflow:
+- `scripts/smoke-snohomish-parcels.py` — geocodes 3 representative Snohomish addresses (Everett incorporated county seat / Lake Stevens small incorporated city / Mukilteo near-water Puget Sound) via Nominatim, queries the WA:Snohomish ArcGIS Cadastral/Tax_Parcels endpoint with each lat/lon, asserts each returns a feature with `PARCEL_ID` + non-empty ring geometry. Stdlib only.
+- `.github/workflows/smoke-county-parcels.yml` — runs on push touching the script / county-registry / workflow itself, weekly Monday 09:00 UTC, and `workflow_dispatch`. `permissions: contents: read` only — verification probe, no PR opened, no writes. Job fails non-zero on any geocode or parcel-query miss; result visible in workflow log.
+
+Same egress-bypass rationale as `fetch-schemas.yml`: agent egress 403s against both `nominatim.openstreetmap.org` AND `gis.snoco.org` from Claude Code execution context (validated locally — all 3 addresses returned `HTTP 403` on Nominatim before the Snohomish endpoint was even reached). GitHub-runner IP space resolves both reliably.
+
+**Pass criterion (per PROJECT_COORDINATOR.md §P0-2 success spec):** 3 of 3 addresses return a parcel polygon. Once the workflow's first run lands a green check, the §P0-2 launch checklist line moves to ✓ DONE.
+
+### Federal Way upload — owner delivered (commits 3cdc3e8 + merge)
+Two new files merged in:
+- `view-source_https___www.codepublishing.com_WA_FederalWay_html_FederalWay19_FederalWay19200.html` — RIGHT chapter (SINGLE-FAMILY RESIDENTIAL RS), unblocks decision #19.
+- `view-source_https___www.codepublishing.com_WA_FederalWay_html_FederalWay19_FederalWay19225.html` — City Center Core overlay (CC-C), already-flagged exclusion.
+
+Federal Way RS 7.2 / RS 9.6 chart integration scheduled for next round (script needs the per-use FWRC layout extractor, not the column-per-zone one Bothell used).
+
+### Round 5d — Auburn rename RESOLVED (decision #23) + Federal Way upload guide
+
+**Decision #23 RESOLVED — Auburn 2024 zone rewrite confirmed.** Owner-uploaded ACC 18.07.030 chart row A (Minimum density) provides the rename map:
+
+| Current zone | Min density | Lot area / unit |
+|---|---|---|
+| RC | 0.25 du/ac | 174,000 sf |
+| R-1 | 1 du/ac | 43,500 sf |
+| **R-2** | **7 du/ac** | **6,222 sf** |
+| R-3 | 12 du/ac | 3,630 sf |
+| R-4 | 16 du/ac | 2,723 sf |
+| R-NM | 30 du/ac | 1,452 sf |
+| R-F | 7 du/ac | 6,222 sf |
+
+Legacy R-5 (4–5 du/ac) and R-7 (5–7 du/ac) **both map to current R-2** by density floor. HB 1110 forced minimum-density up; legacy SF tier consolidated. Same pattern as Redmond (11→2 zone consolidation, Ord 3186).
+
+**Updates landed this commit:**
+- `data/zoning-matrix.js` — new entry `auburn,wa:R-2` with chart-confirmed values: residence front 10ft, garage front 20ft (15ft alley-loaded), interior side 5ft, street side 10ft, rear 15ft, max impervious 75%, max building height 35ft, parking 1, ADU 1,000 sf. HB 1110 row D1 confirms 4 base / D2 6 transit-or-affordability. `_sourceMethod: 'manual'`, `_unverified: []`.
+- `auburn,wa:R-5` and `auburn,wa:R-7` → `_repealed: true`, `_replacedBy: 'auburn,wa:R-2'`. The existing `effectiveZoning()` `_repealed` redirect path (proven for Redmond R-4 → NR) handles legacy GIS tags transparently with a surfaced redirect warning.
+- `scripts/integrate-charts.py` — Auburn integration plan updated with correct column list (RC, R-1, R-2, R-3, R-4, R-NM, R-F).
+
+**End-to-end validation:** `effectiveZoning('Auburn', 'R-5')` → redirects to R-2 → returns `maxUnits: 4, frontSetback: 10, rearSetback: 15, leftSetback: 5, maxHeightFt: 35` with warning "auburn,wa:R-5 is repealed; redirecting to auburn,wa:R-2". 17 of 17 tests passing.
+
+**Decision #19 — Federal Way upload guide** (owner action, one upload)
+
+The earlier upload was wrong chapter (Ch. 19.25 BONDS). RS use-zone chart is in **Chapter 19.200**. Owner steps:
+1. Open https://www.codepublishing.com/WA/FederalWay/html/FederalWay19/FederalWay19200.html in a regular browser
+2. Right-click → Save As → "Webpage, HTML only"
+3. Upload to `antenehproduction/archdraw` `main` via Add files → Upload files (same path that worked rounds 3–4)
+
+Optional secondary (if cottage/compact rules wanted): https://www.codepublishing.com/WA/FederalWay/html/FederalWay19/FederalWay19250.html
+
+Once committed I'll run `integrate-charts.py --city federalway` (after extending the integration plan with the RS column list: RS 5.0 / RS 7.2 / RS 9.6 / RS 15.0 / RS 35.0) and graduate `federal way,wa:RS 7.2` + `RS 9.6` from `_unverified[]`.
+
+### Round 5c — Everett GRADUATED, Pierce identified, security gate live
+
+**First GitHub Actions workflow run succeeded.** 12 of 13 datasets resolved (only `data.lacity.org:yv23-pmwf` 403'd). GitHub-runner egress confirmed unblocked on the WA municipal Socrata hosts that had been walling out agent egress for 4 rounds.
+
+**Round 5c findings from the schema fetch:**
+
+| Entry | P0-5 best-guess | Verified result |
+|---|---|---|
+| **everett** | `7fiu-4gra` (assumed) | **Wrong** — 0 cols, deprecated. **Right answer: `3w3u-656c` "Trakit Permits"**, 21 cols, address = `siteaddress`, geo = `geocoded_column`. **GRADUATED this commit.** |
+| **pierce_county_unincorp** | `bg5p-p534` (assumed) | **Wrong** — 0 cols, deprecated. Round-4 owner candidates (`hmbh-c3hw`, `eugc-5pca`) also wrong (boundary lines + project-level land use). **Web-discovered new candidate: `9yt4-rd9g` "Permits - Pierce County"** added; will graduate after next workflow run validates. |
+| **seattle** (existing) | `76t5-zqzr` with `address` field | **Schema verified** but address field is actually `originaladdress1`. Latent bug in current `searchByAddress` builder (uses `upper(address)`). Not regressing existing behavior, but flagged for follow-up. |
+| 9 other cities (San Francisco, NY, Austin, Boston, Chicago, San Diego, etc.) | various | All resolved with column counts 28–122. No address-field-name mismatches surfaced beyond Seattle's. |
+
+**Everett graduation diff (this commit):**
+- `socrataDataset` → `3w3u-656c` (was 7fiu-4gra)
+- `searchByAddress` builder uses `siteaddress` (was assumed `address`)
+- `radiusSearch` added — uses `within_circle(geocoded_column, ...)` (was null)
+- `_unverifiedEndpoint: true` flag REMOVED — entry now live
+- `_sourceMethod: 'github-actions-schema-fetch'`
+
+**Pierce-County status:** kept `_unverifiedEndpoint: true`, but `socrataDatasetCandidates[]` extended with `9yt4-rd9g` (web-discovered "Permits - Pierce County" feed) and `nhnt-v7ka`. Next workflow run resolves their schemas; if `9yt4-rd9g` advertises a permit-shaped column set with an address column, sync-permit-registry.py will flag for graduation.
+
+**Pipeline behavior validated end-to-end:**
+- Push → workflow runs on GitHub egress (3 sec) → 12 schemas in `data/_socrata-schemas.json` → bot auto-pushes the metadata commit (round 5 ran under old auto-push permissions).
+- The auto-PR pattern lands with this commit (round 5b). All future runs open `bot/schema-update-*` PRs against the trigger branch — the bot can never overwrite source files again.
+
+### Round 5b — workflow tightened to auto-PR (security gate added)
+Changed the schema-fetch workflow's commit pattern from "push directly to current branch" to **"push to bot/schema-update-* branch + open PR"**. Effect:
+- **Permission scope reduced.** `contents: write` still needed to push the throwaway bot branch, but it can never overwrite source files — only humans can merge the PR.
+- **Supply-chain attack surface drops.** If a fetched host gets hijacked and returns a malicious JSON payload, the bot writes it to a PR, not to the working code. A human reviews the diff before it lands. Worst case becomes "we ignore the PR and close it."
+- **Diff is always `data/_socrata-schemas.json` only** — metadata, never executed at runtime. Even an inadvertent merge of bad metadata can't get RCE; it only feeds the offline `sync-permit-registry.py` patch report (which is also reviewed before any registry mutation).
+- **PR base auto-tracks the trigger branch.** Push from a feature branch → PR targets that branch. Cron run on `main` → PR targets `main`. Each round-trip stays inside the appropriate review surface.
+
+This is the validate-then-iterate path: ship the smallest reliable thing, watch the first run, only add the parallel ArcGIS fetcher (Tacoma, snoco-gis) and the auto-merge promoter once we've seen GitHub-runner egress actually clear the Cloudflare wall on these hosts. If the first run shows 0 successes, we pivot egress (Cloudflare Worker, paid scraper) before stacking more code on unproven infra.
+
 ### Round 5 status of decisions
 - **#21 (P0-5 endpoint verification)** — superseded by the GitHub Actions pipeline. Once the workflow runs, schemas are written to `data/_socrata-schemas.json`; sync script promotes them. Owner-browser hit no longer required for any Socrata endpoint.
 - **#16, #18, #20, #22** — pending owner approval (carried).

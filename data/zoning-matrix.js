@@ -472,46 +472,52 @@ window.ZONING_MATRIX_DB = {
   },
 
   // ── Auburn, WA ──
-  // District names UNCHANGED — Auburn did NOT execute a Tacoma/Redmond rename through
-  // Ord 6959/6960 (Dec 2024 comp plan update; eff. 2024-12-27). ACC 18.07.010 retains
-  // R-5 and R-7. Dimensional table at ACC 18.07.030 not directly readable —
-  // auburn.municipal.codes AND codepublishing.com/WA/Auburn/ both returned 403.
-  // All numeric setback/height/FAR/coverage fields nulled in _unverified.
-  'auburn,wa:R-5': {
-    jurisdiction: 'Auburn', state: 'WA', district: 'R-5',
-    fullName: 'Residential Zone — 4 to 5 Dwelling Units Per Net Acre',
+  // ZONE RENAME (round 5, decision #23 RESOLVED 2026-04-25): owner-uploaded
+  // ACC 18.07.030 chart confirms Auburn went through a Tacoma/Redmond-style
+  // rewrite. Current zone columns are RC, R-1, R-2, R-3, R-4, R-NM, R-F.
+  // Legacy R-5 (4–5 du/ac) and R-7 (5–7 du/ac) both map to current R-2
+  // (min density 7 du/ac, 6,222 sf lot area per unit) — HB 1110 forced
+  // minimum-density floors up and consolidated the SF tier. Pattern mirrors
+  // Redmond's 11→2 zone consolidation (Ord 3186): legacy keys deprecated
+  // via _repealed stubs pointing to the current district.
+  'auburn,wa:R-2': {
+    jurisdiction: 'Auburn', state: 'WA', district: 'R-2',
+    fullName: 'Residential Zone — Min 7 du/net acre, 6,222 sf lot area per unit (current ACC 18.07.030; replaces legacy R-5 and R-7)',
     codeURL: 'https://auburn.municipal.codes/ACC/18.07.030',
-    frontSetback: null, rearSetback: null, leftSetback: null, rightSetback: null,
-    maxHeightFt: null, maxStories: null,
+    frontSetback: 10, rearSetback: 15,
+    leftSetback: 5, rightSetback: 5,
+    maxHeightFt: 35, maxStories: null,
     maxFAR: null,
-    maxLotCoverage: null,
+    maxLotCoverage: 75,
     parkingPerUnit: 1,
     aduAllowed: true, aduMaxSqFt: 1000,
-    densityBonus: 'WA HB 1110 (Tier 1, implemented via Ord 6959 eff. 2024-12-27 / ACC 18.02.067): 4 du per lot citywide by right; 6 du per lot within 0.25 mi of major transit (Auburn Sounder station). Additional units above base triggered by lot-area increment per ACC 18.07.030(D)(3). Auburn participates in MFTE (RCW 84.14); residential target area boundaries unverified.',
+    densityBonus: 'WA HB 1110 (Tier 1, Ord 6959/6960 eff. 2024-12-27): chart row D1 confirms 4 du base citywide; D2 confirms 6 du with transit OR affordability bonus. Lot-area-per-unit-above-base allowance 1,250 sf (chart row D3). MFTE per RCW 84.14 may stack on residential target area parcels.',
     sb9Eligible: false,
-    notes: 'Auburn HB 1110 Tier 1 (pop. ~89k, King + Pierce). ACC 18.07.010 confirms R-5 intent: 4–5 du/net acre; zone name unchanged through Dec 2024 comp plan. Permitted middle-housing types: SFR, duplex, triplex, fourplex, stacked flats, courtyard housing, cottage housing (ACC 18.07.020 + ACC 18.25). ADU per ACC 18.32.010 (Ord 6959): 2 ADUs/lot, max 1,000 sf, min 300 sf, max 2 bedrooms; 0 parking within 0.5mi major transit / 1 space/ADU beyond — note: HB 1337 may override the >0.5mi parking requirement (no distance-based exception in HB 1337); flag as VERIFY for parcels outside the Sounder walkshed. WA HB 1337 (RCW 36.70A.680, eff. 2025-07-01): Auburn-compliant; legacy "ADU Disclosure / Affidavit of Owner Occupancy" form on city website (revised 2025-07) may be voluntary post-Ord-6959 — verify enforcement. WA SB 5184 (eff. 2026-07-27): cities >50k → 1/SFR cap; parkingPerUnit=1 reflects this. UNCAPTURED OVERLAYS: Lea Hill (ACC 18.21.010) and West Hill (ACC 18.21.020) — pre-annexation King/Pierce Co plats with modified standards; Lakeland Hills South PUD — entirely separate dimensional rules; Auburn Way North Plan corridor; Downtown Urban Center (ACC 18.29). MUCKLESHOOT TRUST-LAND CARVE-OUT: Auburn zoning code does NOT apply to MIT trust parcels (BIA-held). Site-intel must verify fee vs. trust status before using this entry — the Muckleshoot Reservation is a checkerboard within Auburn city limits. FETCH NOTE: auburn.municipal.codes and codepublishing.com both 403; ACC 18.07.030 table not read; numeric fields recovered from search snippets only (zone-intent text, ADU section title) — all dimensional values in _unverified.',
+    notes: 'ROUND 5 ZONE-RENAME RESOLUTION (decision #23, 2026-04-25): Auburn 2024 comp plan (Ord 6959/6960 eff. 2024-12-27) renamed and reconsolidated residential zones. Current ACC 18.07.030 chart columns: RC / R-1 / R-2 / R-3 / R-4 / R-NM / R-F. Legacy R-5 and R-7 both map to current R-2 by density (7 du/ac min, 6,222 sf per unit). Chart-confirmed values (column 3): residence front 10ft (E1), garage front 20ft / 15ft alley-loaded (E2), interior side 5ft (5), street side 10ft (6), rear 15ft (7), max impervious 75% (F), max building height 35ft (G), max accessory height 24ft (H). HB 1110 base 4 / transit-or-affordability 6 (D1, D2). ADU per ACC 18.32.010: 2 ADUs/lot, 1,000 sf max, 0 parking within 0.5mi major transit / 1 space/ADU beyond. WA HB 1337 + WA SB 5184 statewide overlays apply. UNCAPTURED OVERLAYS: Lea Hill (ACC 18.21.010), West Hill (ACC 18.21.020), Lakeland Hills South PUD, Auburn Way North Plan corridor, Downtown Urban Center (ACC 18.29). MUCKLESHOOT TRUST-LAND CARVE-OUT: Auburn zoning code does NOT apply to MIT trust parcels (BIA-held); site-intel must verify fee vs. trust status — the Muckleshoot Reservation is a checkerboard within Auburn city limits.',
     verifiedDate: '2026-04-25',
-    _sourceMethod: 'search-snippet',
+    _sourceMethod: 'manual',
     _sourceSnapshot: '2026-04-25',
-    _unverified: ['frontSetback', 'rearSetback', 'leftSetback', 'rightSetback', 'maxHeightFt', 'maxStories', 'maxFAR', 'maxLotCoverage'],
+    _legacy_key: ['auburn,wa:R-5', 'auburn,wa:R-7'],
+    _unverified: [],
+  },
+  // Legacy stubs — graceful resolution when stale parcel data tags pre-rename codes
+  'auburn,wa:R-5': {
+    jurisdiction: 'Auburn', state: 'WA', district: 'R-5',
+    fullName: 'R-5 (REPEALED 2024-12-27 — see auburn,wa:R-2)',
+    codeURL: 'https://auburn.municipal.codes/ACC/18.07.030',
+    notes: 'Repealed by Ord 6959/6960 (Auburn 2024 comp plan), eff. 2024-12-27. Successor: auburn,wa:R-2 (consolidates legacy R-5 + R-7 by density mapping; new min density 7 du/ac, 6,222 sf lot area per unit). Maintained as a stub so parcel data layers still tagging "R-5" resolve cleanly via _replacedBy.',
+    verifiedDate: '2026-04-25',
+    _repealed: true,
+    _replacedBy: 'auburn,wa:R-2',
   },
   'auburn,wa:R-7': {
     jurisdiction: 'Auburn', state: 'WA', district: 'R-7',
-    fullName: 'Residential Zone — 5 to 7 Dwelling Units Per Net Acre',
+    fullName: 'R-7 (REPEALED 2024-12-27 — see auburn,wa:R-2)',
     codeURL: 'https://auburn.municipal.codes/ACC/18.07.030',
-    frontSetback: null, rearSetback: null, leftSetback: null, rightSetback: null,
-    maxHeightFt: null, maxStories: null,
-    maxFAR: null,
-    maxLotCoverage: null,
-    parkingPerUnit: 1,
-    aduAllowed: true, aduMaxSqFt: 1000,
-    densityBonus: 'WA HB 1110 (Tier 1, Ord 6959 eff. 2024-12-27 / ACC 18.02.067): 4 du per lot citywide by right; 6 du per lot within 0.25 mi of major transit (Auburn Sounder station). R-7 lot-area-per-unit interval is smaller than R-5 (denser zone), yielding higher absolute unit caps at equivalent lot areas. Auburn participates in MFTE (RCW 84.14).',
-    sb9Eligible: false,
-    notes: 'Auburn HB 1110 Tier 1. ACC 18.07.010 confirms R-7 intent: 5–7 du/net acre; zone name unchanged. R-7 has smaller min lot than R-5 (exact value unverified). Auburn Housing Action Plan (HAP, DNS SEP21-0013) identified R-5 and R-7 as primary middle-housing target zones; HAP feeds Ord 6959. ADU rules, HB 1337 alignment, SB 5184 parking cap, UNCAPTURED OVERLAYS (Lea Hill, West Hill, Lakeland Hills South PUD, Auburn Way North, Downtown Urban Center), and MUCKLESHOOT TRUST-LAND CARVE-OUT all match auburn,wa:R-5 — see that entry for full notes. R-7 parcels are more likely than R-5 to be near Auburn Way North corridor — boundary check required. FETCH NOTE: same 403 block as R-5; numeric fields all in _unverified.',
+    notes: 'Repealed by Ord 6959/6960 (Auburn 2024 comp plan), eff. 2024-12-27. Successor: auburn,wa:R-2 (consolidates legacy R-5 + R-7 by density mapping). Maintained as a stub so parcel data layers still tagging "R-7" resolve cleanly via _replacedBy.',
     verifiedDate: '2026-04-25',
-    _sourceMethod: 'search-snippet',
-    _sourceSnapshot: '2026-04-25',
-    _unverified: ['frontSetback', 'rearSetback', 'leftSetback', 'rightSetback', 'maxHeightFt', 'maxStories', 'maxFAR', 'maxLotCoverage'],
+    _repealed: true,
+    _replacedBy: 'auburn,wa:R-2',
   },
 
   // ── Bothell, WA ──
@@ -685,37 +691,37 @@ window.ZONING_MATRIX_DB = {
     jurisdiction: 'Federal Way', state: 'WA', district: 'RS 7.2',
     fullName: 'Single-Family Residential — 7,200 sq ft minimum lot',
     codeURL: 'https://www.codepublishing.com/WA/FederalWay/html/FederalWay19/FederalWay19200.html',
-    frontSetback: null, rearSetback: null, leftSetback: null, rightSetback: null,
-    maxHeightFt: null, maxStories: null,
+    frontSetback: 20, rearSetback: 5, leftSetback: 5, rightSetback: 5,
+    maxHeightFt: 30, maxStories: null,
     maxFAR: null,
     maxLotCoverage: 60,
     parkingPerUnit: 1,
     aduAllowed: true, aduMaxSqFt: 1000,
     densityBonus: 'WA HB 1110 (Tier 1, Ord adopted 2025-06-03): 4 du by right citywide; 6 du within 0.25mi major transit. Federal Way Link Downtown station (opened 2025-12-06) qualifies; parcels within 0.25mi walking distance eligible for 6 du/lot.',
     sb9Eligible: false,
-    notes: 'Zone name RS 7.2 RETAINED through 2025-06-03 middle-housing ordinance — base district name unchanged; ordinance adds new use-zone charts and middle-housing standards inside the existing RS framework. RS = Single-Family Residential; suffix is lot-size minimum in thousands of sf (7.2 → 7,200 sf min). Lot coverage 60% confirmed for RS 5.0/7.2/9.6 tier (vs. 50% for RS 15.0/35.0) via FWRC Ch. 19.110 search snippet. WA HB 1337 (RCW 36.70A.681, eff. 2025-07-23): 2 ADUs/lot, 1,000 sf floor, no owner-occupancy, no ADU parking — Federal Way pre-HB-1337 cap was reportedly 300–800 sf with 40% GFA limit; state floor governs where local was lower. WA SB 5184 (May 2025): caps SFR parking 1/unit; Federal Way ~102k qualifies → parkingPerUnit=1. UNCAPTURED OVERLAYS: City Center Core (CC-C, FWRC 19.225) and City Center Frame (CC-F, FWRC 19.230) — downtown overlay roughly S 312th to S 324th, Pacific Hwy to 23rd Ave S; do NOT use RS 7.2 for parcels inside CC-C/CC-F. Pacific Highway South (SR-99) corridor may carry CC-F. Twin Lakes Subarea Plan (no independent overlay impact on RS dimensions, but verify TOD amendments). Shoreline Master Program (FWRC Ch. 15.05): 200ft setback from OHWM of Puget Sound + named lakes (Star, Steel, Dolloff, North, Geneva, Killarney, Five Mile) — SMP setbacks supersede RS base. FETCH NOTE: codepublishing.com + federalwaywa.gov + engagefw.com all 403\'d; setback/height/FAR/stories all in _unverified.',
+    notes: 'ROUND 5g (2026-04-25 owner-uploaded FWRC 19.200.010 chart, "Detached dwelling unit"): chart-confirmed values for the RS 15.0 / 9.6 / 7.2 / 5.0 group ("Otherwise:" sub-row): front 20ft, side 5ft per side (10ft on corner-lot street side per note 3), rear 5ft. Height 30ft above average building elevation (universal across all RS zones). Min lot 7,200 sf (chart note 1d). Lot coverage 60% (chart note 6d). Chart parking 2 per dwelling unit; matrix carries 1 to reflect WA SB 5184 cap (~102k pop city, applyWaStatewide enforces SB5184:statutoryCap mode at runtime). Note that RS 35.0 has different setbacks (front 20 / side 10 / rear 10) — separate sub-row at top of chart. WA HB 1337: 2 ADUs/lot, 1,000 sf floor (state-floor governs where local pre-HB-1337 cap was 300–800 sf with 40% GFA). UNCAPTURED OVERLAYS: City Center Core (CC-C, FWRC 19.225) and City Center Frame (CC-F, FWRC 19.230); Twin Lakes Subarea Plan; Shoreline Master Program (FWRC Ch. 15.05) — 200ft from OHWM of Puget Sound + named lakes (Star, Steel, Dolloff, North, Geneva, Killarney, Five Mile) supersedes RS base.',
     verifiedDate: '2026-04-25',
-    _sourceMethod: 'search-snippet',
+    _sourceMethod: 'manual',
     _sourceSnapshot: '2026-04-25',
-    _unverified: ['frontSetback', 'rearSetback', 'leftSetback', 'rightSetback', 'maxHeightFt', 'maxStories', 'maxFAR'],
+    _unverified: ['maxStories', 'maxFAR'],
   },
   'federal way,wa:RS 9.6': {
     jurisdiction: 'Federal Way', state: 'WA', district: 'RS 9.6',
     fullName: 'Single-Family Residential — 9,600 sq ft minimum lot',
     codeURL: 'https://www.codepublishing.com/WA/FederalWay/html/FederalWay19/FederalWay19200.html',
-    frontSetback: null, rearSetback: null, leftSetback: null, rightSetback: null,
-    maxHeightFt: null, maxStories: null,
+    frontSetback: 20, rearSetback: 5, leftSetback: 5, rightSetback: 5,
+    maxHeightFt: 30, maxStories: null,
     maxFAR: null,
     maxLotCoverage: 60,
     parkingPerUnit: 1,
     aduAllowed: true, aduMaxSqFt: 1000,
     densityBonus: 'WA HB 1110 (Tier 1, Ord adopted 2025-06-03): 4 du by right citywide; 6 du within 0.25mi major transit. Federal Way Link Downtown station (opened 2025-12-06) qualifies.',
     sb9Eligible: false,
-    notes: 'Zone name RS 9.6 RETAINED. Larger-lot sibling to RS 7.2 — same RS family, same lot coverage tier (60%), same HB 1110 / HB 1337 / SB 5184 framework. RS 9.6 = 9,600 sf min lot. Lot-size-in-thousands-of-sf nomenclature. Same overlay carve-outs as RS 7.2: City Center (CC-C/CC-F), Shoreline Master Program, Twin Lakes Subarea. FETCH NOTE: same 403 block.',
+    notes: 'ROUND 5g (2026-04-25 owner-uploaded FWRC 19.200.010 chart): chart-confirmed values per the RS 15.0 / 9.6 / 7.2 / 5.0 "Otherwise:" sub-row. Same setbacks/height/coverage profile as RS 7.2 (front 20ft, side 5ft per side, rear 5ft, height 30ft above ABE, lot coverage 60%). RS 9.6 = 9,600 sf min lot (chart note 1c). Larger-lot sibling to RS 7.2; same HB 1110 / HB 1337 / SB 5184 framework, same overlay carve-outs (CC-C/CC-F, SMP, Twin Lakes). Chart parking 2 per dwelling unit; matrix carries 1 (SB 5184 cap via applyWaStatewide).',
     verifiedDate: '2026-04-25',
-    _sourceMethod: 'search-snippet',
+    _sourceMethod: 'manual',
     _sourceSnapshot: '2026-04-25',
-    _unverified: ['frontSetback', 'rearSetback', 'leftSetback', 'rightSetback', 'maxHeightFt', 'maxStories', 'maxFAR'],
+    _unverified: ['maxStories', 'maxFAR'],
   },
 
   // ── San Francisco, CA ──

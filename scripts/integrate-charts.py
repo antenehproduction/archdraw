@@ -91,14 +91,18 @@ INTEGRATION_PLAN = {
     },
     "auburn": {
         "file": "view-source_https___auburn.municipal.codes_ACC_18.07.030.html",
-        "matrix_keys": {"R-5": "auburn,wa:R-5", "R-7": "auburn,wa:R-7"},
-        "columns": ["R-1", "R-5", "R-7", "R-10", "R-16", "R-20"],
+        "matrix_keys": {"R-2": "auburn,wa:R-2"},
+        # Auburn 2024 zone rewrite — current ACC 18.07.030 chart columns
+        # are (left-to-right): RC, R-1, R-2, R-3, R-4, R-NM, R-F.
+        # Legacy R-5 / R-7 are repealed and remap to current R-2 by
+        # density (legacy 5–7 du/ac → current R-2 at 7 du/ac min).
+        "columns": ["RC", "R-1", "R-2", "R-3", "R-4", "R-NM", "R-F"],
         "field_rows": [
-            (r"front yard setback|front yard", "frontSetback", _num),
-            (r"rear yard setback|rear yard", "rearSetback", _num),
-            (r"side yard setback|side yard|interior side", "leftSetback", _num),
-            (r"maximum building height|height of buildings", "maxHeightFt", _num),
-            (r"maximum lot coverage|lot coverage", "maxLotCoverage", _pct),
+            (r"front yard setback|front yard|minimum front", "frontSetback", _num),
+            (r"rear yard setback|rear yard|minimum rear", "rearSetback", _num),
+            (r"side yard setback|side yard|interior side|minimum side", "leftSetback", _num),
+            (r"maximum building height|height of buildings|maximum height", "maxHeightFt", _num),
+            (r"maximum lot coverage|maximum.*coverage|lot coverage", "maxLotCoverage", _pct),
         ],
     },
     "renton": {

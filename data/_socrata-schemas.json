@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "datasetCount": 12,
+    "datasetCount": 8,
     "failures": [
       "data.lacity.org:yv23-pmwf HTTP 403"
     ],
@@ -1607,7 +1607,7 @@
       "host": "data.cityofnewyork.us",
       "name": "DOB Permit Issuance",
       "registryKey": "nyc",
-      "rowsUpdatedAt": 1777060878,
+      "rowsUpdatedAt": 1777147576,
       "viewLastModified": 1764798554
     },
     "data.everettwa.gov:3w3u-656c": {
@@ -1749,69 +1749,6 @@
       "registryKey": "everett",
       "rowsUpdatedAt": 1777112145,
       "viewLastModified": 1777112127
-    },
-    "data.everettwa.gov:7fiu-4gra": {
-      "addressFieldGuess": null,
-      "category": "Responsive and Responsible Government",
-      "columns": [],
-      "datasetId": "7fiu-4gra",
-      "description": "Data is provided as is from the City of Everett permit system.\nThis data includes information on permits issued by the City of Everett.",
-      "geoFieldGuess": null,
-      "host": "data.everettwa.gov",
-      "name": "Permits",
-      "registryKey": "everett",
-      "rowsUpdatedAt": 1777112145,
-      "viewLastModified": 1776103720
-    },
-    "data.everettwa.gov:ppic-abeb": {
-      "addressFieldGuess": null,
-      "category": "Responsive and Responsible Government",
-      "columns": [
-        {
-          "dataTypeName": "text",
-          "description": null,
-          "fieldName": "case_number",
-          "name": "CASE NUMBER"
-        },
-        {
-          "dataTypeName": "text",
-          "description": null,
-          "fieldName": "defendant",
-          "name": "DEFENDANT"
-        },
-        {
-          "dataTypeName": "calendar_date",
-          "description": null,
-          "fieldName": "event_date_mm_dd_yyyy",
-          "name": "EVENT DATE (MM/DD/YYYY)"
-        },
-        {
-          "dataTypeName": "text",
-          "description": null,
-          "fieldName": "event_time_hh_mm_am",
-          "name": "EVENT TIME (HH:MM AM)"
-        },
-        {
-          "dataTypeName": "text",
-          "description": null,
-          "fieldName": "event_type",
-          "name": "EVENT TYPE"
-        },
-        {
-          "dataTypeName": "text",
-          "description": null,
-          "fieldName": "event_sub_type",
-          "name": "EVENT SUB TYPE"
-        }
-      ],
-      "datasetId": "ppic-abeb",
-      "description": "This data is updated when new schedules are available.\nThis list could be updated at 5:00 AM, 11:00 AM, 5:00PM or 11:00PM depending on when new data is introduced.",
-      "geoFieldGuess": null,
-      "host": "data.everettwa.gov",
-      "name": "Everett Prosecutor Hearing notifications",
-      "registryKey": "everett",
-      "rowsUpdatedAt": 1777140014,
-      "viewLastModified": 1777140014
     },
     "data.sandiegocounty.gov:dyzh-7eat": {
       "addressFieldGuess": "full_address",
@@ -2581,12 +2518,12 @@
       "rowsUpdatedAt": 1777120178,
       "viewLastModified": 1755626161
     },
-    "internal.open.piercecountywa.gov:hmbh-c3hw": {
-      "addressFieldGuess": null,
-      "category": "Maps and Geospatial",
+    "internal.open.piercecountywa.gov:nhnt-v7ka": {
+      "addressFieldGuess": "siteaddress",
+      "category": null,
       "columns": [
         {
-          "dataTypeName": "multiline",
+          "dataTypeName": "point",
           "description": null,
           "fieldName": "the_geom",
           "name": "the_geom"
@@ -2600,213 +2537,198 @@
         {
           "dataTypeName": "number",
           "description": null,
-          "fieldName": "length",
-          "name": "LENGTH"
+          "fieldName": "applicationnumber",
+          "name": "applicationNumber"
+        },
+        {
+          "dataTypeName": "text",
+          "description": null,
+          "fieldName": "applicationtype",
+          "name": "applicationType"
+        },
+        {
+          "dataTypeName": "text",
+          "description": null,
+          "fieldName": "applicationstatus",
+          "name": "applicationStatus"
+        },
+        {
+          "dataTypeName": "text",
+          "description": null,
+          "fieldName": "parcelnumber",
+          "name": "parcelNumber"
+        },
+        {
+          "dataTypeName": "text",
+          "description": null,
+          "fieldName": "worktype",
+          "name": "workType"
+        },
+        {
+          "dataTypeName": "text",
+          "description": null,
+          "fieldName": "buildingtype",
+          "name": "buildingType"
+        },
+        {
+          "dataTypeName": "text",
+          "description": null,
+          "fieldName": "housingtype",
+          "name": "housingType"
         },
         {
           "dataTypeName": "number",
           "description": null,
-          "fieldName": "pc_bnd_id",
-          "name": "PC_BND_ID"
+          "fieldName": "sqfttotal",
+          "name": "sqFtTotal"
         },
         {
           "dataTypeName": "number",
           "description": null,
-          "fieldName": "id",
-          "name": "ID"
+          "fieldName": "buildingvaluation",
+          "name": "buildingValuation"
         },
         {
           "dataTypeName": "text",
           "description": null,
-          "fieldName": "source",
-          "name": "SOURCE"
+          "fieldName": "dwellingunits",
+          "name": "dwellingUnits"
+        },
+        {
+          "dataTypeName": "text",
+          "description": null,
+          "fieldName": "stories",
+          "name": "stories"
+        },
+        {
+          "dataTypeName": "text",
+          "description": null,
+          "fieldName": "powercompany",
+          "name": "powerCompany"
+        },
+        {
+          "dataTypeName": "text",
+          "description": null,
+          "fieldName": "sewagedisposal",
+          "name": "sewageDisposal"
         },
         {
           "dataTypeName": "number",
           "description": null,
-          "fieldName": "shape_length",
-          "name": "Shape__Length"
-        }
-      ],
-      "datasetId": "hmbh-c3hw",
-      "description": "Pierce County boundary line based on geographic features mentioned in the legal description, and tax parcels. Please note that some geographic features like rivers have moved which may cause changes to the county boundary. The metadata includes significant detail so please read metadata for additional information (https://matterhorn.co.pierce.wa.us/GISmetadata/pdbis_county_boundary_line.html). Any data download constitutes acceptance of the Terms of Use (https://matterhorn.co.pierce.wa.us/Disclaimer/PierceCountyGISDataTermsofUse.pdf).",
-      "geoFieldGuess": null,
-      "host": "internal.open.piercecountywa.gov",
-      "name": "Pierce County Boundary Lines",
-      "registryKey": "pierce_county_unincorp",
-      "rowsUpdatedAt": 1719536282,
-      "viewLastModified": 1777105348
-    },
-    "open.piercecountywa.gov:bg5p-p534": {
-      "addressFieldGuess": null,
-      "category": null,
-      "columns": [],
-      "datasetId": "bg5p-p534",
-      "description": "This spatial data displays the locations of applications and permits that were reviewed and processed by Pierce County. It includes Building Permits, Development Engineering Permits, Environmental Permits, Fire Prevention Permits, Land Use Permits, and Sewer Permits. This data is extracted from the Planning and Public Works PALS Plus application. The permit points are placed using the XY coordinates from PALS Plus. Permits that have do not have XY coordinates in the PALS Plus application will not be in this spatial data. An example of this would be the parcel number associated with the applica",
-      "geoFieldGuess": null,
-      "host": "open.piercecountywa.gov",
-      "name": "Permits - Pierce County",
-      "registryKey": "pierce_county_unincorp",
-      "rowsUpdatedAt": 1777123148,
-      "viewLastModified": 1777122594
-    },
-    "open.piercecountywa.gov:eugc-5pca": {
-      "addressFieldGuess": null,
-      "category": null,
-      "columns": [
-        {
-          "dataTypeName": "multipolygon",
-          "description": null,
-          "fieldName": "the_geom",
-          "name": "the_geom"
+          "fieldName": "acreage",
+          "name": "acreage"
         },
         {
           "dataTypeName": "number",
           "description": null,
-          "fieldName": "objectid",
-          "name": "OBJECTID"
+          "fieldName": "projectvalue",
+          "name": "projectValue"
         },
         {
           "dataTypeName": "number",
           "description": null,
-          "fieldName": "proj_sys_i",
-          "name": "PROJ_SYS_I"
-        },
-        {
-          "dataTypeName": "number",
-          "description": null,
-          "fieldName": "pcde_map",
-          "name": "pcde_map"
-        },
-        {
-          "dataTypeName": "number",
-          "description": null,
-          "fieldName": "pcde_id",
-          "name": "pcde_id"
+          "fieldName": "projectid",
+          "name": "projectId"
         },
         {
           "dataTypeName": "text",
           "description": null,
-          "fieldName": "pcde_cd",
-          "name": "pcde_cd"
-        },
-        {
-          "dataTypeName": "text",
-          "description": null,
-          "fieldName": "last_nm",
-          "name": "last_nm"
-        },
-        {
-          "dataTypeName": "text",
-          "description": null,
-          "fieldName": "first_nm",
-          "name": "first_nm"
-        },
-        {
-          "dataTypeName": "text",
-          "description": null,
-          "fieldName": "proj_name",
-          "name": "proj_name"
-        },
-        {
-          "dataTypeName": "number",
-          "description": null,
-          "fieldName": "lots_subm",
-          "name": "lots_subm"
-        },
-        {
-          "dataTypeName": "number",
-          "description": null,
-          "fieldName": "lots_apprv",
-          "name": "lots_apprv"
-        },
-        {
-          "dataTypeName": "text",
-          "description": null,
-          "fieldName": "auditor_id",
-          "name": "auditor_id"
-        },
-        {
-          "dataTypeName": "text",
-          "description": null,
-          "fieldName": "file_loc_cd",
-          "name": "file_loc_cd"
-        },
-        {
-          "dataTypeName": "text",
-          "description": null,
-          "fieldName": "proj_type_cd",
-          "name": "proj_type_cd"
-        },
-        {
-          "dataTypeName": "text",
-          "description": null,
-          "fieldName": "proj_status_cd",
-          "name": "proj_status_cd"
-        },
-        {
-          "dataTypeName": "text",
-          "description": null,
-          "fieldName": "proj_type_nm",
-          "name": "proj_type_nm"
-        },
-        {
-          "dataTypeName": "text",
-          "description": null,
-          "fieldName": "proj_status_nm",
-          "name": "proj_status_nm"
-        },
-        {
-          "dataTypeName": "text",
-          "description": null,
-          "fieldName": "file_loc_desc",
-          "name": "file_loc_desc"
-        },
-        {
-          "dataTypeName": "text",
-          "description": null,
-          "fieldName": "fg_ref_id",
-          "name": "fg_ref_id"
+          "fieldName": "applicationdept",
+          "name": "applicationDept"
         },
         {
           "dataTypeName": "date",
           "description": null,
-          "fieldName": "fg_release_dt",
-          "name": "fg_release_dt"
+          "fieldName": "applicationdate",
+          "name": "applicationDate"
         },
         {
-          "dataTypeName": "number",
+          "dataTypeName": "date",
           "description": null,
-          "fieldName": "appl_permit_id",
-          "name": "appl_permit_id"
+          "fieldName": "submittaldate",
+          "name": "submittalDate"
+        },
+        {
+          "dataTypeName": "date",
+          "description": null,
+          "fieldName": "approvaldate",
+          "name": "approvalDate"
+        },
+        {
+          "dataTypeName": "date",
+          "description": null,
+          "fieldName": "denialdate",
+          "name": "denialDate"
+        },
+        {
+          "dataTypeName": "date",
+          "description": null,
+          "fieldName": "issueddate",
+          "name": "issuedDate"
+        },
+        {
+          "dataTypeName": "date",
+          "description": null,
+          "fieldName": "finaldate",
+          "name": "finalDate"
         },
         {
           "dataTypeName": "text",
           "description": null,
-          "fieldName": "parcel_num",
-          "name": "parcel_num"
+          "fieldName": "workdescription",
+          "name": "workDescription"
+        },
+        {
+          "dataTypeName": "text",
+          "description": null,
+          "fieldName": "siteaddress",
+          "name": "siteAddress"
+        },
+        {
+          "dataTypeName": "text",
+          "description": null,
+          "fieldName": "projectname",
+          "name": "projectName"
         },
         {
           "dataTypeName": "number",
           "description": null,
-          "fieldName": "shape_area",
-          "name": "Shape__Area"
+          "fieldName": "xcoord",
+          "name": "XCoord"
         },
         {
           "dataTypeName": "number",
           "description": null,
-          "fieldName": "shape_length",
-          "name": "Shape__Length"
+          "fieldName": "ycoord",
+          "name": "YCoord"
+        },
+        {
+          "dataTypeName": "text",
+          "description": null,
+          "fieldName": "publicwater",
+          "name": "publicWater"
+        },
+        {
+          "dataTypeName": "text",
+          "description": null,
+          "fieldName": "urlonlinepermits",
+          "name": "urlOnlinePermits"
+        },
+        {
+          "dataTypeName": "text",
+          "description": null,
+          "fieldName": "lotssubmitted",
+          "name": "lotsSubmitted"
         }
       ],
-      "datasetId": "eugc-5pca",
-      "description": "Polygons of active and historic other land use development in unincorporated Pierce County.  Please read metadata (https://matterhorn.piercecountywa.gov/GISmetadata/pdbplandev_landuse_projects.html) for additional information.  Any use or data download constitutes acceptance of the Terms of Use (https://matterhorn.piercecountywa.gov/Disclaimer/PierceCountyGISDataTermsofUse.pdf).",
-      "geoFieldGuess": null,
-      "host": "open.piercecountywa.gov",
-      "name": "Development Engineering - Other Land Use",
+      "datasetId": "nhnt-v7ka",
+      "description": "This spatial data displays the locations of applications and permits that were reviewed and processed by Pierce County. It includes Building Permits, Development Engineering Permits, Environmental Permits, Fire Prevention Permits, Land Use Permits, and Sewer Permits. This data is extracted from the Planning and Public Works PALS Plus application. The permit points are placed using the XY coordinates from PALS Plus. Permits that have do not have XY coordinates in the PALS Plus application will not be in this spatial data. An example of this would be the parcel number associated with the applica",
+      "geoFieldGuess": "the_geom",
+      "host": "internal.open.piercecountywa.gov",
+      "name": "Permits - Pierce County",
       "registryKey": "pierce_county_unincorp",
-      "rowsUpdatedAt": 1772499127,
-      "viewLastModified": 1715531748
+      "rowsUpdatedAt": 1777123148,
+      "viewLastModified": 1749281817
     }
   }
 }
