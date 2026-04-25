@@ -119,11 +119,40 @@ Per-city integration is back-fill quality lift, not blocking P0-5. The 5 deferre
 - **#19** Federal Way Ch. 19.25 was the wrong upload — please re-upload from Ch. 19.200 or 19.205 (RS use-zone chart). Same upload path as round 3.
 - **#20** Add `scripts/extract-viewsource.py` to the operating manual as the canonical decoder for owner-uploaded view-source HTML — small (~30 LOC) Python helper with usage docs in its docstring.
 
+### P0-5 (WA permit portals expansion) — first batch shipped this commit
+Five new entries added to `data/permit-registry.js`:
+
+| Key | Coverage | Endpoint status |
+|---|---|---|
+| `mybuildingpermit` | 15 King Co cities (Bellevue, Bothell, Carnation, Clyde Hill, Issaquah, Kenmore, Kirkland, Mercer Island, Newcastle, North Bend, Redmond, Sammamish, Snoqualmie, Woodinville, Yarrow Point) | Web-only portal — `searchByAddress: null`. Same pattern as Portland. checklist-auto links the user to the public search. |
+| `tacoma` | Tacoma | ArcGIS Hub item `a12d6fbf58e4434b8ff5070c09646f19` (Accela Permit Data). FeatureServer URL not yet confirmed (Hub indirection + 403 on direct probe). `_unverifiedEndpoint: true`. |
+| `pierce_county_unincorp` | Pierce County (unincorporated + small cities; Tacoma has its own entry) | Socrata `bg5p-p534` on `open.piercecountywa.gov`. searchByAddress + radiusSearch builders generated; field name `site_address` assumed pending live `?$select=:*` confirm. |
+| `snohomish_county_unincorp` | Snohomish County | snoco-gis Active Permits dataset; org host `services6.arcgis.com/z6WYi9VRHfgwgtyW` confirmed for sibling layers (zoning, parcels) but service name not yet probed. PDS Online Records portal as fallback. |
+| `everett` | Everett | Socrata `7fiu-4gra` on `data.everettwa.gov` + eTRAKiT online portal. searchByAddress builder generated; `address` field name assumed. |
+
+**P0-5 status note — Cloudflare wall pattern repeats.** Direct REST/Socrata probes from agent egress all returned 403 (Tacoma Hub, Pierce Socrata, Snohomish ArcGIS, Everett Socrata). Same anti-scraping wall that hit P0-3 municipal-codes. URL patterns ship as best-known from public documentation (Esri Hub item IDs, Socrata canonical URL conventions, advertised dataset slugs). Field-name verification deferred to owner-browser smoke test.
+
+**Schema convention introduced — `_unverifiedEndpoint: true`.** Mirrors the matrix `_unverified[]` discipline for fields whose URL/field schema is best-known but not live-verified. Consumers (`runPhase_comp`) should treat `_unverifiedEndpoint: true` entries the same as `searchByAddress: null` — surface portal links to the user; do not auto-query the JSON endpoint until the flag is cleared.
+
+### New decisions awaiting the human owner (round 3 + P0-5)
+- **#19** Federal Way Ch. 19.25 was the wrong upload — please re-upload from Ch. 19.200 or 19.205 (RS use-zone chart). Same upload path as round 3.
+- **#20** Add `scripts/extract-viewsource.py` to the operating manual as the canonical decoder for owner-uploaded view-source HTML.
+- **#21 NEW (P0-5)** — Verify the 4 best-known REST endpoints via owner-browser hits:
+  - `https://open.piercecountywa.gov/resource/bg5p-p534.json?$select=*&$limit=1` — confirm field names, especially the address column (assumed `site_address`).
+  - `https://data.everettwa.gov/resource/7fiu-4gra.json?$select=*&$limit=1` — confirm field names (assumed `address`).
+  - `https://services6.arcgis.com/z6WYi9VRHfgwgtyW/arcgis/rest/services?f=json` — list all services on snoco-gis to find the active-permits FeatureServer name.
+  - The Tacoma ArcGIS Hub item `a12d6fbf58e4434b8ff5070c09646f19` resolves to a hosted FeatureServer URL on the city's ArcGIS Online org — usually visible in the item's "View as ArcGIS REST" link.
+
+  Owner-browser smoke test takes ~5 minutes per endpoint. Once values are pasted back, `_unverifiedEndpoint: true` flags clear and the entries graduate to live consumers.
+
+- **#22 NEW (P0-5)** — `mybuildingpermit` covers a market-significant chunk of King County but exposes no public REST API. Two paths: (a) accept web-only forever and route checklist-auto links accordingly; (b) procure an Accela Construct API key (typically requires an MOU with eCityGov Alliance). Recommend (a) until P1 — the web link is sufficient for the checklist-auto use case; auto-querying historical permits is a comp-phase enhancement, not P0.
+
 ### Next up
-- Owner approval of decisions #16–#20 + the round-3 batch.
+- Owner-browser verification of decisions #21 endpoints (5-min/each).
 - Owner re-upload of Federal Way RS chart (decision #19).
-- **P0-5 (WA permit portals expansion) — STARTING NOW** per owner instruction.
-- Round 4 integration batch (5 deferred cities) when context allows.
+- **P0-5 batch 2** when verifications come back: clear `_unverifiedEndpoint` flags, optionally add Lakewood + smaller Pierce cities, and wire `runPhase_comp` to route to the new entries.
+- Round 4 chart-integration batch for the 5 still-`_unverified` cities (Auburn, Kirkland, Renton, Kent, Everett).
+- Owner approval of decisions #16–#22 + the P0-5 batch.
 
 ---
 
