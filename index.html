@@ -393,40 +393,54 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--ink);color:var
 <script>
 // ═══ STATE ═══
 // ═══ ADI_PROXY configuration ═══
-// The ArchDraw Intel proxy (workers/proxy.js) unlocks CORS-blocked data sources:
+// The ArchDraw Intel proxy (api/[...path].js Vercel Edge Function or
+// workers/proxy.js Cloudflare Worker) unlocks CORS-blocked data sources:
 // FEMA, county ArcGIS, municipal codes, Socrata permit portals.
-// To enable: deploy the worker (see workers/README.md) then either:
-//   (a) set window.ADI_PROXY_DEFAULT=<url> below, or
-//   (b) run localStorage.setItem('ADI_PROXY', <url>) in the browser console.
-// When unset, the app falls back to direct fetch + public corsproxy.io.
+//
+// Resolution chain:
+//   1. localStorage.ADI_PROXY                 (user override)
+//   2. window.ADI_PROXY_DEFAULT               (build-time default)
+//   3. /api  (relative)                       (auto-used on *.vercel.app /
+//                                              localhost / 127.0.0.1 — same-
+//                                              origin so no CORS needed)
+//   4. null → direct fetch only, NO third-party hop
+//
+// P1-2 (2026-04-25): the legacy `corsproxy.io` fallback was removed. All
+// production data routes through ArchDraw-controlled infra (Vercel Edge
+// or Cloudflare Worker). Standalone users (e.g., GitHub Pages with no
+// proxy configured) see a clear error and must set localStorage.ADI_PROXY
+// to a deployed proxy URL — no silent third-party network hop.
 window.ADI_PROXY_DEFAULT=window.ADI_PROXY_DEFAULT||null;
 function getProxyBase(){
   try{
     const explicit=localStorage.getItem('ADI_PROXY')||window.ADI_PROXY_DEFAULT;
     if(explicit)return explicit;
-    // Zero-config fallback: if the app is served from a host likely to have
-    // /api/* available (Vercel deployment, custom domain with a same-origin
-    // proxy), use a relative path. The /api route either works (no CORS
-    // needed — same origin) or fails quickly and we fall through.
     if(typeof location!=='undefined'&&(/\.vercel\.app$/.test(location.hostname)||location.hostname==='localhost'||location.hostname==='127.0.0.1')){
       return '/api';
     }
     return null;
   }catch(_){return window.ADI_PROXY_DEFAULT||null}
 }
-// Proxy-aware fetch: when ADI_PROXY is set (or we're on a Vercel deployment),
-// routes through our worker; otherwise uses direct fetch with corsproxy.io
-// fallback on failure.
+// Proxy-aware fetch:
+//   - When ADI_PROXY base is resolvable, route through it (no CORS needed
+//     because the proxy returns Access-Control-Allow-Origin: *).
+//   - When no proxy is configured, try direct fetch — succeeds for the
+//     small set of upstream services that are publicly CORS-permissive
+//     (Nominatim, Esri World Imagery, OSM Overpass).
+//   - Direct-fetch failures are NOT silently routed through a third-party
+//     proxy. Caller sees a real error and can set ADI_PROXY to recover.
 async function proxyFetch(route,upstreamUrl){
   const base=getProxyBase();
   if(base){
-    // Route through our proxy. "route" is like '/fema?lat=X&lon=Y'
+    // Route through our proxy. "route" is like '/fema?lat=X&lon=Y'.
     return fetch(`${base}${route}`);
   }
   if(upstreamUrl){
-    // No proxy configured — try direct, fall back to corsproxy.io
-    try{const r=await fetch(upstreamUrl);if(r.ok)return r;throw new Error('direct failed')}
-    catch(_){return fetch(`https://corsproxy.io/?${encodeURIComponent(upstreamUrl)}`)}
+    // No proxy configured — try direct. Fail loudly on CORS / network
+    // errors rather than introducing a silent third-party data hop.
+    const r=await fetch(upstreamUrl);
+    if(r.ok)return r;
+    throw new Error(`proxyFetch direct fetch failed (status ${r.status}). Set localStorage.ADI_PROXY to a deployed Vercel/Worker proxy URL to enable CORS-blocked endpoints.`);
   }
   throw new Error('proxyFetch: no route and no upstreamUrl');
 }
@@ -882,12 +896,28 @@ function localFloorPlan(z, selectedOption){
 function valPlan(plan,z){
   const minX=z.leftSetback,maxX=z.lotWidth-z.rightSetback,minY=z.frontSetback,maxY=z.lotDepth-z.rearSetback;
   if(!plan.floors)return;
-  plan.floors.forEach(fl=>{if(!fl.rooms)fl.rooms=[];fl.rooms=fl.rooms.filter(r=>{
+  const EXEMPT=new Set(['corridor','stair','storage','balcony','entry','laundry']);
+  const minD=t=>EXEMPT.has(t||'')?3:7; // IBC §1208.1 min 7ft habitable
+  plan.floors.forEach(fl=>{if(!fl.rooms)fl.rooms=[];
+    fl.rooms=fl.rooms.filter(r=>{
       if(typeof r.w!=='number'||typeof r.h!=='number')return false;
-      const EXEMPT=new Set(['corridor','stair','storage','balcony','entry','laundry']);
-      const minD=EXEMPT.has(r.type||'')?3:7; // GEOM-3: IBC §1208.1 min 7ft habitable
-      return r.w>=minD&&r.h>=minD;
-    });fl.rooms.forEach(r=>{r.x=Math.max(minX,r.x||minX);r.y=Math.max(minY,r.y||minY);if(r.x+r.w>maxX)r.w=maxX-r.x;if(r.y+r.h>maxY)r.h=maxY-r.y;if(r.w<2)r.w=2;if(r.h<2)r.h=2})});
+      // GEOM-2: drop rooms whose origin already crosses the rear or right
+      // setback line (no clip can save them) — main-building rooms like
+      // DINING, BATH, and LAUNDRY can land past the rear setback when
+      // buildable depth is shallow because their y-coords are computed
+      // from min-size constants (max(13,...)) without checking mainD.
+      if(r.x>=maxX||r.y>=maxY)return false;
+      if(r.x<minX){r.w-=(minX-r.x);r.x=minX;}
+      if(r.y<minY){r.h-=(minY-r.y);r.y=minY;}
+      // Clip overhang to the setback envelope (parcel-level rear/right).
+      if(r.x+r.w>maxX)r.w=maxX-r.x;
+      if(r.y+r.h>maxY)r.h=maxY-r.y;
+      // After clipping, drop rooms below per-type minimum dimension.
+      // GEOM-3 retained: 7ft min for habitable, 3ft for utility/circulation.
+      const md=minD(r.type);
+      return r.w>=md&&r.h>=md;
+    });
+  });
 }
 
 // ═══ PIPELINE ═══

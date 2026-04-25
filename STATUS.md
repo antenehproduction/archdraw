@@ -189,7 +189,45 @@ git push (this commit)
 - ArcGIS endpoints (Tacoma Hub, Snohomish snoco-gis) aren't yet covered by this pipeline — Socrata only. Adding ArcGIS support is a parallel script that hits `<host>/arcgis/rest/services?f=json` to enumerate FeatureServers; planned follow-up.
 - If a host blocks GitHub Actions runners too, fall back to (a) Cloudflare Workers paid tier (different egress) or (b) the existing scripts/extract-viewsource.py + owner manual-copy path.
 
-### Round 5i — ArcGIS fetcher + DRAW-5 + MAP-6 fixes (this commit)
+### Round 5j — GEOM-2 fix + P1-2 corsproxy.io removal (this commit)
+
+Owner note: Supabase is now connected (Claude / Vercel / GitHub) — unblocks the Supabase-side of P0-1 hosted-key auth, P1-1 Stripe, P1-3 observability, P1-4 caching. Logged for follow-up; not actioned this commit.
+
+**Two completions in this batch:**
+
+#### 1. GEOM-2 RESOLVED — rooms past rear-setback line
+The actual overflow source: when buildable depth (`mainD = lotDepth - frontSetback - rearSetback - ADU-share`) is shallow, main-building rooms (DINING, BATH, level-2 LAUNDRY) get y-coordinates computed from min-size constants like `max(13, ...)` without checking against `mainD`. CLAUDE.md described it as "ADU rooms" but ADU rooms are bounded by `aduD-8` clamps and don't actually overflow; the offenders are main-building rooms.
+
+Example failure (mainD=20, hasADU=false):
+- DINING placed at `y = bY + livH(=16)`, `h = max(10, ...)` = 10. End = `bY+26`. **6ft past rear setback line** (`bY+mainD = bY+20`).
+- BATH at `y = bY + kitH(=12)`, `h = 9`. End = `bY+21`. **1ft past.**
+- Level 2 LAUNDRY: `y = bY + bedH(>=13)`, `h = 7`. End = `bY+20+`. **Past rear setback whenever `mainD < 20`.**
+
+Fix landed in `valPlan` (the existing room-validation pass that runs after `localFloorPlan`):
+- Drop rooms whose origin already crosses the rear or right setback line (no clip can save them).
+- Clip overhang to the setback envelope (parcel-level rear/right) — was already there, kept.
+- After clipping, drop rooms below per-type minimum dimension (IBC §1208.1: 7ft habitable / 3ft utility) — was implicit, now explicit and runs after the clip so a room clipped to 4ft no longer ships as "habitable."
+
+Comment cites the bug ID (GEOM-2) and the bug-misdescription (ADU vs. main-building) for future maintenance.
+
+CLAUDE.md active bugs: 2 → 1. Only DATA-2 (cost-estimate ENR adjustment) remains.
+
+#### 2. P1-2 RESOLVED — corsproxy.io fallback removed
+`proxyFetch` (line 420 in index.html) had a fallback chain: try ADI_PROXY → direct fetch → **`https://corsproxy.io/?url=...`** as last resort. The third-party hop was a production dependency on a free service ArchDraw doesn't control.
+
+New chain (third-party hop deleted):
+1. `localStorage.ADI_PROXY` (user override)
+2. `window.ADI_PROXY_DEFAULT` (build-time default)
+3. `/api` relative (auto-used on `*.vercel.app` / localhost) — same-origin Vercel Edge function, no CORS needed
+4. `null` → direct fetch only; if it fails, throw with directive: "Set localStorage.ADI_PROXY to a deployed Vercel/Worker proxy URL to enable CORS-blocked endpoints."
+
+Production users (Vercel-hosted) auto-detect `/api` → existing routes (`/api/arcgis`, `/api/fema`, `/api/municode`, `/api/permits/:city`, `/api/diag`) handle every CORS-blocked source. Standalone users (GitHub Pages with no proxy) see a clear error directing them to set `ADI_PROXY` instead of silently routing through `corsproxy.io`.
+
+Audit grep: `grep -nE "corsproxy|cors-anywhere|allorigins|jina\.ai"` returns ONLY the documentation reference in the new comment block. No remaining runtime third-party-proxy calls anywhere in `index.html` / `api/[...path].js` / `workers/proxy.js`.
+
+§P1-2 success criterion ("zero third-party-controlled hops in the production data path") MET for the standalone path. The hosted path (Vercel + Cloudflare Worker) was already first-party.
+
+### Round 5i — ArcGIS fetcher + DRAW-5 + MAP-6 fixes
 
 Three items completed:
 
