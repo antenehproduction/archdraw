@@ -467,6 +467,49 @@ window.ZONING_MATRIX_DB = {
     _unverified: ['maxStories', 'rearSetback', 'aduMaxSqFt'],
   },
 
+  // ── Auburn, WA ──
+  // District names UNCHANGED — Auburn did NOT execute a Tacoma/Redmond rename through
+  // Ord 6959/6960 (Dec 2024 comp plan update; eff. 2024-12-27). ACC 18.07.010 retains
+  // R-5 and R-7. Dimensional table at ACC 18.07.030 not directly readable —
+  // auburn.municipal.codes AND codepublishing.com/WA/Auburn/ both returned 403.
+  // All numeric setback/height/FAR/coverage fields nulled in _unverified.
+  'auburn,wa:R-5': {
+    jurisdiction: 'Auburn', state: 'WA', district: 'R-5',
+    fullName: 'Residential Zone — 4 to 5 Dwelling Units Per Net Acre',
+    codeURL: 'https://auburn.municipal.codes/ACC/18.07.030',
+    frontSetback: null, rearSetback: null, leftSetback: null, rightSetback: null,
+    maxHeightFt: null, maxStories: null,
+    maxFAR: null,
+    maxLotCoverage: null,
+    parkingPerUnit: 1,
+    aduAllowed: true, aduMaxSqFt: 1000,
+    densityBonus: 'WA HB 1110 (Tier 1, implemented via Ord 6959 eff. 2024-12-27 / ACC 18.02.067): 4 du per lot citywide by right; 6 du per lot within 0.25 mi of major transit (Auburn Sounder station). Additional units above base triggered by lot-area increment per ACC 18.07.030(D)(3). Auburn participates in MFTE (RCW 84.14); residential target area boundaries unverified.',
+    sb9Eligible: false,
+    notes: 'Auburn HB 1110 Tier 1 (pop. ~89k, King + Pierce). ACC 18.07.010 confirms R-5 intent: 4–5 du/net acre; zone name unchanged through Dec 2024 comp plan. Permitted middle-housing types: SFR, duplex, triplex, fourplex, stacked flats, courtyard housing, cottage housing (ACC 18.07.020 + ACC 18.25). ADU per ACC 18.32.010 (Ord 6959): 2 ADUs/lot, max 1,000 sf, min 300 sf, max 2 bedrooms; 0 parking within 0.5mi major transit / 1 space/ADU beyond — note: HB 1337 may override the >0.5mi parking requirement (no distance-based exception in HB 1337); flag as VERIFY for parcels outside the Sounder walkshed. WA HB 1337 (RCW 36.70A.680, eff. 2025-07-01): Auburn-compliant; legacy "ADU Disclosure / Affidavit of Owner Occupancy" form on city website (revised 2025-07) may be voluntary post-Ord-6959 — verify enforcement. WA SB 5184 (eff. 2026-07-27): cities >50k → 1/SFR cap; parkingPerUnit=1 reflects this. UNCAPTURED OVERLAYS: Lea Hill (ACC 18.21.010) and West Hill (ACC 18.21.020) — pre-annexation King/Pierce Co plats with modified standards; Lakeland Hills South PUD — entirely separate dimensional rules; Auburn Way North Plan corridor; Downtown Urban Center (ACC 18.29). MUCKLESHOOT TRUST-LAND CARVE-OUT: Auburn zoning code does NOT apply to MIT trust parcels (BIA-held). Site-intel must verify fee vs. trust status before using this entry — the Muckleshoot Reservation is a checkerboard within Auburn city limits. FETCH NOTE: auburn.municipal.codes and codepublishing.com both 403; ACC 18.07.030 table not read; numeric fields recovered from search snippets only (zone-intent text, ADU section title) — all dimensional values in _unverified.',
+    verifiedDate: '2026-04-25',
+    _sourceMethod: 'search-snippet',
+    _sourceSnapshot: '2026-04-25',
+    _unverified: ['frontSetback', 'rearSetback', 'leftSetback', 'rightSetback', 'maxHeightFt', 'maxStories', 'maxFAR', 'maxLotCoverage'],
+  },
+  'auburn,wa:R-7': {
+    jurisdiction: 'Auburn', state: 'WA', district: 'R-7',
+    fullName: 'Residential Zone — 5 to 7 Dwelling Units Per Net Acre',
+    codeURL: 'https://auburn.municipal.codes/ACC/18.07.030',
+    frontSetback: null, rearSetback: null, leftSetback: null, rightSetback: null,
+    maxHeightFt: null, maxStories: null,
+    maxFAR: null,
+    maxLotCoverage: null,
+    parkingPerUnit: 1,
+    aduAllowed: true, aduMaxSqFt: 1000,
+    densityBonus: 'WA HB 1110 (Tier 1, Ord 6959 eff. 2024-12-27 / ACC 18.02.067): 4 du per lot citywide by right; 6 du per lot within 0.25 mi of major transit (Auburn Sounder station). R-7 lot-area-per-unit interval is smaller than R-5 (denser zone), yielding higher absolute unit caps at equivalent lot areas. Auburn participates in MFTE (RCW 84.14).',
+    sb9Eligible: false,
+    notes: 'Auburn HB 1110 Tier 1. ACC 18.07.010 confirms R-7 intent: 5–7 du/net acre; zone name unchanged. R-7 has smaller min lot than R-5 (exact value unverified). Auburn Housing Action Plan (HAP, DNS SEP21-0013) identified R-5 and R-7 as primary middle-housing target zones; HAP feeds Ord 6959. ADU rules, HB 1337 alignment, SB 5184 parking cap, UNCAPTURED OVERLAYS (Lea Hill, West Hill, Lakeland Hills South PUD, Auburn Way North, Downtown Urban Center), and MUCKLESHOOT TRUST-LAND CARVE-OUT all match auburn,wa:R-5 — see that entry for full notes. R-7 parcels are more likely than R-5 to be near Auburn Way North corridor — boundary check required. FETCH NOTE: same 403 block as R-5; numeric fields all in _unverified.',
+    verifiedDate: '2026-04-25',
+    _sourceMethod: 'search-snippet',
+    _sourceSnapshot: '2026-04-25',
+    _unverified: ['frontSetback', 'rearSetback', 'leftSetback', 'rightSetback', 'maxHeightFt', 'maxStories', 'maxFAR', 'maxLotCoverage'],
+  },
+
   // ── San Francisco, CA ──
   'san francisco,ca:RH-1': {
     jurisdiction: 'San Francisco', state: 'CA', district: 'RH-1',
