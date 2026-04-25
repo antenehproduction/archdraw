@@ -579,6 +579,138 @@ window.ZONING_MATRIX_DB = {
     _replacedBy: 'bothell,wa:R-L2',
   },
 
+  // ── Renton, WA ──
+  // District codes R-4 and R-8 RETAINED through HB 1110 compliance (Ord adopted
+  // 2025-06-24, eff. ~2025-07-24). RMC 4-2-110A is dimensional standards section;
+  // codepublishing.com 403'd. Wall plate heights confirmed from snippets.
+  'renton,wa:R-4': {
+    jurisdiction: 'Renton', state: 'WA', district: 'R-4',
+    fullName: 'Residential-4 (low-density; 4 du/net acre base)',
+    codeURL: 'https://www.codepublishing.com/WA/Renton/html/Renton04/Renton0402/Renton0402110A.html',
+    frontSetback: null, rearSetback: null,
+    leftSetback: null, rightSetback: null,
+    maxHeightFt: 32, maxStories: null,
+    maxFAR: null,
+    maxLotCoverage: null,
+    parkingPerUnit: null,
+    aduAllowed: true, aduMaxSqFt: 1000,
+    densityBonus: 'WA HB 1110 (Tier 1, Ord adopted 2025-06-24): 4 du citywide by right; 6 du within 0.25mi major transit (Stride BRT terminal at Renton Landing qualifies). RMC 4-9-065 density bonus review also available.',
+    sb9Eligible: false,
+    notes: 'Zone name R-4 RETAINED — Renton did NOT rename residential districts in its 2025-06-24 HB 1110 ordinance (unlike Tacoma/Redmond/Everett/Bellevue/Bothell). Wall plate height 32ft confirmed from RMC 4-2-110A search snippet (R-4 is 32ft tier; R-8/R-6/R-10/R-14 are the 24ft tier — counterintuitive but reflects denser-zone bulk control). HB 1337 (eff. 2025-07-23, RCW 35A.21.314) fully implemented in same June 2025 ordinance package: ADU floor 1,000 sf, 2 ADUs/lot, no owner-occupancy. WA SB 5184 (May 2025): caps SFR parking at 1 space/unit; Renton (~108k pop) must codify by 2027-01-27. Cottage-cluster standards in RMC 4-2-110G may apply. UNCAPTURED OVERLAYS: Renton Landing/The Landing commercial overlay; Sunset Area Master Plan; Cedar River Shoreline Master Program (RMC 4-3-090); Aquifer Protection Wellfield Tiers I/II (RMC 4-3-050) — covers significant residential acreage. FAR not used as primary residential control in Renton (lot-coverage based). FETCH NOTE: codepublishing.com, rentonwa.gov, yourvoice.rentonwa.gov, edocs.rentonwa.gov, rentonreporter.com all returned 403; values via Google/Bing search snippets only. Most numeric fields in _unverified.',
+    verifiedDate: '2026-04-25',
+    _sourceMethod: 'search-snippet',
+    _sourceSnapshot: '2026-04-25',
+    _unverified: ['frontSetback', 'rearSetback', 'leftSetback', 'rightSetback', 'maxStories', 'maxFAR', 'maxLotCoverage', 'parkingPerUnit'],
+  },
+  'renton,wa:R-8': {
+    jurisdiction: 'Renton', state: 'WA', district: 'R-8',
+    fullName: 'Residential-8 (moderate-density; 8 du/net acre base)',
+    codeURL: 'https://www.codepublishing.com/WA/Renton/html/Renton04/Renton0402/Renton0402110A.html',
+    frontSetback: null, rearSetback: null,
+    leftSetback: null, rightSetback: null,
+    maxHeightFt: 24, maxStories: null,
+    maxFAR: null,
+    maxLotCoverage: null,
+    parkingPerUnit: null,
+    aduAllowed: true, aduMaxSqFt: 1000,
+    densityBonus: 'WA HB 1110 (Tier 1, Ord adopted 2025-06-24): 4 du citywide by right; 6 du within 0.25mi major transit (Stride BRT terminal at Renton Landing). RMC 4-9-065 density bonus review available.',
+    sb9Eligible: false,
+    notes: 'Zone name R-8 RETAINED. Wall plate height 24ft (lower than R-4\'s 32ft despite denser zone — bulk control via lower plate). Same June 2025 ordinance package implemented HB 1110 + HB 1337. SB 5184 same as R-4 (codification deadline 2027-01-27). Same uncaptured overlays as R-4: The Landing, Sunset Area Master Plan, Cedar River SMP, Aquifer Protection Wellfield Tiers. Cottage-cluster (RMC 4-2-110G) may apply. FAR not the primary control. FETCH NOTE: same 403 block as R-4.',
+    verifiedDate: '2026-04-25',
+    _sourceMethod: 'search-snippet',
+    _sourceSnapshot: '2026-04-25',
+    _unverified: ['frontSetback', 'rearSetback', 'leftSetback', 'rightSetback', 'maxStories', 'maxFAR', 'maxLotCoverage', 'parkingPerUnit'],
+  },
+
+  // ── Kent, WA ──
+  // District codes SR-6 and SR-8 RETAINED through ReCode Kent Phase 1 (Ord 4517
+  // adopted 2025-06-30, eff. 2025-07-30). KCC 15.04 governs but
+  // codepublishing.com/WA/Kent/ 403'd; values are best-available from search
+  // snippets and SEPA checklist excerpts; flagged in _unverified pending direct
+  // chart read.
+  'kent,wa:SR-6': {
+    jurisdiction: 'Kent', state: 'WA', district: 'SR-6',
+    fullName: 'Single-Family Residential 6 du/acre',
+    codeURL: 'https://www.codepublishing.com/WA/Kent/html/Kent15/Kent1504.html',
+    frontSetback: 20, rearSetback: 20,
+    leftSetback: 5, rightSetback: 5,
+    maxHeightFt: 35, maxStories: 2,
+    maxFAR: null,
+    maxLotCoverage: null,
+    parkingPerUnit: 1,
+    aduAllowed: true, aduMaxSqFt: 1000,
+    densityBonus: 'WA HB 1110 (Tier 1, Ord 4517, eff. 2025-07-30): 4 du by right citywide; 6 du within 0.25mi major transit (Sounder Kent Station + planned ST2 Link extension).',
+    sb9Eligible: false,
+    notes: 'Zone name SR-6 RETAINED. Density 6.05 du/ac confirmed (Kent Reporter subdivision approval). Setback values (front 20, rear 20, side 5 per side) are best-guess from KCC 15.08 general SR-zone provisions snippets — KCC 15.04.170 district table not directly readable. NOTE: one snippet stated "side minimum 15 feet" which may be the COMBINED rule rather than per-side; chart access needed to disambiguate. Height 35ft / 2.5 stories from SEPA checklist excerpt (apps.ecology.wa.gov DocumentId=198716). HB 1110 / HB 1337 / SB 5184 framework: ReCode Kent Phase 1 implements HB 1110 (4 du citywide, 6 near transit). ADU per Ord 4325 (eff. 2023-06-15) ahead of HB 1337: 2 ADUs/lot, max 1,000 sf, max 24ft height, no owner-occupancy, no parking required, first ADU impact-fee waived + second 50% of SFR rate. SB 5184: parking cap 1/SFR; Kent (~136k pop) compliance deadline 2027-01-27 — parkingPerUnit=1 reflects the cap. UNCAPTURED OVERLAYS: Downtown Subarea Action Plan (commercial corridors), Midway Subarea Plan (commercial), Kent Valley industrial overlays (Green River M-1/M-2), Shoreline Master Program (within 200ft of Green River / Lake Fenwick). All numeric fields flagged _unverified pending direct read of KCC 15.04.170. FETCH NOTE: codepublishing.com + engage.kentwa.gov + apps.ecology.wa.gov + kentwa.gov WebLink all 403\'d.',
+    verifiedDate: '2026-04-25',
+    _sourceMethod: 'search-snippet',
+    _sourceSnapshot: '2026-04-25',
+    _unverified: ['frontSetback', 'rearSetback', 'leftSetback', 'rightSetback', 'maxHeightFt', 'maxStories', 'maxFAR', 'maxLotCoverage', 'parkingPerUnit'],
+  },
+  'kent,wa:SR-8': {
+    jurisdiction: 'Kent', state: 'WA', district: 'SR-8',
+    fullName: 'Single-Family Residential 8 du/acre',
+    codeURL: 'https://www.codepublishing.com/WA/Kent/html/Kent15/Kent1504.html',
+    frontSetback: 20, rearSetback: 20,
+    leftSetback: 5, rightSetback: 5,
+    maxHeightFt: 35, maxStories: 2,
+    maxFAR: null,
+    maxLotCoverage: null,
+    parkingPerUnit: 1,
+    aduAllowed: true, aduMaxSqFt: 1000,
+    densityBonus: 'WA HB 1110 (Tier 1, Ord 4517, eff. 2025-07-30): 4 du by right citywide; 6 du within 0.25mi major transit (Sounder/Link).',
+    sb9Eligible: false,
+    notes: 'Zone name SR-8 RETAINED. Higher-density single-family tier (~8 du/ac, ~5,400 sf implied lot). Dimensional standards CARRIED from SR-6 (KCC 15.04.170 not directly read; same Ch. 15.08 general SR-zone provisions assumed) — possible SR-8 has reduced setbacks vs SR-6 (denser intent), unverified. Same HB 1110 / HB 1337 / SB 5184 framework, ADU rules, and uncaptured overlays as SR-6. Drawing-engine should verify per-lot floor-area headroom — SR-8 may trigger HB 1110 6-unit threshold faster than SR-6 due to smaller base lot. FETCH NOTE: same 403 block as SR-6.',
+    verifiedDate: '2026-04-25',
+    _sourceMethod: 'search-snippet',
+    _sourceSnapshot: '2026-04-25',
+    _unverified: ['frontSetback', 'rearSetback', 'leftSetback', 'rightSetback', 'maxHeightFt', 'maxStories', 'maxFAR', 'maxLotCoverage', 'parkingPerUnit'],
+  },
+
+  // ── Federal Way, WA ──
+  // District codes RS 7.2 and RS 9.6 RETAINED through HB 1110 compliance.
+  // Middle-housing ordinance adopted 2025-06-03 (effective ~2025-07-03 per
+  // standard 30-day rule, unverified from ordinance text).
+  // CRITICAL DATE: Federal Way Link Extension (1 Line ext to Federal Way
+  // Downtown station) opened 2025-12-06 — NOT 2024-08-30 (that was Lynnwood
+  // Link). HB 1110 transit bonus applies as of Dec 2025.
+  'federal way,wa:RS 7.2': {
+    jurisdiction: 'Federal Way', state: 'WA', district: 'RS 7.2',
+    fullName: 'Single-Family Residential — 7,200 sq ft minimum lot',
+    codeURL: 'https://www.codepublishing.com/WA/FederalWay/html/FederalWay19/FederalWay19200.html',
+    frontSetback: null, rearSetback: null, leftSetback: null, rightSetback: null,
+    maxHeightFt: null, maxStories: null,
+    maxFAR: null,
+    maxLotCoverage: 60,
+    parkingPerUnit: 1,
+    aduAllowed: true, aduMaxSqFt: 1000,
+    densityBonus: 'WA HB 1110 (Tier 1, Ord adopted 2025-06-03): 4 du by right citywide; 6 du within 0.25mi major transit. Federal Way Link Downtown station (opened 2025-12-06) qualifies; parcels within 0.25mi walking distance eligible for 6 du/lot.',
+    sb9Eligible: false,
+    notes: 'Zone name RS 7.2 RETAINED through 2025-06-03 middle-housing ordinance — base district name unchanged; ordinance adds new use-zone charts and middle-housing standards inside the existing RS framework. RS = Single-Family Residential; suffix is lot-size minimum in thousands of sf (7.2 → 7,200 sf min). Lot coverage 60% confirmed for RS 5.0/7.2/9.6 tier (vs. 50% for RS 15.0/35.0) via FWRC Ch. 19.110 search snippet. WA HB 1337 (RCW 36.70A.681, eff. 2025-07-23): 2 ADUs/lot, 1,000 sf floor, no owner-occupancy, no ADU parking — Federal Way pre-HB-1337 cap was reportedly 300–800 sf with 40% GFA limit; state floor governs where local was lower. WA SB 5184 (May 2025): caps SFR parking 1/unit; Federal Way ~102k qualifies → parkingPerUnit=1. UNCAPTURED OVERLAYS: City Center Core (CC-C, FWRC 19.225) and City Center Frame (CC-F, FWRC 19.230) — downtown overlay roughly S 312th to S 324th, Pacific Hwy to 23rd Ave S; do NOT use RS 7.2 for parcels inside CC-C/CC-F. Pacific Highway South (SR-99) corridor may carry CC-F. Twin Lakes Subarea Plan (no independent overlay impact on RS dimensions, but verify TOD amendments). Shoreline Master Program (FWRC Ch. 15.05): 200ft setback from OHWM of Puget Sound + named lakes (Star, Steel, Dolloff, North, Geneva, Killarney, Five Mile) — SMP setbacks supersede RS base. FETCH NOTE: codepublishing.com + federalwaywa.gov + engagefw.com all 403\'d; setback/height/FAR/stories all in _unverified.',
+    verifiedDate: '2026-04-25',
+    _sourceMethod: 'search-snippet',
+    _sourceSnapshot: '2026-04-25',
+    _unverified: ['frontSetback', 'rearSetback', 'leftSetback', 'rightSetback', 'maxHeightFt', 'maxStories', 'maxFAR'],
+  },
+  'federal way,wa:RS 9.6': {
+    jurisdiction: 'Federal Way', state: 'WA', district: 'RS 9.6',
+    fullName: 'Single-Family Residential — 9,600 sq ft minimum lot',
+    codeURL: 'https://www.codepublishing.com/WA/FederalWay/html/FederalWay19/FederalWay19200.html',
+    frontSetback: null, rearSetback: null, leftSetback: null, rightSetback: null,
+    maxHeightFt: null, maxStories: null,
+    maxFAR: null,
+    maxLotCoverage: 60,
+    parkingPerUnit: 1,
+    aduAllowed: true, aduMaxSqFt: 1000,
+    densityBonus: 'WA HB 1110 (Tier 1, Ord adopted 2025-06-03): 4 du by right citywide; 6 du within 0.25mi major transit. Federal Way Link Downtown station (opened 2025-12-06) qualifies.',
+    sb9Eligible: false,
+    notes: 'Zone name RS 9.6 RETAINED. Larger-lot sibling to RS 7.2 — same RS family, same lot coverage tier (60%), same HB 1110 / HB 1337 / SB 5184 framework. RS 9.6 = 9,600 sf min lot. Lot-size-in-thousands-of-sf nomenclature. Same overlay carve-outs as RS 7.2: City Center (CC-C/CC-F), Shoreline Master Program, Twin Lakes Subarea. FETCH NOTE: same 403 block.',
+    verifiedDate: '2026-04-25',
+    _sourceMethod: 'search-snippet',
+    _sourceSnapshot: '2026-04-25',
+    _unverified: ['frontSetback', 'rearSetback', 'leftSetback', 'rightSetback', 'maxHeightFt', 'maxStories', 'maxFAR'],
+  },
+
   // ── San Francisco, CA ──
   'san francisco,ca:RH-1': {
     jurisdiction: 'San Francisco', state: 'CA', district: 'RH-1',

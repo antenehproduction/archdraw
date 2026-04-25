@@ -178,10 +178,37 @@ Six Kirkland overlays the matrix can't represent: Totem Lake Urban Center (KZC 4
 
 Matrix count: 44 entries. Any Tier-1 WA city added going forward needs per-city rename verification; dual-entry only where a rename is detected.
 
-### P0-3 progress: 7 of 10 WA cities shipped
-Done: Seattle + Shoreline (pre-existing) + Bellevue + Tacoma + Everett + Redmond + Kirkland. Remaining: **Renton, Bothell, Auburn, Kent, Federal Way**.
+### P0-3 progress: ALL 10 WA CITIES SHIPPED ✓
+**Coverage complete.** 12 WA jurisdictions in matrix; 56 total entries.
 
-Recommend: **Renton next** (6th-largest King Co; HB 1110 Tier 1; Stride BRT terminus at Renton Landing; pairs with already-shipped King Co county registry).
+| City | Form | Keys | Quality |
+|---|---|---|---|
+| Seattle | pre-existing | NR1, NR2 | verified Jan 2025 |
+| Shoreline | pre-existing | R-6 | verified Jan 2025 |
+| Bellevue | dual: 4 legacy + 4 new | R-X + LL/SR/LDR/MDR | owner chart; full setback/height/FAR/coverage data |
+| Tacoma | dual: 3 new + 3 stubs | UR-X + R-X stubs | full chart data |
+| Everett | dual: 2 legacy + 2 new | R-X + NR-C/NR | owner chart for setbacks; partial |
+| Redmond | dual: 2 new + 3 stubs | NR/NMF + R-4/6/8 stubs | owner chart; full setback/height/FAR data |
+| Kirkland | full | RSA 6, RSA 8 | search-snippet only |
+| Auburn | full | R-5, R-7 | all dimensional fields nulled (Cloudflare 403) |
+| Bothell | dual: 2 new + 2 stubs | R-L1/R-L2 + R-9600/R-7200 stubs | search-snippet; height + coverage + ADU confirmed |
+| Renton | full | R-4, R-8 | wall-plate height confirmed; rest nulled |
+| Kent | full | SR-6, SR-8 | best-guess setbacks + height from Ch. 15.08 + SEPA |
+| Federal Way | full | RS 7.2, RS 9.6 | lot coverage 60% confirmed; setbacks nulled |
+
+### Final rename-pattern tally — exactly 5 of 10
+**RENAMED via HB 1110 compliance:** Tacoma (R→UR), Redmond (R-X→NR/NMF, 11→2), Everett (R-X→NR-C/NR/UR/MU), Bellevue (R-X→LL/SR/LDR/MDR), Bothell (R-9600/7200→R-L1/L2).
+**RETAINED:** Kirkland (RSA), Auburn (R-5/R-7), Renton (R-4/R-8), Kent (SR-6/SR-8), Federal Way (RS 7.2/9.6).
+
+The "rename pattern is unambiguous" finding I declared mid-sweep was wrong. Final: it's mixed 50/50. Going forward (other states, new cities) — never assume either way.
+
+### Cloudflare 403 wall — across the entire sweep
+**Hit on every city after Tacoma:** Bellevue, Everett, Redmond, Auburn, Bothell, Renton, Kent, Federal Way municipal-code hosts all 403'd. Tacoma was the lone exception (cms.tacoma.gov + cityoftacoma.org outside the General-Code/codepublishing CDN). Kirkland's `codepublishing.com/WA/Kirkland` ALSO 403'd — disproved the "codepublishing is safe" hypothesis. Final-state: only owner-uploaded HTML snapshots (Bellevue/Everett/Redmond) yielded full chart data; the other 7 cities ship with significant `_unverified[]` arrays. Manual-copy back-fill is the path for any future quality lift.
+
+### What's next (post-P0-3)
+- **P0-4 HB 1110 first-class data** — schema work to build `data/middle-housing.js` with the WA HB 1110 / HB 1337 / SB 5184 overlays modeled as a sibling. The patterns are now well-understood; this is local code work.
+- **Owner decisions still queued** (#1–#15) — most still pending. P0-1 Hosted-key auth fully blocked on §7-A/7-C/§8-Q1.
+- **Manual-copy back-fill** for the 7 cities still in `_unverified` (Auburn, Kirkland, Renton, Kent, Federal Way, Bothell partial, Everett partial). Path #4 same as the Bellevue/Everett/Redmond round 2 protocol.
 
 ---
 
