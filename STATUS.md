@@ -189,7 +189,33 @@ git push (this commit)
 - ArcGIS endpoints (Tacoma Hub, Snohomish snoco-gis) aren't yet covered by this pipeline — Socrata only. Adding ArcGIS support is a parallel script that hits `<host>/arcgis/rest/services?f=json` to enumerate FeatureServers; planned follow-up.
 - If a host blocks GitHub Actions runners too, fall back to (a) Cloudflare Workers paid tier (different egress) or (b) the existing scripts/extract-viewsource.py + owner manual-copy path.
 
-### Round 5b — workflow tightened to auto-PR (security gate added, this commit)
+### Round 5c — Everett GRADUATED, Pierce identified, security gate live
+
+**First GitHub Actions workflow run succeeded.** 12 of 13 datasets resolved (only `data.lacity.org:yv23-pmwf` 403'd). GitHub-runner egress confirmed unblocked on the WA municipal Socrata hosts that had been walling out agent egress for 4 rounds.
+
+**Round 5c findings from the schema fetch:**
+
+| Entry | P0-5 best-guess | Verified result |
+|---|---|---|
+| **everett** | `7fiu-4gra` (assumed) | **Wrong** — 0 cols, deprecated. **Right answer: `3w3u-656c` "Trakit Permits"**, 21 cols, address = `siteaddress`, geo = `geocoded_column`. **GRADUATED this commit.** |
+| **pierce_county_unincorp** | `bg5p-p534` (assumed) | **Wrong** — 0 cols, deprecated. Round-4 owner candidates (`hmbh-c3hw`, `eugc-5pca`) also wrong (boundary lines + project-level land use). **Web-discovered new candidate: `9yt4-rd9g` "Permits - Pierce County"** added; will graduate after next workflow run validates. |
+| **seattle** (existing) | `76t5-zqzr` with `address` field | **Schema verified** but address field is actually `originaladdress1`. Latent bug in current `searchByAddress` builder (uses `upper(address)`). Not regressing existing behavior, but flagged for follow-up. |
+| 9 other cities (San Francisco, NY, Austin, Boston, Chicago, San Diego, etc.) | various | All resolved with column counts 28–122. No address-field-name mismatches surfaced beyond Seattle's. |
+
+**Everett graduation diff (this commit):**
+- `socrataDataset` → `3w3u-656c` (was 7fiu-4gra)
+- `searchByAddress` builder uses `siteaddress` (was assumed `address`)
+- `radiusSearch` added — uses `within_circle(geocoded_column, ...)` (was null)
+- `_unverifiedEndpoint: true` flag REMOVED — entry now live
+- `_sourceMethod: 'github-actions-schema-fetch'`
+
+**Pierce-County status:** kept `_unverifiedEndpoint: true`, but `socrataDatasetCandidates[]` extended with `9yt4-rd9g` (web-discovered "Permits - Pierce County" feed) and `nhnt-v7ka`. Next workflow run resolves their schemas; if `9yt4-rd9g` advertises a permit-shaped column set with an address column, sync-permit-registry.py will flag for graduation.
+
+**Pipeline behavior validated end-to-end:**
+- Push → workflow runs on GitHub egress (3 sec) → 12 schemas in `data/_socrata-schemas.json` → bot auto-pushes the metadata commit (round 5 ran under old auto-push permissions).
+- The auto-PR pattern lands with this commit (round 5b). All future runs open `bot/schema-update-*` PRs against the trigger branch — the bot can never overwrite source files again.
+
+### Round 5b — workflow tightened to auto-PR (security gate added)
 Changed the schema-fetch workflow's commit pattern from "push directly to current branch" to **"push to bot/schema-update-* branch + open PR"**. Effect:
 - **Permission scope reduced.** `contents: write` still needed to push the throwaway bot branch, but it can never overwrite source files — only humans can merge the PR.
 - **Supply-chain attack surface drops.** If a fetched host gets hijacked and returns a malicious JSON payload, the bot writes it to a PR, not to the working code. A human reviews the diff before it lands. Worst case becomes "we ignore the PR and close it."
