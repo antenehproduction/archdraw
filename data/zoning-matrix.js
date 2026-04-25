@@ -510,6 +510,75 @@ window.ZONING_MATRIX_DB = {
     _unverified: ['frontSetback', 'rearSetback', 'leftSetback', 'rightSetback', 'maxHeightFt', 'maxStories', 'maxFAR', 'maxLotCoverage'],
   },
 
+  // ── Bothell, WA ──
+  // ZONE-RENAME FINDING: Dec 2024 Comprehensive Plan Periodic Update (City Council
+  // approval 2024-12-10) replaced lot-size-named series (R 40,000 / R 9,600 / R 7,200
+  // / R 5,400 / R 2,800 etc.) with descriptive tier codes R-C / R-L1 / R-L2 / R-M1 /
+  // R-M2. Legacy R-9600 → R-L1; R-7200 → R-L2.
+  // HB 1110 TIER 2: Bothell pop. 48,161 (2020 Census) is below 75k Tier 1 threshold.
+  // Tier 2 still requires 4 du citywide / 6 du within 0.25mi major transit.
+  // PARKING: Bothell City Council voted 5-1 in July 2025 to eliminate ALL off-street
+  // parking minimums voluntarily — first city in King or Snohomish County to do so.
+  'bothell,wa:R-L1': {
+    jurisdiction: 'Bothell', state: 'WA', district: 'R-L1',
+    fullName: 'Low-Density Residential 1 (current code; legacy R 9,600, ~9,600 sf min lot)',
+    codeURL: 'https://bothell.municipal.codes/BMC/12.14.030',
+    frontSetback: null, rearSetback: null,
+    leftSetback: 5, rightSetback: 5,
+    maxHeightFt: 35, maxStories: null,
+    maxFAR: null,
+    maxLotCoverage: 55,
+    parkingPerUnit: 0,
+    aduAllowed: true, aduMaxSqFt: 1200,
+    densityBonus: 'WA HB 1110 (Tier 2, compliance eff. 2025-06-30): 4 du by right citywide in R-L1; 6 du within 0.25mi walking distance of a major transit stop. BMC 12.14.134 + 12.06.140 implement middle-housing permissions. Affordable-housing density bonus may apply via BMC 12.07 (parameters not confirmed).',
+    sb9Eligible: false,
+    notes: 'ZONE RENAME: Legacy "R 9,600" → "R-L1" (Dec 2024 Comprehensive Plan). Min lot ~9,600 sf (inferred from BMC 12.14.030 density-ladder rule). Hard-surface coverage 55% base, max 65% (BMC 12.14.140). Height 35ft confirmed for R-L1 with peaked roof (4:12 min pitch) or where uppermost floor is ≤50% of floor below (BMC 12.14.030). Side yards 5ft per side confirmed via ADU setback cross-references (BMC 12.14.135). MIDDLE HOUSING (duplex/triplex/fourplex): front and rear reducible to 5ft minimum in R-C/R-L1/R-L2 per BMC 12.14.134. Base SFR front/rear setbacks not directly confirmed (table inaccessible). FAR not in retrieved snippets; Bothell may not use FAR for residential. ADU per BMC 12.14.135: max 1,200 sf (exceeds HB 1337 floor of 1,000 — local rule governs); 2 ADUs/lot; detached up to 30ft (33ft over existing accessory structure); no owner-occupancy. PARKING: Bothell eliminated all off-street parking minimums July 2025 via 5-1 council vote — parkingPerUnit=0 reflects this voluntary action; preempts SB 5184 (which would impose 1/SFR cap by ~2028 for the 30k–50k band Bothell falls into). UNCAPTURED OVERLAYS: Canyon Park Subarea (BMC 12.46), Northshore Senior Services Center SSHO (BMC 12.66.060), Northwest Mobile Estates (BMC 12.44.030), Shoreline Master Program (BMC 13.07.030 — within 200ft of state-significance shorelines). Downtown Subarea Plan (BMC Ch. 12.64) is a SEPARATE downtown overlay — not applicable to R-L1 base parcels but verify via subarea boundary. FETCH NOTE: bothell.municipal.codes and bothellwa.gov DocumentCenter both 403; values via search snippet extracts.',
+    verifiedDate: '2026-04-25',
+    _sourceMethod: 'search-snippet',
+    _sourceSnapshot: '2026-04-25',
+    _legacy_key: 'bothell,wa:R-9600',
+    _unverified: ['frontSetback', 'rearSetback', 'maxStories', 'maxFAR'],
+  },
+  'bothell,wa:R-L2': {
+    jurisdiction: 'Bothell', state: 'WA', district: 'R-L2',
+    fullName: 'Low-Density Residential 2 (current code; legacy R 7,200, ~7,200 sf min lot)',
+    codeURL: 'https://bothell.municipal.codes/BMC/12.14.030',
+    frontSetback: null, rearSetback: null,
+    leftSetback: 5, rightSetback: 5,
+    maxHeightFt: 35, maxStories: null,
+    maxFAR: null,
+    maxLotCoverage: 60,
+    parkingPerUnit: 0,
+    aduAllowed: true, aduMaxSqFt: 1200,
+    densityBonus: 'WA HB 1110 (Tier 2): 4 du by right citywide in R-L2; 6 du within 0.25mi walking distance of a major transit stop. BMC 12.14.134 + 12.06.140 implement middle-housing permissions. Corner-lot duplexes already permitted in R 7,200 zone since 2021 (pre-HB 1110 city action). Affordable-housing density bonus may apply via BMC 12.07.',
+    sb9Eligible: false,
+    notes: 'ZONE RENAME: Legacy "R 7,200" → "R-L2" (Dec 2024 Comprehensive Plan). R-L2 sits one density step above R-L1 — denser, smaller min lot (~7,200 sf inferred). Hard-surface coverage 60% base, max 65% (BMC 12.14.140) — higher than R-L1\'s 55%. Same 35ft height rule with peaked-roof / uppermost-floor condition as R-L1. Same 5ft side per BMC 12.14.135 cross-references. Middle-housing setback reduction to 5ft front/rear available per BMC 12.14.134. Lot-size averaging: subdivision lots may average above the zone minimum if no individual lot drops below the R-M1 size (BMC 12.14.030). Corner-lot duplexes legal pre-HB 1110 (since 2021). ADU rules same as R-L1 (1,200 sf max; 2/lot; no owner-occupancy). Parking: 0 (same Jul 2025 voluntary elimination). Same overlay framework as R-L1. FETCH NOTE: same 403 block.',
+    verifiedDate: '2026-04-25',
+    _sourceMethod: 'search-snippet',
+    _sourceSnapshot: '2026-04-25',
+    _legacy_key: 'bothell,wa:R-7200',
+    _unverified: ['frontSetback', 'rearSetback', 'maxStories', 'maxFAR'],
+  },
+  // Bothell legacy stubs — graceful resolution when stale parcel data tags pre-rename codes
+  'bothell,wa:R-9600': {
+    jurisdiction: 'Bothell', state: 'WA', district: 'R-9600',
+    fullName: 'R 9,600 (RENAMED 2024-12-10 — see bothell,wa:R-L1)',
+    codeURL: 'https://bothell.municipal.codes/BMC/12.04.020',
+    notes: 'Renamed by Bothell 2024 Comprehensive Plan Periodic Update (City Council 2024-12-10). Successor: bothell,wa:R-L1.',
+    verifiedDate: '2026-04-25',
+    _repealed: true,
+    _replacedBy: 'bothell,wa:R-L1',
+  },
+  'bothell,wa:R-7200': {
+    jurisdiction: 'Bothell', state: 'WA', district: 'R-7200',
+    fullName: 'R 7,200 (RENAMED 2024-12-10 — see bothell,wa:R-L2)',
+    codeURL: 'https://bothell.municipal.codes/BMC/12.04.020',
+    notes: 'Renamed by Bothell 2024 Comprehensive Plan Periodic Update (City Council 2024-12-10). Successor: bothell,wa:R-L2.',
+    verifiedDate: '2026-04-25',
+    _repealed: true,
+    _replacedBy: 'bothell,wa:R-L2',
+  },
+
   // ── San Francisco, CA ──
   'san francisco,ca:RH-1': {
     jurisdiction: 'San Francisco', state: 'CA', district: 'RH-1',
