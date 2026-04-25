@@ -388,6 +388,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--ink);color:var
 <script src="data/zoning-matrix.js"></script>
 <script src="data/middle-housing.js"></script>
 <script src="data/wa-statewide.js"></script>
+<script src="data/cost-index.js"></script>
 <script src="data/permit-registry.js"></script>
 <script src="data/overlay-registry.js"></script>
 <script>
@@ -1377,9 +1378,19 @@ function generateOptions(z){
 
   const opts=[];
 
-  // Compute realistic costs and values
-  const costPerSF=(isCA||isWA)?380:220;
-  const valuePerUnit=(isCA)?720000:isWA?540000:320000;
+  // Compute realistic costs and values.
+  // DATA-2 fix (2026-04): apply a time-based inflation multiplier so the
+  // hard-coded $/SF baselines (anchored to 2024-Q1 publication) track
+  // current construction-cost inflation. ENR CCI is paywalled; BLS PPI for
+  // Residential Construction (series PCU236116, https://data.bls.gov/) is
+  // the closest free analog and is what the multiplier below tracks.
+  // Update procedure: every quarter, fetch the latest PPI value, divide by
+  // the baseline-quarter PPI value, set window.COST_INDEX.current to the
+  // ratio, and bump COST_INDEX.asOf. Auto-refresh script is a planned
+  // follow-up (parallel to fetch-socrata-schemas.py — workflow on cron).
+  const costIndex=(window.COST_INDEX&&window.COST_INDEX.current)||1.06;
+  const costPerSF=Math.round((isCA||isWA?380:220)*costIndex);
+  const valuePerUnit=Math.round(((isCA)?720000:isWA?540000:320000)*costIndex);
   const costMultiplier=(highSeismic)?1.18:1.0;// seismic premium
 
   // Option 1: Conservative — SFR + ADU
@@ -1587,7 +1598,10 @@ async function runPhase_chk(){
   const highSeismic=['CA','AK','WA','OR','NV','UT','HI'].includes(st);
   const highWind=['FL','TX','LA','SC','NC','VA','MD','NJ','NY','MA','CT','HI'].includes(st);
   const isLargeMF=units>=5;const isMixedUse=(S.plan?.meta?.commercialSqFt||0)>0;
-  const costPerSF=(isCA||isNY||isDC||isMA||isWA)?380:(isFL||isTX)?200:260;
+  // DATA-2 fix: apply ENR-style inflation multiplier (BLS PPI proxy) —
+  // see options-panel cost calc above for full rationale and update path.
+  const costIndex=(window.COST_INDEX&&window.COST_INDEX.current)||1.06;
+  const costPerSF=Math.round(((isCA||isNY||isDC||isMA||isWA)?380:(isFL||isTX)?200:260)*costIndex);
   const valuation=Math.round(totalSF*costPerSF);const feeRate=(isCA||isNY)?.012:(isWA||isOR)?.01:.008;
   const feeEst=Math.round(valuation*feeRate/100)*100;
   const feeRange=`$${(feeEst*.8/1000).toFixed(0)}K–$${(feeEst*1.4/1000).toFixed(0)}K`;

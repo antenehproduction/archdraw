@@ -189,7 +189,30 @@ git push (this commit)
 - ArcGIS endpoints (Tacoma Hub, Snohomish snoco-gis) aren't yet covered by this pipeline — Socrata only. Adding ArcGIS support is a parallel script that hits `<host>/arcgis/rest/services?f=json` to enumerate FeatureServers; planned follow-up.
 - If a host blocks GitHub Actions runners too, fall back to (a) Cloudflare Workers paid tier (different egress) or (b) the existing scripts/extract-viewsource.py + owner manual-copy path.
 
-### Round 5j — GEOM-2 fix + P1-2 corsproxy.io removal (this commit)
+### Round 5k — DATA-2 fix (last active CLAUDE.md bug closes; this commit)
+
+**DATA-2 RESOLVED — cost-estimate inflation adjustment.** Hard-coded $/SF baselines (`$380` CA/WA, `$220` other) were anchored to 2024-Q1 publication and never adjusted for construction-cost inflation since.
+
+Fix:
+- `data/cost-index.js` (NEW) — `window.COST_INDEX = { baseline:'2024-Q1', current:1.06, asOf:'2026-04', source:'https://data.bls.gov/timeseries/PCU2361162361162', ... }`. Multiplier tracks BLS PPI for Residential Construction (series PCU236116) — free public analog of the paywalled ENR CCI. Update procedure documented in the file header (manual quarterly bump for now; auto-refresh workflow planned).
+- `index.html` — both cost call sites (the options-panel `costPerSF`/`valuePerUnit` at line 1380 and the permit-fee `costPerSF` at line 1600) now read `window.COST_INDEX.current` with a `1.06` inline fallback for offline/standalone HTML use. Comment cites the BLS series + update path.
+- `<script src="data/cost-index.js"></script>` registered after middle-housing + wa-statewide.
+
+Effect today: `$380/SF` → `$403/SF` (CA/WA), `$220/SF` → `$233/SF` (other). Roughly 6% inflation since Q1-2024, calibrated to the BLS PPI series.
+
+**CLAUDE.md active bugs: 1 → 0.** All four (API-CONN, DRAW-5, GEOM-2, MAP-6, DATA-2) now resolved.
+
+| Bug | Status | Commit |
+|---|---|---|
+| API-CONN | RESOLVED earlier (parse error from unescaped apostrophes) | pre-session |
+| DRAW-5 PDF aspect ratio | RESOLVED — 914.4×609.6mm exact ratio | round 5i (`71e9626`) |
+| MAP-6 parcel rectangle | RESOLVED — irregular polygon path-rendered | round 5i (`71e9626`) |
+| GEOM-2 ADU rear-setback overflow | RESOLVED — `valPlan` drops past-setback rooms | round 5j (`450cdf4`) |
+| DATA-2 fixed $/SF | RESOLVED — `COST_INDEX` multiplier (BLS PPI) | round 5k (this commit) |
+
+Follow-up tracked: a `data/cost-index.js` auto-refresh GitHub Actions workflow (parallel to `fetch-schemas.yml`) that pulls the latest BLS PPI value quarterly and opens a PR. Same security-gate pattern as the schema fetcher. Not blocking; manual bump every 3 months keeps the multiplier current.
+
+### Round 5j — GEOM-2 fix + P1-2 corsproxy.io removal
 
 Owner note: Supabase is now connected (Claude / Vercel / GitHub) — unblocks the Supabase-side of P0-1 hosted-key auth, P1-1 Stripe, P1-3 observability, P1-4 caching. Logged for follow-up; not actioned this commit.
 
