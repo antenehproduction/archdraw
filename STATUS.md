@@ -189,7 +189,38 @@ git push (this commit)
 - ArcGIS endpoints (Tacoma Hub, Snohomish snoco-gis) aren't yet covered by this pipeline — Socrata only. Adding ArcGIS support is a parallel script that hits `<host>/arcgis/rest/services?f=json` to enumerate FeatureServers; planned follow-up.
 - If a host blocks GitHub Actions runners too, fall back to (a) Cloudflare Workers paid tier (different egress) or (b) the existing scripts/extract-viewsource.py + owner manual-copy path.
 
-### Round 5g — Federal Way GRADUATED + buffer pattern in runPhase_record + Pierce re-trigger (this commit)
+### Round 5h — Pierce GRADUATED + workflow fail-soft on blocked PR-create (this commit)
+
+**Pierce winner: `internal.open.piercecountywa.gov:nhnt-v7ka` "Permits - Pierce County"** (33 cols, address `siteaddress`, geo `the_geom`). Sync helper score 12.0 vs next-best 1.0 — clear separation.
+
+Round 5g re-trigger workflow ran twice on origin (commits `ff7c779` + cron). Both runs **succeeded at the schema fetch + branch push** (`bot/schema-update-20260425-1819` and `-1900` exist on origin with the new schemas). PR creation step failed with:
+
+```
+pull request create failed: GraphQL: GitHub Actions is not permitted to create or approve pull requests
+```
+
+This is the GitHub repo-setting default: **Settings → Actions → General → Workflow permissions → "Allow GitHub Actions to create and approve pull requests"** is off out of the box. Owner can enable it for full auto-PR; in the meantime we adopt a fail-soft pattern.
+
+**Two updates landed this commit:**
+
+1. `data/permit-registry.js` — Pierce graduated to verified:
+   - `socrataDataset` → `https://internal.open.piercecountywa.gov/resource/nhnt-v7ka.json`
+   - `searchByAddress` builder uses `siteaddress`
+   - `radiusSearch` uses `within_circle(the_geom, ...)`
+   - `_unverifiedEndpoint: true` REMOVED
+   - `socrataDatasetCandidates` collapsed to `[nhnt-v7ka]` only (the 4 wrong-dataset attempts kept in the comment for provenance)
+
+2. `.github/workflows/fetch-schemas.yml` — fail-soft branch around `gh pr create`:
+   - If PR creation fails, branch is already pushed (schemas not lost) — workflow exits 0 with a `::warning::` message including the manual PR URL `https://github.com/{repo}/pull/new/{branch}`.
+   - Owner can either enable the repo setting (one click — recommended) or open PRs manually from the Actions log link. Either way, schemas land.
+
+`data/_socrata-schemas.json` updated from the bot branch — pulled into this commit so we don't depend on a manual PR for the data to land.
+
+**Findings on dataset hosting (worth flagging):**
+- Pierce County has TWO Socrata hosts: `open.piercecountywa.gov` (citizen-facing) AND `internal.open.piercecountywa.gov` (the actual permit data). The "Permits - Pierce County" name is reused between hosts (3 datasets share that name across both); `internal.` is the only one with real columns. The owner round-4 Foundry upload of `internal.open.piercecountywa.gov_hmbh-c3hw.html` correctly identified the host; the round-5c addition of `nhnt-v7ka` as candidate landed on the right id.
+- Same pattern likely exists for other WA counties — when registering future permit endpoints, search both `open.<county>` and `internal.open.<county>` Socrata domains.
+
+### Round 5g — Federal Way GRADUATED + buffer pattern in runPhase_record + Pierce re-trigger
 
 **Three tasks completed in one batch:**
 

@@ -183,38 +183,31 @@ window.PERMIT_PORTAL_REGISTRY = {
     _unverifiedEndpoint: true,
   },
 
-  // Pierce County (unincorporated + Lakewood + smaller cities; Tacoma has its
-  // own portal above). FINDING (round 5, 2026-04-25 GitHub Actions schema-fetch):
-  // all 3 candidate Socrata datasets checked are NOT building permits:
-  //   bg5p-p534  — 0 columns (deprecated / no longer published)
-  //   hmbh-c3hw  — "Pierce County Boundary Lines" (geometry only, 7 cols)
-  //   eugc-5pca  — "Development Engineering - Other Land Use" (project
-  //                boundaries / land-use applications, 24 cols, no
-  //                address column — has parcel_num + the_geom only)
-  // The actual building-permits Socrata feed is unidentified. searchByAddress
-  // points at bg5p-p534 (legacy URL still resolves on the open portal even
-  // though the dataset is empty); a future schema-fetch round will pick up
-  // the right dataset once the correct ID is registered here.
+  // Pierce County — VERIFIED via GitHub Actions schema-fetch (round 5h,
+  // 2026-04-25). Of 5 candidate Socrata IDs across both Pierce hosts, only
+  // internal.open.piercecountywa.gov:nhnt-v7ka is the right "Permits -
+  // Pierce County" dataset (33 cols, address field `siteaddress`, geo field
+  // `the_geom`). Two other "Permits - Pierce County"-named feeds are
+  // deprecated empties (bg5p-p534, 9yt4-rd9g — both 0 cols). hmbh-c3hw is
+  // Boundary Lines (geometry only); eugc-5pca is project-level land use
+  // (24 cols but no address column). The owner round-4 Foundry upload
+  // identified the right HOST (internal.open.piercecountywa.gov); the
+  // round-5c addition of nhnt-v7ka as an "alternate Permits feed" candidate
+  // turned out to be exactly the right id.
   pierce_county_unincorp: {
     city: 'Pierce County (unincorporated)', state: 'WA',
-    portalURL: 'https://open.piercecountywa.gov/dataset/Permits-Pierce-County/bg5p-p534',
-    socrataDataset: 'https://open.piercecountywa.gov/resource/bg5p-p534.json',
+    portalURL: 'https://open.piercecountywa.gov/dataset/Permits-Pierce-County/9yt4-rd9g',
+    socrataDataset: 'https://internal.open.piercecountywa.gov/resource/nhnt-v7ka.json',
     socrataDatasetCandidates: [
-      // Round 5 promising additions (web-discovered 2026-04-25; round 5g
-      // re-trigger of fetch-schemas workflow to validate via GH-runner egress):
-      'https://open.piercecountywa.gov/resource/9yt4-rd9g.json',          // "Permits - Pierce County" (likely the right one)
-      'https://internal.open.piercecountywa.gov/resource/nhnt-v7ka.json', // alternate "Permits" feed
-      // Round 5 already-checked (kept for provenance — workflow skips dupes):
-      'https://open.piercecountywa.gov/resource/bg5p-p534.json',
-      'https://internal.open.piercecountywa.gov/resource/hmbh-c3hw.json',
-      'https://open.piercecountywa.gov/resource/eugc-5pca.json',
+      'https://internal.open.piercecountywa.gov/resource/nhnt-v7ka.json',
     ],
-    searchByAddress: null,
-    radiusSearch: null,
-    notes: 'Pierce County permits — round 5 (2026-04-25): added 9yt4-rd9g (advertised as "Permits - Pierce County" at open.piercecountywa.gov/dataset/Permits-Pierce-County/9yt4-rd9g) and nhnt-v7ka as new candidates. Three previously-checked IDs (bg5p-p534, hmbh-c3hw, eugc-5pca) all confirmed not-permits via GitHub Actions schema-fetch. searchByAddress remains null until the next workflow run validates the new candidates and the sync-permit-registry.py report graduates the chosen one.',
+    searchByAddress: (addr) =>
+      `https://internal.open.piercecountywa.gov/resource/nhnt-v7ka.json?$where=upper(siteaddress) like '%25${encodeURIComponent(addr.toUpperCase())}%25'&$limit=20`,
+    radiusSearch: (lat, lon, miles = 2) =>
+      `https://internal.open.piercecountywa.gov/resource/nhnt-v7ka.json?$where=within_circle(the_geom,${lat},${lon},${miles * 1609.34})&$limit=50`,
+    notes: 'Pierce County "Permits - Pierce County" — Socrata dataset nhnt-v7ka on internal.open.piercecountywa.gov. Schema verified via GitHub Actions workflow 2026-04-25 (round 5h): 33 columns, address field is `siteaddress`, geo field is `the_geom`. Other Pierce dataset candidates checked but not permits: bg5p-p534 / 9yt4-rd9g (both 0 cols, deprecated empties at the public open portal); hmbh-c3hw (boundary lines); eugc-5pca (project-level land use). Note the data is on the *internal* subdomain — public portal at open.piercecountywa.gov is the citizen-facing landing.',
     _verifiedDate: '2026-04-25',
     _sourceMethod: 'github-actions-schema-fetch',
-    _unverifiedEndpoint: true,
   },
 
   // Snohomish County — Active Permits dataset hosted on the snoco-gis ArcGIS
