@@ -1750,69 +1750,6 @@
       "rowsUpdatedAt": 1777112145,
       "viewLastModified": 1777112127
     },
-    "data.everettwa.gov:7fiu-4gra": {
-      "addressFieldGuess": null,
-      "category": "Responsive and Responsible Government",
-      "columns": [],
-      "datasetId": "7fiu-4gra",
-      "description": "Data is provided as is from the City of Everett permit system.\nThis data includes information on permits issued by the City of Everett.",
-      "geoFieldGuess": null,
-      "host": "data.everettwa.gov",
-      "name": "Permits",
-      "registryKey": "everett",
-      "rowsUpdatedAt": 1777112145,
-      "viewLastModified": 1776103720
-    },
-    "data.everettwa.gov:ppic-abeb": {
-      "addressFieldGuess": null,
-      "category": "Responsive and Responsible Government",
-      "columns": [
-        {
-          "dataTypeName": "text",
-          "description": null,
-          "fieldName": "case_number",
-          "name": "CASE NUMBER"
-        },
-        {
-          "dataTypeName": "text",
-          "description": null,
-          "fieldName": "defendant",
-          "name": "DEFENDANT"
-        },
-        {
-          "dataTypeName": "calendar_date",
-          "description": null,
-          "fieldName": "event_date_mm_dd_yyyy",
-          "name": "EVENT DATE (MM/DD/YYYY)"
-        },
-        {
-          "dataTypeName": "text",
-          "description": null,
-          "fieldName": "event_time_hh_mm_am",
-          "name": "EVENT TIME (HH:MM AM)"
-        },
-        {
-          "dataTypeName": "text",
-          "description": null,
-          "fieldName": "event_type",
-          "name": "EVENT TYPE"
-        },
-        {
-          "dataTypeName": "text",
-          "description": null,
-          "fieldName": "event_sub_type",
-          "name": "EVENT SUB TYPE"
-        }
-      ],
-      "datasetId": "ppic-abeb",
-      "description": "This data is updated when new schedules are available.\nThis list could be updated at 5:00 AM, 11:00 AM, 5:00PM or 11:00PM depending on when new data is introduced.",
-      "geoFieldGuess": null,
-      "host": "data.everettwa.gov",
-      "name": "Everett Prosecutor Hearing notifications",
-      "registryKey": "everett",
-      "rowsUpdatedAt": 1777140014,
-      "viewLastModified": 1777140014
-    },
     "data.sandiegocounty.gov:dyzh-7eat": {
       "addressFieldGuess": "full_address",
       "category": "Housing and Infrastructure",
@@ -2636,6 +2573,231 @@
       "registryKey": "pierce_county_unincorp",
       "rowsUpdatedAt": 1719536282,
       "viewLastModified": 1777105348
+    },
+    "internal.open.piercecountywa.gov:nhnt-v7ka": {
+      "addressFieldGuess": "siteaddress",
+      "category": null,
+      "columns": [
+        {
+          "dataTypeName": "point",
+          "description": null,
+          "fieldName": "the_geom",
+          "name": "the_geom"
+        },
+        {
+          "dataTypeName": "number",
+          "description": null,
+          "fieldName": "objectid",
+          "name": "OBJECTID"
+        },
+        {
+          "dataTypeName": "number",
+          "description": null,
+          "fieldName": "applicationnumber",
+          "name": "applicationNumber"
+        },
+        {
+          "dataTypeName": "text",
+          "description": null,
+          "fieldName": "applicationtype",
+          "name": "applicationType"
+        },
+        {
+          "dataTypeName": "text",
+          "description": null,
+          "fieldName": "applicationstatus",
+          "name": "applicationStatus"
+        },
+        {
+          "dataTypeName": "text",
+          "description": null,
+          "fieldName": "parcelnumber",
+          "name": "parcelNumber"
+        },
+        {
+          "dataTypeName": "text",
+          "description": null,
+          "fieldName": "worktype",
+          "name": "workType"
+        },
+        {
+          "dataTypeName": "text",
+          "description": null,
+          "fieldName": "buildingtype",
+          "name": "buildingType"
+        },
+        {
+          "dataTypeName": "text",
+          "description": null,
+          "fieldName": "housingtype",
+          "name": "housingType"
+        },
+        {
+          "dataTypeName": "number",
+          "description": null,
+          "fieldName": "sqfttotal",
+          "name": "sqFtTotal"
+        },
+        {
+          "dataTypeName": "number",
+          "description": null,
+          "fieldName": "buildingvaluation",
+          "name": "buildingValuation"
+        },
+        {
+          "dataTypeName": "text",
+          "description": null,
+          "fieldName": "dwellingunits",
+          "name": "dwellingUnits"
+        },
+        {
+          "dataTypeName": "text",
+          "description": null,
+          "fieldName": "stories",
+          "name": "stories"
+        },
+        {
+          "dataTypeName": "text",
+          "description": null,
+          "fieldName": "powercompany",
+          "name": "powerCompany"
+        },
+        {
+          "dataTypeName": "text",
+          "description": null,
+          "fieldName": "sewagedisposal",
+          "name": "sewageDisposal"
+        },
+        {
+          "dataTypeName": "number",
+          "description": null,
+          "fieldName": "acreage",
+          "name": "acreage"
+        },
+        {
+          "dataTypeName": "number",
+          "description": null,
+          "fieldName": "projectvalue",
+          "name": "projectValue"
+        },
+        {
+          "dataTypeName": "number",
+          "description": null,
+          "fieldName": "projectid",
+          "name": "projectId"
+        },
+        {
+          "dataTypeName": "text",
+          "description": null,
+          "fieldName": "applicationdept",
+          "name": "applicationDept"
+        },
+        {
+          "dataTypeName": "date",
+          "description": null,
+          "fieldName": "applicationdate",
+          "name": "applicationDate"
+        },
+        {
+          "dataTypeName": "date",
+          "description": null,
+          "fieldName": "submittaldate",
+          "name": "submittalDate"
+        },
+        {
+          "dataTypeName": "date",
+          "description": null,
+          "fieldName": "approvaldate",
+          "name": "approvalDate"
+        },
+        {
+          "dataTypeName": "date",
+          "description": null,
+          "fieldName": "denialdate",
+          "name": "denialDate"
+        },
+        {
+          "dataTypeName": "date",
+          "description": null,
+          "fieldName": "issueddate",
+          "name": "issuedDate"
+        },
+        {
+          "dataTypeName": "date",
+          "description": null,
+          "fieldName": "finaldate",
+          "name": "finalDate"
+        },
+        {
+          "dataTypeName": "text",
+          "description": null,
+          "fieldName": "workdescription",
+          "name": "workDescription"
+        },
+        {
+          "dataTypeName": "text",
+          "description": null,
+          "fieldName": "siteaddress",
+          "name": "siteAddress"
+        },
+        {
+          "dataTypeName": "text",
+          "description": null,
+          "fieldName": "projectname",
+          "name": "projectName"
+        },
+        {
+          "dataTypeName": "number",
+          "description": null,
+          "fieldName": "xcoord",
+          "name": "XCoord"
+        },
+        {
+          "dataTypeName": "number",
+          "description": null,
+          "fieldName": "ycoord",
+          "name": "YCoord"
+        },
+        {
+          "dataTypeName": "text",
+          "description": null,
+          "fieldName": "publicwater",
+          "name": "publicWater"
+        },
+        {
+          "dataTypeName": "text",
+          "description": null,
+          "fieldName": "urlonlinepermits",
+          "name": "urlOnlinePermits"
+        },
+        {
+          "dataTypeName": "text",
+          "description": null,
+          "fieldName": "lotssubmitted",
+          "name": "lotsSubmitted"
+        }
+      ],
+      "datasetId": "nhnt-v7ka",
+      "description": "This spatial data displays the locations of applications and permits that were reviewed and processed by Pierce County. It includes Building Permits, Development Engineering Permits, Environmental Permits, Fire Prevention Permits, Land Use Permits, and Sewer Permits. This data is extracted from the Planning and Public Works PALS Plus application. The permit points are placed using the XY coordinates from PALS Plus. Permits that have do not have XY coordinates in the PALS Plus application will not be in this spatial data. An example of this would be the parcel number associated with the applica",
+      "geoFieldGuess": "the_geom",
+      "host": "internal.open.piercecountywa.gov",
+      "name": "Permits - Pierce County",
+      "registryKey": "pierce_county_unincorp",
+      "rowsUpdatedAt": 1777123148,
+      "viewLastModified": 1749281817
+    },
+    "open.piercecountywa.gov:9yt4-rd9g": {
+      "addressFieldGuess": null,
+      "category": null,
+      "columns": [],
+      "datasetId": "9yt4-rd9g",
+      "description": "This spatial data displays the locations of applications and permits that were reviewed and processed by Pierce County. It includes Building Permits, Development Engineering Permits, Environmental Permits, Fire Prevention Permits, Land Use Permits, and Sewer Permits. This data is extracted from the Planning and Public Works PALS Plus application. The permit points are placed using the XY coordinates from PALS Plus. Permits that have do not have XY coordinates in the PALS Plus application will not be in this spatial data. An example of this would be the parcel number associated with the applica",
+      "geoFieldGuess": null,
+      "host": "open.piercecountywa.gov",
+      "name": "Permits - Pierce County",
+      "registryKey": "pierce_county_unincorp",
+      "rowsUpdatedAt": 1777054941,
+      "viewLastModified": 1777140218
     },
     "open.piercecountywa.gov:bg5p-p534": {
       "addressFieldGuess": null,
