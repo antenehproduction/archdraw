@@ -51,14 +51,23 @@ def geocode(addr: str) -> tuple[float, float]:
 
 
 def query_parcel(lat: float, lon: float) -> dict:
+    # 20-meter buffer: Nominatim often returns street-centerline points
+    # (right-of-way, not parcel interior). Buffering the spatial query
+    # snaps to the adjacent parcel polygon. Standard Esri REST pattern;
+    # 20m is the minimum safe distance for typical urban/suburban
+    # parcels (avoids false positives spanning two adjacent parcels at
+    # narrower buffers; tighter than residential lot widths).
     params = {
         "geometry": f"{lon},{lat}",
         "geometryType": "esriGeometryPoint",
         "spatialRel": "esriSpatialRelIntersects",
+        "distance": "20",
+        "units": "esriSRUnit_Meter",
         "outFields": "PARCEL_ID,TAB_ACRES,USECODE",
         "returnGeometry": "true",
         "f": "json",
         "inSR": "4326",
+        "outSR": "4326",
     }
     req = urllib.request.Request(
         f"{ENDPOINT}?{urllib.parse.urlencode(params)}",
