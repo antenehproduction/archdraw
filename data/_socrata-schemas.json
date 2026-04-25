@@ -1,0 +1,23 @@
+{
+  "_meta": {
+    "datasetCount": 0,
+    "failures": [
+      "data.austintexas.gov:3syk-w9eu HTTP 403",
+      "data.cityofchicago.org:ydr8-5enu HTTP 403",
+      "data.everettwa.gov:3w3u-656c HTTP 403",
+      "data.everettwa.gov:7fiu-4gra HTTP 403",
+      "data.everettwa.gov:ppic-abeb HTTP 403",
+      "data.lacity.org:yv23-pmwf HTTP 403",
+      "data.cityofnewyork.us:ipu4-2q9a HTTP 403",
+      "internal.open.piercecountywa.gov:hmbh-c3hw HTTP 403",
+      "open.piercecountywa.gov:bg5p-p534 HTTP 403",
+      "open.piercecountywa.gov:eugc-5pca HTTP 403",
+      "data.sandiegocounty.gov:dyzh-7eat HTTP 403",
+      "data.seattle.gov:76t5-zqzr HTTP 403",
+      "data.sfgov.org:i98e-djp9 HTTP 403"
+    ],
+    "generatedBy": "scripts/fetch-socrata-schemas.py",
+    "schemaVersion": 1
+  },
+  "schemas": {}
+}

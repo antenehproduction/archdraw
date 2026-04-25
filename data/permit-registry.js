@@ -181,18 +181,28 @@ window.PERMIT_PORTAL_REGISTRY = {
   },
 
   // Pierce County (unincorporated + Lakewood + smaller cities; Tacoma has its
-  // own portal above). Socrata dataset id bg5p-p534. Canonical Socrata URL is
-  // <domain>/resource/<id>.json. Field names are inferred from the Pierce
-  // PALS-Plus extract; live first-query verification still required.
+  // own portal above). Multiple Socrata datasets discovered via owner-browser
+  // upload of dev.socrata.com Foundry pages (round 4, 2026-04-25):
+  //   bg5p-p534  — original P0-5 best-guess (broad permits feed)
+  //   hmbh-c3hw  — internal.open.piercecountywa.gov (newer endpoint)
+  //   eugc-5pca  — open.piercecountywa.gov (embed view)
+  // The GitHub Actions schema-fetch workflow (.github/workflows/fetch-schemas.yml)
+  // resolves field names for all of these; sync-permit-registry.py picks the
+  // dataset whose schema actually advertises a permit-like address column.
   pierce_county_unincorp: {
     city: 'Pierce County (unincorporated)', state: 'WA',
     portalURL: 'https://open.piercecountywa.gov/dataset/Permits-Pierce-County/bg5p-p534',
     socrataDataset: 'https://open.piercecountywa.gov/resource/bg5p-p534.json',
+    socrataDatasetCandidates: [
+      'https://open.piercecountywa.gov/resource/bg5p-p534.json',
+      'https://internal.open.piercecountywa.gov/resource/hmbh-c3hw.json',
+      'https://open.piercecountywa.gov/resource/eugc-5pca.json',
+    ],
     searchByAddress: (addr) =>
       `https://open.piercecountywa.gov/resource/bg5p-p534.json?$where=upper(site_address) like '%25${encodeURIComponent(addr.toUpperCase())}%25'&$limit=20`,
     radiusSearch: (lat, lon, miles = 2) =>
       `https://open.piercecountywa.gov/resource/bg5p-p534.json?$where=within_circle(location,${lat},${lon},${miles * 1609.34})&$limit=50`,
-    notes: 'Pierce County PALS-Plus extract published to Open Pierce County. Permit points placed via PALS-Plus XY coords; permits without coords are not in the spatial layer. Field names assumed (site_address, permit_number, issue_date, permit_type, location); first live query should call ?$select=:* to confirm.',
+    notes: 'Pierce County PALS-Plus extract published to Open Pierce County. Permit points placed via PALS-Plus XY coords; permits without coords are not in the spatial layer. Field names assumed (site_address, permit_number, issue_date, permit_type, location); GitHub Actions schema fetch will graduate this entry once it returns the canonical column names.',
     _verifiedDate: '2026-04-25',
     _sourceMethod: 'documented-socrata-id',
     _unverifiedEndpoint: true,
@@ -213,18 +223,29 @@ window.PERMIT_PORTAL_REGISTRY = {
     _unverifiedEndpoint: true,
   },
 
-  // Everett — Socrata dataset id 7fiu-4gra on data.everettwa.gov. The
-  // online permit portal at onlinepermits.everettwa.gov is eTRAKiT (no
-  // public REST surface).
+  // Everett — multiple Socrata datasets discovered via owner-browser upload
+  // of dev.socrata.com Foundry pages (round 4, 2026-04-25):
+  //   7fiu-4gra  — original P0-5 best-guess (Permits)
+  //   3w3u-656c  — newly discovered Everett Socrata dataset
+  //   ppic-abeb  — newly discovered Everett Socrata dataset
+  // The GitHub Actions workflow resolves all schemas; sync-permit-registry.py
+  // picks the one whose schema is actually permit-shaped. eTRAKiT online
+  // portal at onlinepermits.everettwa.gov is the citizen-facing apply/inspect
+  // surface (no public REST).
   everett: {
     city: 'Everett', state: 'WA',
     portalURL: 'https://onlinepermits.everettwa.gov/etrakit/default.aspx',
     socrataDataset: 'https://data.everettwa.gov/resource/7fiu-4gra.json',
+    socrataDatasetCandidates: [
+      'https://data.everettwa.gov/resource/7fiu-4gra.json',
+      'https://data.everettwa.gov/resource/3w3u-656c.json',
+      'https://data.everettwa.gov/resource/ppic-abeb.json',
+    ],
     openDataURL: 'https://data.everettwa.gov/Responsive-and-Responsible-Government/Permits/7fiu-4gra',
     searchByAddress: (addr) =>
       `https://data.everettwa.gov/resource/7fiu-4gra.json?$where=upper(address) like '%25${encodeURIComponent(addr.toUpperCase())}%25'&$limit=20`,
     radiusSearch: null,
-    notes: 'Everett Socrata permit dataset 7fiu-4gra. Standard Socrata URL conventions; field name "address" assumed (other Everett datasets use the bare "address" column). First live query should ?$select=:* to confirm. eTRAKiT online portal is the citizen-facing apply/inspect surface.',
+    notes: 'Everett Socrata permit dataset (id pending schema-fetch). Standard Socrata URL conventions; field name "address" assumed pending GitHub Actions schema-fetch graduation. eTRAKiT online portal is the citizen-facing apply/inspect surface.',
     _verifiedDate: '2026-04-25',
     _sourceMethod: 'documented-socrata-id',
     _unverifiedEndpoint: true,
