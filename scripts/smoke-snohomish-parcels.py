@@ -24,13 +24,15 @@ import urllib.request
 
 UA = "ArchDraw-smoke-test/1.0 (github.com/antenehproduction/archdraw)"
 
-# 3 representative Snohomish addresses per the §P0-2 acceptance criterion:
+# 3 representative Snohomish addresses per the §P0-2 acceptance criterion
+# ("one each in: incorporated city, unincorporated, near-water"):
 #   1) Incorporated county seat
-#   2) Smaller incorporated city (different city, different parcel layer chunk)
-#   3) Near-water (waterfront parcel; tests SMP-overlay zone parcels)
+#   2) Unincorporated rural / CDP (Maltby — Yew Way corridor, definitively
+#      unincorporated Snohomish per the county's incorporated-areas map)
+#   3) Near-water (Puget Sound waterfront, tests SMP-overlay parcels)
 ADDRESSES = [
     ("Everett — county seat (incorporated)",      "3322 Wetmore Ave, Everett, WA 98201"),
-    ("Lake Stevens — small incorporated city",    "1812 Main St, Lake Stevens, WA 98258"),
+    ("Maltby — unincorporated (Maltby Library)",  "21008 Yew Way, Snohomish, WA 98296"),
     ("Mukilteo — near-water (Puget Sound)",       "624 5th St, Mukilteo, WA 98275"),
 ]
 
