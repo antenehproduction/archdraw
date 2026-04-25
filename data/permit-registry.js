@@ -11,8 +11,11 @@ window.PERMIT_PORTAL_REGISTRY = {
     city: 'Seattle', state: 'WA',
     portalURL: 'https://cosaccela.seattle.gov/portal/Default.aspx',
     socrataDataset: 'https://data.seattle.gov/resource/76t5-zqzr.json',
+    // Address column is `originaladdress1` per data/_socrata-schemas.json
+    // (verified by GitHub Actions schema-fetch 2026-04-25). Earlier builder
+    // used `address` which silently zero-results on this dataset.
     searchByAddress: (addr) =>
-      `https://data.seattle.gov/resource/76t5-zqzr.json?$where=upper(address) like '%25${encodeURIComponent(addr.toUpperCase())}%25'&$limit=20`,
+      `https://data.seattle.gov/resource/76t5-zqzr.json?$where=upper(originaladdress1) like '%25${encodeURIComponent(addr.toUpperCase())}%25'&$limit=20`,
     radiusSearch: (lat, lon, miles = 2) =>
       `https://data.seattle.gov/resource/76t5-zqzr.json?$where=within_circle(location,${lat},${lon},${miles * 1609.34})&$limit=50`,
   },

@@ -189,6 +189,25 @@ git push (this commit)
 - ArcGIS endpoints (Tacoma Hub, Snohomish snoco-gis) aren't yet covered by this pipeline — Socrata only. Adding ArcGIS support is a parallel script that hits `<host>/arcgis/rest/services?f=json` to enumerate FeatureServers; planned follow-up.
 - If a host blocks GitHub Actions runners too, fall back to (a) Cloudflare Workers paid tier (different egress) or (b) the existing scripts/extract-viewsource.py + owner manual-copy path.
 
+### Round 5e — Seattle latent-bug fix + P0-2 smoke test pipeline (this commit)
+
+**Seattle bug fix (one-line, low-risk).** `searchByAddress` builder for `seattle` entry was using `upper(address) like '...'`, but `data/_socrata-schemas.json` (verified by GitHub Actions schema-fetch round 5) shows the real address column is `originaladdress1`. Silent zero-results for any Seattle address lookup. Fixed; comment documents the verification source.
+
+**P0-2 acceptance smoke test wired.** New script + new workflow:
+- `scripts/smoke-snohomish-parcels.py` — geocodes 3 representative Snohomish addresses (Everett incorporated county seat / Lake Stevens small incorporated city / Mukilteo near-water Puget Sound) via Nominatim, queries the WA:Snohomish ArcGIS Cadastral/Tax_Parcels endpoint with each lat/lon, asserts each returns a feature with `PARCEL_ID` + non-empty ring geometry. Stdlib only.
+- `.github/workflows/smoke-county-parcels.yml` — runs on push touching the script / county-registry / workflow itself, weekly Monday 09:00 UTC, and `workflow_dispatch`. `permissions: contents: read` only — verification probe, no PR opened, no writes. Job fails non-zero on any geocode or parcel-query miss; result visible in workflow log.
+
+Same egress-bypass rationale as `fetch-schemas.yml`: agent egress 403s against both `nominatim.openstreetmap.org` AND `gis.snoco.org` from Claude Code execution context (validated locally — all 3 addresses returned `HTTP 403` on Nominatim before the Snohomish endpoint was even reached). GitHub-runner IP space resolves both reliably.
+
+**Pass criterion (per PROJECT_COORDINATOR.md §P0-2 success spec):** 3 of 3 addresses return a parcel polygon. Once the workflow's first run lands a green check, the §P0-2 launch checklist line moves to ✓ DONE.
+
+### Federal Way upload — owner delivered (commits 3cdc3e8 + merge)
+Two new files merged in:
+- `view-source_https___www.codepublishing.com_WA_FederalWay_html_FederalWay19_FederalWay19200.html` — RIGHT chapter (SINGLE-FAMILY RESIDENTIAL RS), unblocks decision #19.
+- `view-source_https___www.codepublishing.com_WA_FederalWay_html_FederalWay19_FederalWay19225.html` — City Center Core overlay (CC-C), already-flagged exclusion.
+
+Federal Way RS 7.2 / RS 9.6 chart integration scheduled for next round (script needs the per-use FWRC layout extractor, not the column-per-zone one Bothell used).
+
 ### Round 5d — Auburn rename RESOLVED (decision #23) + Federal Way upload guide
 
 **Decision #23 RESOLVED — Auburn 2024 zone rewrite confirmed.** Owner-uploaded ACC 18.07.030 chart row A (Minimum density) provides the rename map:
