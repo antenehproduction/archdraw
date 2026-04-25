@@ -189,7 +189,57 @@ git push (this commit)
 - ArcGIS endpoints (Tacoma Hub, Snohomish snoco-gis) aren't yet covered by this pipeline — Socrata only. Adding ArcGIS support is a parallel script that hits `<host>/arcgis/rest/services?f=json` to enumerate FeatureServers; planned follow-up.
 - If a host blocks GitHub Actions runners too, fall back to (a) Cloudflare Workers paid tier (different egress) or (b) the existing scripts/extract-viewsource.py + owner manual-copy path.
 
-### Round 5n — Top-4 fix batch from live Kirkland test (this commit)
+### Round 5o — Prompt-anchor batch: fixes #3, #4, #5 (this commit)
+
+The next batch of priority items from the live Kirkland test. All three are AI-prompt anchoring problems — the AI was confabulating data that contradicted the verified matrix or other panels in the same analysis. Fix pattern is the same across all three: inject canonical/authoritative values into the prompt + explicit instruction not to fabricate alternatives.
+
+#### Fix #3 — anchor zoning text panel to matrix `codeURL`
+**Symptom:** Zoning panel cited `KZC §115.10.020` for Kirkland — fabricated. The real chart-verified dimensional standards live in `KZC 15.30` (per round-4 owner upload). AI invented section numbers because nothing in its prompt told it which URL was authoritative.
+**Fix:** new `matrixAnchor` template literal injected into the runPhase_zone prompt when `z._zoneMatrixVerified` is true. Includes:
+- Verified municipal-code URL (the matrix `codeURL`)
+- Chart-confirmed dimensional standards (front/rear/side/height/FAR/coverage)
+- Verification date (from `z._zoneMatrixDate`)
+- Local rule notes (first 800 chars of matrix `notes`)
+- Explicit instruction: "When you cite a code section, use ONLY the URL above. Do NOT invent municipal-code section numbers."
+
+#### Fix #4 — lock comp research to passed-in jurisdiction
+**Symptom:** Kirkland comp research cited `RS-7.2`, `RS-5`, `Title 21`, `KMC 21.14` — those are **Federal Way** zone codes, not Kirkland. AI conflated WA cities and substituted neighbor-city codes.
+**Fix:** new `JURISDICTION LOCK` clause in the runPhase_comp prompt:
+> "All zoning, code, and ordinance references in your response MUST be specific to **${z.jurisdiction}, ${z.state}** (district: **${z.zoningDistrict}**). Do NOT cite zone codes from other cities (e.g., do not write 'RS 7.2' or 'KMC Title 21' if those belong to a different jurisdiction). When unsure of a specific section number, write 'see ${z.jurisdiction} municipal code' instead of fabricating a citation."
+
+This makes the city-specific zone data authoritative + tells the AI what the failure mode looks like (concrete examples of the kind of mistake to avoid).
+
+#### Fix #5 — single-source lot dimensions
+**Symptom:** Site Identification panel said "60′ × 115′ working assumption"; Zoning panel said "50′ × 120′ typical RSA-6 parcel"; bottom dim panel said "Lot: 50×120ft". Same analysis showing 3 different lot sizes.
+**Fix (two-part):**
+1. **Site prompt cleanup** — removed item #2 ("Typical lot dimensions for this block") from the site research prompt. Site phase becomes context-only (jurisdiction, land use, neighborhood, topography, transit, redevelopment opportunity). Added explicit instruction:
+   > "Do NOT speculate on lot dimensions, setbacks, FAR, height, or zone codes — those come from the GIS + zoning research phase that follows."
+2. **Comp prompt lot anchor** — explicit `${z.lotWidth}ft × ${z.lotDepth}ft = N SF` injected with directive: "the canonical site dimensions; do not invent alternatives."
+
+The zoning JSON (runPhase_zone) is now the **single source** for all dimensional values across the entire analysis. Site + comp panels reference it; they no longer guess.
+
+#### Static check (all 7 prompt augmentations verified)
+- ✓ site prompt: "Do NOT speculate on lot dimensions" instruction present
+- ✓ site prompt: items 1–7 (was 8 with lot-dim removed)
+- ✓ zone prompt: `matrixAnchor` variable defined
+- ✓ zone prompt: "AUTHORITATIVE SOURCE" clause present
+- ✓ zone prompt: "Do NOT invent municipal-code" instruction present
+- ✓ comp prompt: "JURISDICTION LOCK" clause present
+- ✓ comp prompt: "canonical site dimensions; do not invent" present
+
+#### Out of scope this batch (still queued)
+- #8 Option SF clamp (option claims 4,950 SF but plan can only emit 2,911 SF — option overpromise)
+- #9 A-4 Sections renders empty 3D scene (wrong sheet routing)
+- #10 Floor plan canvas auto-fit
+- #11 Differentiated elevations
+- #12 3D camera framing
+- #13 Workspace vault aesthetic carry-through
+- #14 Cover sheet font sizing
+- #15–#18 cosmetic / UX nice-to-haves
+
+Tests: 17/17 passing. Inline `<script>` parse-checked.
+
+### Round 5n — Top-4 fix batch from live Kirkland test
 
 Owner ran a live analysis against `508 8th Avenue West, Kirkland, WA 98033` and surfaced 18 issues across data accuracy, logic, visual polish, and UX. This commit ships the 4 highest-priority fixes (the ones with regulatory/safety implications).
 

@@ -1112,7 +1112,7 @@ async function startAnalysis(){
 async function runPhase_site(){
   L.info('--- Phase 1: Site ---');phSet('site','active');setOvl('SITE RESEARCH','Identifying parcel, jurisdiction & conditions');const t=Date.now();
   try{
-    let prompt=`Research property: "${S.addr}"\n1. Governing jurisdiction (city/county + building dept)\n2. Typical lot dimensions for this block\n3. Current land use and existing structure type\n4. Neighborhood context (urban density, adjacent uses)\n5. Topography, slope, aspect (north-facing?)\n6. Infrastructure (sewer, water, gas, fiber)\n7. Transit proximity (walk score, nearest transit)\n8. Key redevelopment opportunity in one sentence`;
+    let prompt=`Research property: "${S.addr}"\n1. Governing jurisdiction (city/county + building dept)\n2. Current land use and existing structure type\n3. Neighborhood context (urban density, adjacent uses)\n4. Topography, slope, aspect (north-facing?)\n5. Infrastructure (sewer, water, gas, fiber)\n6. Transit proximity (walk score, nearest transit)\n7. Key redevelopment opportunity in one sentence\n\nIMPORTANT: Do NOT speculate on lot dimensions, setbacks, FAR, height, or zone codes — those come from the GIS + zoning research phase that follows. Stay on context items 1–7.`;
     if(S.img64){const imgA=await callAIWithImg(`Analyze site for: ${S.addr}. Describe: existing structure condition, lot coverage, setback violations, orientation, neighboring scale, opportunities for passive solar.`,S.img64,S.imgType,SYS,600);prompt+=`\n\nSite photo analysis:\n${imgA}`;addFind('img','📷 Site Photo',fmt(imgA))}
     const res=await callAIWithRetry([{role:'user',content:prompt}],SYS,1500);
     // Geocode
@@ -1195,7 +1195,11 @@ async function runPhase_zone(){
     z._lotSource=looksDefault?'AI default (pending OSM calibration)':'AI research';
     z._lotConfidence=looksDefault?'unverified':'verify-with-plat';
     L.info(`Zone: ${z.zoningDistrict} ${z.jurisdiction} ${z.state} lot=${z.lotWidth}×${z.lotDepth} src=${z._lotSource}`);
-    const zt=await callAIWithRetry([{role:'user',content:`Expert zoning analysis for "${S.addr}" — ${z.zoningDistrict}, ${z.jurisdiction}, ${z.state}.\nCover: by-right vs conditional development options, setbacks front ${z.frontSetback}/rear ${z.rearSetback}/sides ${z.leftSetback}-${z.rightSetback}ft, FAR ${z.maxFAR}, ${z.maxLotCoverage}% coverage, ${z.maxStories} stories, ADU rights: ${z.aduAllowed}. Note any density bonus programs, SB9 rights, or form-based code options.`}],SYS,1000);
+    // Round 5o fix #3: when matrix override fired, anchor the AI prompt
+    // to the chart-verified codeURL + notes so it doesn't fabricate
+    // municipal-code section numbers (e.g. KZC §115.10.020 was made up).
+    const matrixAnchor=z._zoneMatrixVerified?`\n\nAUTHORITATIVE SOURCE — DO NOT CONTRADICT:\n  Verified municipal-code URL: ${z._zoneMatrixURL||'(see matrix entry)'}\n  Chart-confirmed dimensional standards: front ${z.frontSetback}ft / rear ${z.rearSetback}ft / sides ${z.leftSetback}-${z.rightSetback}ft / height ${z.maxHeightFt}ft / FAR ${z.maxFAR} / coverage ${z.maxLotCoverage}%\n  Verification date: ${z._zoneMatrixDate||'recent'}\n  Local rule notes: ${(z.notes||'').substring(0,800)}\n\nWhen you cite a code section, use ONLY the URL above. Do NOT invent municipal-code section numbers.`:'';
+    const zt=await callAIWithRetry([{role:'user',content:`Expert zoning analysis for "${S.addr}" — ${z.zoningDistrict}, ${z.jurisdiction}, ${z.state}.\nCover: by-right vs conditional development options, setbacks front ${z.frontSetback}/rear ${z.rearSetback}/sides ${z.leftSetback}-${z.rightSetback}ft, FAR ${z.maxFAR}, ${z.maxLotCoverage}% coverage, ${z.maxStories} stories, ADU rights: ${z.aduAllowed}. Note any density bonus programs, SB9 rights, or form-based code options.${matrixAnchor}`}],SYS,1000);
     phSet('zone','done',`${((Date.now()-t)/1000).toFixed(1)}s`);
     const lotNote=z._lotSource?`<div style="margin-top:6px;padding:5px 8px;border:1px dashed var(--brd);border-radius:3px;font-size:9px;color:var(--txt3)">\uD83D\uDCCE Lot dims source: <strong>${z._lotSource}</strong> \u00B7 confidence: <em>${z._lotConfidence}</em></div>`:'';
     const matrixNote=z._zoneMatrixVerified?`<div style="margin-top:4px;padding:5px 8px;border:1px solid rgba(34,224,138,.35);border-radius:3px;font-size:9px;color:var(--green)">\u2713 Zoning standards <strong>verified</strong> against ${z.jurisdiction} municipal code (${z._zoneMatrixDate}) \u00B7 <a href="${z._zoneMatrixURL}" target="_blank" style="color:var(--blue)">open code \u2192</a></div>`:'';
@@ -1677,6 +1681,8 @@ async function runPhase_comp(){
 
 We are designing a **${opt?.name||'multi-family'} project** (${opt?.units||2} units, ~${opt?.sf||2500} SF).
 
+JURISDICTION LOCK: All zoning, code, and ordinance references in your response MUST be specific to **${z.jurisdiction}, ${z.state}** (district: **${z.zoningDistrict}**). Do NOT cite zone codes from other cities (e.g., do not write "RS 7.2" or "KMC Title 21" if those belong to a different jurisdiction). When unsure of a specific section number, write "see ${z.jurisdiction} municipal code" instead of fabricating a citation.
+
 Prioritize sources in this order:
   1. Public permit data portals (data.<city>.gov / Socrata) filed under a recognizable project name within ${z.jurisdiction}
   2. Recently listed/sold properties visible on Zillow, Redfin, Realtor.com within the 2–5 mile radius
@@ -1685,7 +1691,7 @@ Prioritize sources in this order:
 
 For each comparable provide:
 1. Project name, specific street/neighborhood, developer, year completed, permit number if known
-2. Distance from ${S.addr} (miles) and WHY it's a relevant comparable (similar lot, use, density, typology)
+2. Distance from ${S.addr} (miles) and WHY it's a relevant comparable (similar lot, use, density, typology). For lot context use ${z.lotWidth}ft × ${z.lotDepth}ft = ${(z.lotWidth*z.lotDepth).toLocaleString()} SF — the canonical site dimensions; do not invent alternatives.
 3. Unit mix, stories, total SF, density achieved
 4. Notable green/sustainable innovations actually implemented
 5. Structural system and why it was chosen
