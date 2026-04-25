@@ -189,6 +189,40 @@ git push (this commit)
 - ArcGIS endpoints (Tacoma Hub, Snohomish snoco-gis) aren't yet covered by this pipeline — Socrata only. Adding ArcGIS support is a parallel script that hits `<host>/arcgis/rest/services?f=json` to enumerate FeatureServers; planned follow-up.
 - If a host blocks GitHub Actions runners too, fall back to (a) Cloudflare Workers paid tier (different egress) or (b) the existing scripts/extract-viewsource.py + owner manual-copy path.
 
+### Round 5d — Auburn rename RESOLVED (decision #23) + Federal Way upload guide
+
+**Decision #23 RESOLVED — Auburn 2024 zone rewrite confirmed.** Owner-uploaded ACC 18.07.030 chart row A (Minimum density) provides the rename map:
+
+| Current zone | Min density | Lot area / unit |
+|---|---|---|
+| RC | 0.25 du/ac | 174,000 sf |
+| R-1 | 1 du/ac | 43,500 sf |
+| **R-2** | **7 du/ac** | **6,222 sf** |
+| R-3 | 12 du/ac | 3,630 sf |
+| R-4 | 16 du/ac | 2,723 sf |
+| R-NM | 30 du/ac | 1,452 sf |
+| R-F | 7 du/ac | 6,222 sf |
+
+Legacy R-5 (4–5 du/ac) and R-7 (5–7 du/ac) **both map to current R-2** by density floor. HB 1110 forced minimum-density up; legacy SF tier consolidated. Same pattern as Redmond (11→2 zone consolidation, Ord 3186).
+
+**Updates landed this commit:**
+- `data/zoning-matrix.js` — new entry `auburn,wa:R-2` with chart-confirmed values: residence front 10ft, garage front 20ft (15ft alley-loaded), interior side 5ft, street side 10ft, rear 15ft, max impervious 75%, max building height 35ft, parking 1, ADU 1,000 sf. HB 1110 row D1 confirms 4 base / D2 6 transit-or-affordability. `_sourceMethod: 'manual'`, `_unverified: []`.
+- `auburn,wa:R-5` and `auburn,wa:R-7` → `_repealed: true`, `_replacedBy: 'auburn,wa:R-2'`. The existing `effectiveZoning()` `_repealed` redirect path (proven for Redmond R-4 → NR) handles legacy GIS tags transparently with a surfaced redirect warning.
+- `scripts/integrate-charts.py` — Auburn integration plan updated with correct column list (RC, R-1, R-2, R-3, R-4, R-NM, R-F).
+
+**End-to-end validation:** `effectiveZoning('Auburn', 'R-5')` → redirects to R-2 → returns `maxUnits: 4, frontSetback: 10, rearSetback: 15, leftSetback: 5, maxHeightFt: 35` with warning "auburn,wa:R-5 is repealed; redirecting to auburn,wa:R-2". 17 of 17 tests passing.
+
+**Decision #19 — Federal Way upload guide** (owner action, one upload)
+
+The earlier upload was wrong chapter (Ch. 19.25 BONDS). RS use-zone chart is in **Chapter 19.200**. Owner steps:
+1. Open https://www.codepublishing.com/WA/FederalWay/html/FederalWay19/FederalWay19200.html in a regular browser
+2. Right-click → Save As → "Webpage, HTML only"
+3. Upload to `antenehproduction/archdraw` `main` via Add files → Upload files (same path that worked rounds 3–4)
+
+Optional secondary (if cottage/compact rules wanted): https://www.codepublishing.com/WA/FederalWay/html/FederalWay19/FederalWay19250.html
+
+Once committed I'll run `integrate-charts.py --city federalway` (after extending the integration plan with the RS column list: RS 5.0 / RS 7.2 / RS 9.6 / RS 15.0 / RS 35.0) and graduate `federal way,wa:RS 7.2` + `RS 9.6` from `_unverified[]`.
+
 ### Round 5c — Everett GRADUATED, Pierce identified, security gate live
 
 **First GitHub Actions workflow run succeeded.** 12 of 13 datasets resolved (only `data.lacity.org:yv23-pmwf` 403'd). GitHub-runner egress confirmed unblocked on the WA municipal Socrata hosts that had been walling out agent egress for 4 rounds.
