@@ -632,6 +632,13 @@ function repairJSON(s){return s.replace(/,(\s*[}\]])/g,'$1').replace(/\/\/[^\n]*
 function delay(ms){return new Promise(r=>setTimeout(r,ms))}
 
 // ═══ 50-STATE DB ═══
+// ═══ State-name normalization (fixes round 5n / issue #2) ═══
+// Site-intel often returns full state names ("Washington") while STATE_DB
+// and county/permit registries key on 2-letter abbreviations ("WA").
+// Centralize the conversion so every consumer reads the same code-stack.
+const STATE_NAME_TO_ABBR={alabama:'AL',alaska:'AK',arizona:'AZ',arkansas:'AR',california:'CA',colorado:'CO',connecticut:'CT',delaware:'DE','district of columbia':'DC',florida:'FL',georgia:'GA',hawaii:'HI',idaho:'ID',illinois:'IL',indiana:'IN',iowa:'IA',kansas:'KS',kentucky:'KY',louisiana:'LA',maine:'ME',maryland:'MD',massachusetts:'MA',michigan:'MI',minnesota:'MN',mississippi:'MS',missouri:'MO',montana:'MT',nebraska:'NE',nevada:'NV','new hampshire':'NH','new jersey':'NJ','new mexico':'NM','new york':'NY','north carolina':'NC','north dakota':'ND',ohio:'OH',oklahoma:'OK',oregon:'OR',pennsylvania:'PA','rhode island':'RI','south carolina':'SC','south dakota':'SD',tennessee:'TN',texas:'TX',utah:'UT',vermont:'VT',virginia:'VA',washington:'WA','west virginia':'WV',wisconsin:'WI',wyoming:'WY'};
+function normalizeState(s){if(!s)return '';const t=String(s).trim();if(t.length===2)return t.toUpperCase();return STATE_NAME_TO_ABBR[t.toLowerCase()]||t.toUpperCase().substring(0,2);}
+
 const STATE_DB={AL:{bc:'IBC 2018',ec:'IECC 2015',seismic:'C',wind:'130',note:'No statewide residential code; municipal adoption'},AK:{bc:'IBC 2018',ec:'IECC 2018',seismic:'D-F',wind:'150',note:'Extreme seismic + wind — special engineering required'},AZ:{bc:'IBC 2018',ec:'IECC 2015',seismic:'C',wind:'105',note:'Check city/county amendments'},AR:{bc:'IBC 2018',ec:'IECC 2015',seismic:'C',wind:'115',note:'Arkansas Fire Prevention Code'},CA:{bc:'CBC 2022',ec:'Title 24 2022',seismic:'D-E',wind:'110',note:'CALGreen required. Title 24 CF1R. SB9 ADU rights'},CO:{bc:'IBC 2021',ec:'IECC 2021',seismic:'B',wind:'115',note:'Denver has own code'},CT:{bc:'IBC 2018',ec:'IECC 2021',seismic:'B',wind:'120',note:'CT State Building Code (IBC amendments)'},DE:{bc:'IBC 2018',ec:'IECC 2018',seismic:'B',wind:'130',note:'DE State Fire Prevention Regulations'},FL:{bc:'FBC 2023',ec:'FBC Energy 2023',seismic:'A',wind:'175',note:'Product Approvals required. NOA for HVHZ'},GA:{bc:'IBC 2018',ec:'IECC 2015',seismic:'B',wind:'130',note:'Local amendments common'},HI:{bc:'IBC 2018',ec:'ASHRAE 90.1-2019',seismic:'D',wind:'150',note:'County codes vary. Hurricane requirements'},ID:{bc:'IBC 2018',ec:'IECC 2015',seismic:'C',wind:'115',note:'Small jurisdictions may use county regs'},IL:{bc:'IBC 2021',ec:'IECC 2021',seismic:'B',wind:'115',note:'Chicago Municipal Code — significantly different'},IN:{bc:'IBC 2020',ec:'IECC 2018',seismic:'B',wind:'105',note:'IDOI inspection required'},IA:{bc:'IBC 2018',ec:'IECC 2018',seismic:'B',wind:'115',note:'Local adoption required'},KS:{bc:'IBC 2018',ec:'IECC 2018',seismic:'B',wind:'115+',note:'Tornado shelter recommended in tornado alley'},KY:{bc:'IBC 2019',ec:'IECC 2018',seismic:'C',wind:'115',note:'Kentucky Building Code (KBC)'},LA:{bc:'IBC 2018',ec:'IECC 2015',seismic:'B',wind:'150',note:'Post-Katrina coastal requirements strict'},ME:{bc:'IBC 2015',ec:'IECC 2015',seismic:'B',wind:'120',note:'Maine Uniform Building & Energy Code (MUBEC)'},MD:{bc:'IBC 2018',ec:'IECC 2018',seismic:'B',wind:'130',note:'Green Building Council active'},MA:{bc:'MSBC 2022',ec:'IECC 2021',seismic:'B',wind:'130',note:'Stretch Code required in 300+ municipalities'},MI:{bc:'MBC 2015',ec:'IECC 2015',seismic:'B',wind:'115',note:'BCC oversight'},MN:{bc:'IBC 2020',ec:'IECC 2020',seismic:'A',wind:'115',note:'MNGBC green building programs'},MS:{bc:'IBC 2015',ec:'IECC 2015',seismic:'B',wind:'140',note:'Gulf Coast wind zone enforcement'},MO:{bc:'IBC 2018',ec:'IECC 2018',seismic:'C',wind:'115',note:'KC/STL local amendments'},MT:{bc:'IBC 2018',ec:'IECC 2021',seismic:'C',wind:'115',note:'Small jurisdictions may use county regs'},NE:{bc:'IBC 2018',ec:'IECC 2018',seismic:'B',wind:'115',note:'Tornado shelter in some areas'},NV:{bc:'IBC 2018',ec:'IECC 2018',seismic:'C',wind:'105',note:'Clark County has own amendments'},NH:{bc:'IBC 2009',ec:'IECC 2018',seismic:'B',wind:'130',note:'Older base code — check local ordinances'},NJ:{bc:'IBC 2021',ec:'IECC 2021',seismic:'B',wind:'130',note:'NJ Uniform Construction Code (UCC). DCA oversight'},NM:{bc:'IBC 2018',ec:'IECC 2018',seismic:'C',wind:'115',note:'Construction Industries Division'},NY:{bc:'NYBC 2022',ec:'NYCECC 2022',seismic:'B',wind:'130',note:'NYC has separate code from NY State'},NC:{bc:'IBC 2018',ec:'IECC 2018',seismic:'B',wind:'140',note:'Hurricane straps required coastal counties'},ND:{bc:'IBC 2018',ec:'IECC 2018',seismic:'A',wind:'115',note:'State guides but not mandates'},OH:{bc:'OBC 2019',ec:'OEBC 2017',seismic:'B',wind:'115',note:'Ohio Building Code'},OK:{bc:'IBC 2018',ec:'IECC 2018',seismic:'C',wind:'130+',note:'Tornado shelter ICC 500 recommended'},OR:{bc:'OSSC 2021',ec:'OEESC 2021',seismic:'D',wind:'115',note:'Portland has own amendments + green reqs'},PA:{bc:'IBC 2018',ec:'IECC 2018',seismic:'B',wind:'115',note:'PA Uniform Construction Code (UCC)'},RI:{bc:'IBC 2018',ec:'IECC 2018',seismic:'B',wind:'130',note:'CRMC coastal management'},SC:{bc:'IBC 2018',ec:'IECC 2018',seismic:'C',wind:'150',note:'Coastal resilience requirements'},SD:{bc:'IBC 2018',ec:'IECC 2018',seismic:'A',wind:'115',note:'No statewide mandate — local adoption'},TN:{bc:'IBC 2018',ec:'IECC 2018',seismic:'C',wind:'115',note:'Commerce & Insurance oversight'},TX:{bc:'IBC 2015',ec:'IECC 2015',seismic:'A',wind:'150',note:'No statewide residential code. TDLR commercial'},UT:{bc:'IBC 2021',ec:'IECC 2021',seismic:'D',wind:'115',note:'High seismic Wasatch Front'},VT:{bc:'IBC 2015',ec:'IECC 2015',seismic:'B',wind:'115',note:'Act 250 land use review for large projects'},VA:{bc:'USBC 2021',ec:'IECC 2018',seismic:'B',wind:'130',note:'USBC — DHCD oversight'},WA:{bc:'IBC 2021',ec:'WSEC 2021',seismic:'D',wind:'115',note:'SEPA review required. High seismic + liquefaction'},WV:{bc:'IBC 2018',ec:'IECC 2015',seismic:'B',wind:'115',note:'WVDOL enforcement'},WI:{bc:'IBC 2015',ec:'IECC 2015',seismic:'A',wind:'115',note:'DSPS oversight'},WY:{bc:'IBC 2018',ec:'IECC 2018',seismic:'B',wind:'115',note:'Local ordinances vary widely'},DC:{bc:'DCBC 2020',ec:'IECC 2018',seismic:'B',wind:'115',note:'LEED Silver required >10K SF. HPO review historic'}};
 
 // ═══ OVERLAY FUNCTIONS ═══
@@ -1239,7 +1246,13 @@ async function runPhase_record(){
         S.countyRecord={source:'OpenStreetMap',buildings:blds.length,data:blds};
         L.info(`OSM: ${blds.length} buildings found`);
       }else{findings.push('No existing buildings recorded in OpenStreetMap for this parcel.')}
-    }catch(e){L.warn('OSM record search failed:',e.message);findings.push('OSM query failed: '+e.message.substring(0,60))}
+    }catch(e){
+      L.warn('OSM record search failed:',e.message);
+      const corsLike=/fetch|cors|network/i.test(e.message);
+      findings.push(corsLike
+        ? '• OSM lookup blocked by browser CORS — set localStorage.ADI_PROXY to a deployed Vercel/Worker proxy URL, or run the app from a *.vercel.app deployment where /api auto-detects.'
+        : '• OSM query failed: '+e.message.substring(0,60));
+    }
 
     // Strategy 2: Try FEMA for flood zone (if not already done) — direct first, CORS proxy on failure
     if(!S.femaZone){
@@ -1263,7 +1276,7 @@ async function runPhase_record(){
     // Strategy 3: COUNTY_REGISTRY lookup (verified ArcGIS parcel endpoints)
     if(z&&window.COUNTY_REGISTRY&&window.countyRegistryKey){
       try{
-        const key=window.countyRegistryKey(z.county,z.state);
+        const key=window.countyRegistryKey(z.county,normalizeState(z.state));
         const reg=window.COUNTY_REGISTRY[key];
         if(reg){
           L.info(`County registry hit: ${key}`);
@@ -1318,7 +1331,13 @@ async function runPhase_record(){
                 }
               }
             }
-          }catch(e){L.warn(`County registry fetch failed for ${key}: ${e.message.substring(0,100)}`)}
+          }catch(e){
+            L.warn(`County registry fetch failed for ${key}: ${e.message.substring(0,100)}`);
+            // Surface distinct state for provenance — avoids the misleading
+            // 'NO_PUBLIC_ENDPOINT' message when an endpoint IS registered
+            // but couldn't be reached from the current client.
+            S.countyRecord={...(S.countyRecord||{}),esriStatus:'unreachable',esriEndpoint:reg.parcelQuery,esriError:e.message.substring(0,100)};
+          }
         }else{
           L.info(`County registry miss: ${key||'(no county)'} \u2014 generic ArcGIS fallback not attempted to avoid false positives`);
         }
@@ -1519,7 +1538,7 @@ function generateOptions(z){
   const adu=z.aduAllowed!==false;
   const isCA=z.state==='CA';const isWA=z.state==='WA';const isOR=z.state==='OR';
   const highSeismic=['CA','AK','WA','OR','NV','UT','HI'].includes(z.state||'');
-  const db=STATE_DB[z.state]||{bc:'IBC 2018',ec:'IECC 2018'};
+  const db=STATE_DB[normalizeState(z.state)]||{bc:'IBC 2018',ec:'IECC 2018'};
 
   const opts=[];
 
@@ -1736,7 +1755,7 @@ async function runPhase_chk(){
   const haveSheet=S.plan?.meta?`drawing-engine.A-${{cover:0,site:1,plans:2,elev:3,sect:4,sched:5}}.generated`:null;
   const havePlan=S.plan?`drawing-engine.localFloorPlan()`:null;
   const apn=S.countyRecord?.esri?.APN||S.countyRecord?.esri?.PARCELNO||S.countyRecord?.esri?.PIN||null;
-  const st=z.state||'WA';const db=STATE_DB[st]||{bc:'IBC 2018',ec:'IECC 2018',seismic:'B',wind:'115',note:'Confirm adopted code with local building dept'};
+  const st=normalizeState(z.state)||'WA';const db=STATE_DB[st]||{bc:'IBC 2018',ec:'IECC 2018',seismic:'B',wind:'115',note:'Confirm adopted code with local building dept'};
   const jur=z.jurisdiction||'Local Jurisdiction';const units=S.plan?.meta?.units||2;const stories=S.plan?.meta?.stories||2;
   const totalSF=S.plan?.meta?.totalSqFt||2000;const ov=S.overlays;
   const isCA=st==='CA',isWA=st==='WA',isOR=st==='OR',isNY=st==='NY',isTX=st==='TX',isFL=st==='FL',isMA=st==='MA',isDC=st==='DC';
@@ -3037,7 +3056,7 @@ function buildUseCaseBrief(a){
 // ── SHEET: A-0 Cover Sheet ──
 function drawCoverSheet(ctx,W,H){
   const m=S.plan?.meta||{};const z=S._z||{};const st=z.state||'';
-  const db=STATE_DB[st]||{bc:'IBC 2018',ec:'IECC 2018',seismic:'B',wind:'115'};
+  const db=STATE_DB[normalizeState(st)]||{bc:'IBC 2018',ec:'IECC 2018',seismic:'B',wind:'115'};
   ctx.fillStyle='#0c1420';ctx.fillRect(0,0,W,H);
   // Border
   ctx.strokeStyle='rgba(61,139,255,.35)';ctx.lineWidth=2;ctx.strokeRect(12,12,W-24,H-24);
@@ -3109,7 +3128,7 @@ function drawCoverSheet(ctx,W,H){
 
 // ── CODE-2 helper: energy schedule called from drawSchedulesSheet ──
 function drawEnergySchedule(ctx,W,H,TY,z){
-  const st=z?.state||'';const db=STATE_DB[st]||{ec:'IECC 2018'};
+  const st=normalizeState(z?.state||'');const db=STATE_DB[st]||{ec:'IECC 2018'};
   const isCA=st==='CA',isFL=st==='FL',isAK=st==='AK',isWA=st==='WA';
   const R={
     ceil:isCA?'R-49':isFL?'R-30':isAK?'R-60':'R-49',

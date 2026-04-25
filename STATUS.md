@@ -189,7 +189,50 @@ git push (this commit)
 - ArcGIS endpoints (Tacoma Hub, Snohomish snoco-gis) aren't yet covered by this pipeline — Socrata only. Adding ArcGIS support is a parallel script that hits `<host>/arcgis/rest/services?f=json` to enumerate FeatureServers; planned follow-up.
 - If a host blocks GitHub Actions runners too, fall back to (a) Cloudflare Workers paid tier (different egress) or (b) the existing scripts/extract-viewsource.py + owner manual-copy path.
 
-### Round 5m — Vault landing UI + §7-A / §7-C decisions accepted (this commit, FEATURE BRANCH ONLY)
+### Round 5n — Top-4 fix batch from live Kirkland test (this commit)
+
+Owner ran a live analysis against `508 8th Avenue West, Kirkland, WA 98033` and surfaced 18 issues across data accuracy, logic, visual polish, and UX. This commit ships the 4 highest-priority fixes (the ones with regulatory/safety implications).
+
+#### Fix #1 — zoning-matrix override silently failed (RSA-6 vs RSA 6)
+**Symptom:** Bottom dim panel showed `HEIGHT 35ft, STORIES 2` instead of the chart-verified `kirkland,wa:RSA 6` value `30ft`. Permit risk: building submitted at 35ft would be rejected at plan review.
+**Root cause:** site-intel returned `zoningDistrict: "RSA-6"` (with hyphen); matrix key is `kirkland,wa:RSA 6` (space). Lookup missed; AI values passed through unchallenged.
+**Fix:** `zoningMatrixKey()` now tries 5 candidate variants in order — original, dash→space, space→dash, no-separators, normalized-whitespace — and returns the first match. 6 of 7 smoke-test cases now hit (only `lowercase rsa 6` misses — matrix entries are canonical case; that's a separate concern).
+**Verified:** `kirkland,wa:RSA-6` / `RSA 6` / `RSA  6` (double-space) / `Tacoma:UR-1` / `Bothell:R-L1` all resolve.
+
+#### Fix #2 — code stack version mismatch (IBC 2018 vs IBC 2021)
+**Symptom:** Site Identification correctly said "2021 IBC + WSEC 2021" but cover sheet + checklist showed `IBC 2018, IECC 2018`. Permit risk: wrong code references on stamped drawings.
+**Root cause:** AI returned `state: "Washington"` (full name); `STATE_DB` keys are 2-letter (`WA`). Lookups `STATE_DB[z.state]` returned `undefined` and fell through to the `IBC 2018` fallback.
+**Fix:** new `normalizeState()` helper + 50-state name→abbr map inserted before `STATE_DB`. Wraps every `STATE_DB[...]` consumer (4 call sites: option card, cover sheet, checklist, energy compliance row). `Washington / WA / washington / wa / WASHINGTON` all → `WA`.
+**Effect:** WA addresses now correctly render `IBC 2021 / WSEC 2021 / SDC D / 115mph`. CA addresses → `CBC 2022 / Title 24 2022`. Etc. for all 50 states + DC.
+
+#### Fix #6 — "esri: NO_PUBLIC_ENDPOINT" misleading message + state-name issue
+**Symptom:** Records panel showed `esri: NO_PUBLIC_ENDPOINT` even though `WA:King` IS in `data/county-registry.js` and verified.
+**Root cause (two layers):**
+1. State-name issue same as #2 — `countyRegistryKey('King County', 'Washington')` produced `WASHINGTON:King`. Inner `.substring(0,2)` made `WA:King` work for short forms but not for some inputs.
+2. When the registry key DID match but the proxy fetch failed (CORS in standalone mode), the catch handler only logged a warning. `S.countyRecord.esri` stayed undefined, so provenance text showed the "no endpoint" message even though the endpoint was reachable, just blocked from this client.
+**Fix:**
+1. Wrap `z.state` with `normalizeState()` before `countyRegistryKey()` call.
+2. On fetch failure, set `S.countyRecord.esriStatus = 'unreachable'` + record the URL that was tried + the error. Provenance can now differentiate "no endpoint registered" from "endpoint unreachable from this client".
+
+#### Fix #7 — friendlier OSM error message
+**Symptom:** Records panel showed raw `OSM query failed: Failed to fetch` — useless to a user trying to figure out what went wrong.
+**Fix:** OSM catch handler now detects `/fetch|cors|network/i` patterns and replaces with: `OSM lookup blocked by browser CORS — set localStorage.ADI_PROXY to a deployed Vercel/Worker proxy URL, or run from a *.vercel.app deployment where /api auto-detects.` Same UX guidance as the new `proxyFetch` directive (P1-2).
+
+#### Out of scope this batch (still in queue per priority list)
+- #3 Anchor zoning-AI to matrix `codeURL` (prevents fabricated KZC sections)
+- #4 Lock comp-research to passed-in jurisdiction (prevents Federal Way zone names appearing in Kirkland comps)
+- #5 Single-source lot-dim (collision: site says 60×115, zoning says 50×120)
+- #8 Option SF clamp (option claims 4,950 SF but plan can only emit 2,911 SF)
+- #9 A-4 Sections renders empty 3D scene
+- #10 Floor plan canvas auto-fit
+- #11 Differentiated elevations
+- #12 3D camera framing
+- #13 Workspace vault aesthetic carry-through
+- #14–#18 cosmetic / UX
+
+Tests: 17/17 passing. Inline `<script>` parse-checked.
+
+### Round 5m — Vault landing UI + §7-A / §7-C decisions accepted
 
 **Owner decisions accepted:**
 - **§7-A** — Option 2 (split data + lib only). Defer Vite/framework migration to P3. ACCEPTED.
