@@ -189,7 +189,31 @@ git push (this commit)
 - ArcGIS endpoints (Tacoma Hub, Snohomish snoco-gis) aren't yet covered by this pipeline — Socrata only. Adding ArcGIS support is a parallel script that hits `<host>/arcgis/rest/services?f=json` to enumerate FeatureServers; planned follow-up.
 - If a host blocks GitHub Actions runners too, fall back to (a) Cloudflare Workers paid tier (different egress) or (b) the existing scripts/extract-viewsource.py + owner manual-copy path.
 
-### Round 5e — Seattle latent-bug fix + P0-2 smoke test pipeline (this commit)
+### Round 5f — §P0-2 ACCEPTANCE MET (this commit)
+
+**Snohomish smoke test green: 3 of 3.** GitHub Actions workflow run on commit `3e89539` returned valid parcels for all three addresses:
+
+| Address | PARCEL_ID | TAB_ACRES | USECODE |
+|---|---|---|---|
+| 3322 Wetmore Ave, Everett (incorporated county seat) | 00436979102500 | 0.14 | 130 Multiple Family 5–7 Units |
+| 21008 Yew Way, Snohomish (Maltby — unincorporated) | 27052400300500 | 0.69 | 910 Undeveloped Vacant Land |
+| 624 5th St, Mukilteo (near-water Puget Sound) | 00459800501000 | 0.10 | 699 Other Misc Services NEC |
+
+**Diagnosis history (for the audit trail):**
+- First run (`30bf29e`) returned 1 of 3. Maltby PASSed; Everett + Mukilteo returned no features.
+- Root cause: Nominatim resolves urban street addresses to street-centerline points (right-of-way), not parcel interiors. Maltby happened to land on a 9-acre Centennial Trail parcel wide enough to catch the off-target point.
+- Fix (`3e89539`): added `distance=20` + `units=esriSRUnit_Meter` to the spatial query — standard Esri buffered-intersect pattern. 20m is wider than typical street ROW (~12m) and tighter than residential lot widths so a single parcel is matched, not two adjacent.
+
+**Updates landed this commit:**
+- `data/county-registry.js` — `WA:Snohomish` cleared `corsOk` from `_unverified[]` (smoke test confirms cross-egress reachability + parcel-shaped response). `yearBuilt` stays in `_unverified` — separate CAMA-table concern not addressed by this test. `verifiedDate: 2026-04-25`. Notes updated with the §P0-2 acceptance line + the buffer pattern recommendation for `runPhase_record`.
+
+**§6 Launch checklist — first ✓:**
+- [x] **`WA:Snohomish` in `county-registry.js` with verified field schemas** — DONE 2026-04-25 via the smoke-test pipeline.
+- [ ] (Same line also covers `WA:King` and `WA:Pierce` — King was pre-existing in registry; Pierce ships with `_unverified` field schemas pending its own smoke-test wiring.)
+
+**Pattern adopted as canonical:** county-registry endpoints can be P0-acceptance-verified via the `smoke-county-parcels` workflow without owner-browser involvement. Adding new counties: register the entry, add the address triplet to `scripts/smoke-snohomish-parcels.py` (or follow-up: parameterize the script to take a county arg), push.
+
+### Round 5e — Seattle latent-bug fix + P0-2 smoke test pipeline
 
 **Seattle bug fix (one-line, low-risk).** `searchByAddress` builder for `seattle` entry was using `upper(address) like '...'`, but `data/_socrata-schemas.json` (verified by GitHub Actions schema-fetch round 5) shows the real address column is `originaladdress1`. Silent zero-results for any Seattle address lookup. Fixed; comment documents the verification source.
 

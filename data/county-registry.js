@@ -40,9 +40,9 @@ window.COUNTY_REGISTRY = {
     parcelQuery: 'https://gis.snoco.org/sis/rest/services/Cadastral/Tax_Parcels/MapServer/0/query',
     fields: { apn: 'PARCEL_ID', lotArea: 'TAB_ACRES', useClass: 'USECODE', yearBuilt: null },
     corsOk: true,
-    notes: 'Snohomish Co SIS Cadastral/Tax_Parcels layer 0. PARCEL_ID = 14-char string. TAB_ACRES is ACRES (Double) — multiply by 43560 for sq ft; WA:King SHAPEAREA is sq ft natively, so consumer must branch on unit. yearBuilt lives on separate Improvement Records CAMA table (not this layer). AGO mirror fallback if SIS blocks CORS: https://services8.arcgis.com/7YUdLQ8pDBKU1XYI/arcgis/rest/services/Parcels/FeatureServer/0',
-    verifiedDate: '2026-04-23',
-    _unverified: ['corsOk', 'yearBuilt'],
+    notes: 'Snohomish Co SIS Cadastral/Tax_Parcels layer 0. PARCEL_ID = 14-char string. TAB_ACRES is ACRES (Double) — multiply by 43560 for sq ft; WA:King SHAPEAREA is sq ft natively, so consumer must branch on unit. yearBuilt lives on separate Improvement Records CAMA table (not this layer). AGO mirror fallback if SIS blocks CORS: https://services8.arcgis.com/7YUdLQ8pDBKU1XYI/arcgis/rest/services/Parcels/FeatureServer/0. §P0-2 ACCEPTANCE MET 2026-04-25 via scripts/smoke-snohomish-parcels.py: 3 of 3 representative addresses (Everett incorporated / Maltby unincorporated / Mukilteo near-water) returned valid parcel polygons + PARCEL_ID + ring geometry through GitHub Actions egress. Smoke test uses a 20m buffered intersect to handle Nominatim street-centerline geocodes; runPhase_record in index.html should adopt the same buffer pattern.',
+    verifiedDate: '2026-04-25',
+    _unverified: ['yearBuilt'],
   },
 
   // ── California ──
