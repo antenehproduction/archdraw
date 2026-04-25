@@ -189,7 +189,79 @@ git push (this commit)
 - ArcGIS endpoints (Tacoma Hub, Snohomish snoco-gis) aren't yet covered by this pipeline — Socrata only. Adding ArcGIS support is a parallel script that hits `<host>/arcgis/rest/services?f=json` to enumerate FeatureServers; planned follow-up.
 - If a host blocks GitHub Actions runners too, fall back to (a) Cloudflare Workers paid tier (different egress) or (b) the existing scripts/extract-viewsource.py + owner manual-copy path.
 
-### Round 5o — Prompt-anchor batch: fixes #3, #4, #5 (this commit)
+### Round 5p — Last two non-cosmetic fixes from live Kirkland test (this commit)
+
+#### Fix #8 — option SF clamp
+**Symptom:** Option card claimed `5-unit · 4,950 SF · 2-story` (Maximum Density 2-Story + ADUs) but the rendered plan emitted only `2,911 SF`. FAR derived `0.49`, coverage `24%`. The option promise overstated buildable by ~70%.
+**Root cause:** option generator computed `sf = Math.round(bW*bD*storyMultiplier)` (e.g. `40*90*1.55 = 5,580`) without clamping by FAR cap or coverage×stories cap. On a 50×120 RSA-6 Kirkland lot, FAR cap = `6,000 × 0.5 = 3,000 SF` — option 4 was claiming 1,980 SF over the regulatory cap.
+**Fix:** new `clampSF(rawSF, stories)` helper in `generateOptions()`:
+```js
+function clampSF(rawSF, stories) {
+  const farCap = (z.maxFAR || 1) * lotSF;
+  const covCap = ((z.maxLotCoverage || 100) / 100) * lotSF * stories;
+  return Math.round(Math.min(rawSF, farCap, covCap));
+}
+```
+Applied to all 6 option `sf` calculations.
+
+**Smoke-test on Kirkland 50×120 RSA-6 (FAR 0.5, coverage 50%):**
+
+| Option | Raw SF (buggy) | Clamped SF (fixed) | Cap that fired |
+|---|---|---|---|
+| 1 (Conservative SFR + ADU, 1 story) | 2,340 | 2,340 | (under cap) |
+| 2 (Stacked Duplex + ADU, 2 story) | 4,680 | 3,000 | FAR cap |
+| 3 (Net-Zero Side-by-Side + 2 ADUs, 2 story) | 5,580 | 3,000 | FAR cap |
+| 4 (Maximum Density 2-Story + ADUs) | 5,940 | 3,000 | FAR cap |
+
+Cost / value / ROI estimates derived from `sf` automatically inherit the cap. Option promise now matches what the renderer can produce.
+
+#### Fix #9 — A-4 Sections empty render (sheet-tab + view dispatcher disconnect)
+**Symptom:** Click A-4 Sections tab while in 3D view → tab gets the active styling but the canvas continues to show the 3D model (with A-4 selected in state). Looked like the section drawing failed; was actually a view-routing issue.
+**Root cause:** sheet-tab `onclick` handler (line 2833) only called `renderSheet(sh.id)` if `S.view === 'plan'`. In MAP/3D, the sheet update was a no-op visually.
+**Fix:** when the user clicks a sheet tab while in MAP or 3D view, auto-snap to PLAN view (which calls `renderSheet` via its own path). The selected sheet now actually appears.
+
+```js
+b.onclick=()=>{
+  S.activeSheet=sh.id;
+  document.querySelectorAll('.stab').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on');
+  if(S.view==='plan')renderSheet(sh.id);
+  else setView('plan');  // auto-switch + renderSheet via setView path
+};
+```
+
+Effect: clicking A-4 (or any sheet tab) from MAP or 3D view now correctly transitions to PLAN view with that sheet rendered. `drawSectionsSheet` was always working — it just wasn't being triggered.
+
+#### Cumulative test-run improvements (rounds 5n + 5o + 5p)
+
+When the owner re-runs the Kirkland analysis, the result panel will show:
+
+| Panel | Expected (after fixes) | Was (live test) |
+|---|---|---|
+| Bottom dim panel | `HEIGHT 30ft` (chart-verified) | `HEIGHT 35ft` (AI passthrough) |
+| Cover sheet codes | `IBC 2021 / WSEC 2021 / SDC D` | `IBC 2018 / IECC 2018 / SDC B` |
+| Records panel | distinct `endpoint registered/unreachable` provenance | `NO_PUBLIC_ENDPOINT` (misleading) |
+| OSM error | actionable `set ADI_PROXY` directive | raw `Failed to fetch` |
+| Zoning citations | matrix `codeURL` only, no fabricated sections | fabricated `KZC §115.10.020` |
+| Comp-research zone codes | only Kirkland (KZC, KMC Title 22) | Federal Way `RS 7.2`, `KMC 21.14` |
+| Lot dimensions | one number across site/zoning/dim panels | 60×115 vs 50×120 collision |
+| Option SF | `≤ FAR cap × lot area` | over-promise by ~70% |
+| Sheet-tab clicks | always render selected sheet | silent no-op in MAP/3D view |
+
+#### Out of scope (visual/UX polish, lower priority)
+- #10 Floor plan canvas auto-fit
+- #11 Differentiated elevations
+- #12 3D camera framing
+- #13 Workspace vault aesthetic carry-through
+- #14 Cover sheet font sizing
+- #15 Phase pipeline timing display cleanup
+- #16 Permit checklist strikethrough legend
+- #17 Save/restore analysis state
+- #18 Verified-vs-assumed badge in dim panel
+
+These are visual/UX polish; they don't affect data accuracy or regulatory compliance. Available for follow-up rounds.
+
+### Round 5o — Prompt-anchor batch: fixes #3, #4, #5
 
 The next batch of priority items from the live Kirkland test. All three are AI-prompt anchoring problems — the AI was confabulating data that contradicted the verified matrix or other panels in the same analysis. Fix pattern is the same across all three: inject canonical/authoritative values into the prompt + explicit instruction not to fabricate alternatives.
 
