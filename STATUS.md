@@ -147,12 +147,47 @@ Five new entries added to `data/permit-registry.js`:
 
 - **#22 NEW (P0-5)** — `mybuildingpermit` covers a market-significant chunk of King County but exposes no public REST API. Two paths: (a) accept web-only forever and route checklist-auto links accordingly; (b) procure an Accela Construct API key (typically requires an MOU with eCityGov Alliance). Recommend (a) until P1 — the web link is sufficient for the checklist-auto use case; auto-querying historical permits is a comp-phase enhancement, not P0.
 
+### Round 4 — first chart-integration batch + auto-extraction tooling (this commit)
+
+**Shipped:**
+- `scripts/integrate-charts.py` — auto-extraction tool. Reads a Chrome view-source HTML save, walks the encoded page DOM, groups `<p>{label}</p>` rows into chart records, applies a per-city integration plan (filename → matrix keys + column ordering + field-row regex), and emits JSON patch suggestions plus a `review` array with raw chart cells per extracted value. Pure stdout — does NOT mutate `data/zoning-matrix.js`. Hand-merge is the safety gate against chart misreads (the same risk that caused the Bothell P0-3 column-misread).
+- Sanity-checked on Bothell (already-integrated): script reproduces the chart values. Confirms the column-per-zone layout works.
+- Kirkland integrated: KZC 15.30 § 15.30.060 "Detached Dwelling Unit" row chart-confirms RSA 6 / RSA 8 values (front 20', side 5', rear 10', height 30' ABE, coverage 50%). Pre-existing matrix values were correct; round-4 promotes `_sourceMethod: 'manual'` + `_sourceSnapshot: '2026-04-25'` and clears `_unverified[]` to empty.
+
+**Findings:**
+- **Decision #23 NEW — Auburn zone rename.** Auburn ACC 18.07.030 chart shows zones **RC, R-1, R-2, R-3, R-4, R-NM, R-F** — there is NO R-5 or R-7. Same pattern as Tacoma/Redmond/Everett/Bellevue/Bothell (~6th of 10 P0-3 cities now confirmed renamed). The P0-3 `auburn,wa:R-5` and `R-7` matrix entries reference obsolete code. Owner action options:
+  - (A) Mirror the dual-entry approach used for Bellevue/Tacoma (decision #15 / Option C): keep legacy R-5 / R-7 with a `_legacy_key` back-reference, add new RC/R-1..4 entries.
+  - (B) Deprecate R-5 / R-7 via `_repealed: true` stubs pointing to the new zones (need an authoritative density-tier mapping to choose `_replacedBy`).
+  - (C) Live-research the lot-area-per-unit row in the chart to confirm the rename mapping (legacy R-5 ≈ R-3 if both are 5 du/ac? or ≈ R-4? unverified) before choosing A or B.
+  
+  Recommend (C) → (A) — once rename mapping is confirmed via the chart, dual-entry preserves backward-compat with stale GIS tags and lets new code work too.
+
+- **Renton / Kent / Everett — chart-layout heterogeneity.** Auto-extraction emits values, but spot-checks suggest column-ordering misalignment (e.g. Kent SR-8 rear=20 vs SR-6 rear=10 — opposite of expected density-tier pattern; column list in the script likely doesn't match the chart's actual header order). Pier-city tuning + per-row spot-check is required before applying. Deferred to round 5.
+
+- **Kirkland (handled this round) needed a different layout** than Bothell: KZC 15.30 uses per-USE rows with inline per-zone exceptions (`<b>RSA: </b>5'`) rather than a column-per-zone grid. The auto-extractor doesn't support this layout; values were hand-confirmed against the same chart cells the script would have read. Future enhancement: a second extractor mode for "row-per-use, inline-per-zone-overrides" charts.
+
+**Round 4 status summary:**
+
+| City | Chart layout | Round 4 outcome |
+|---|---|---|
+| Bothell | column-per-zone | INTEGRATED in round 3 (commit 9fbf39a) |
+| Kirkland | row-per-use, inline overrides | INTEGRATED this round (chart confirms existing matrix values) |
+| Auburn | column-per-zone but ZONES RENAMED | DEFERRED — decision #23 needed |
+| Kent | column-per-zone, 11+ columns | DEFERRED — script extracted values but column-order needs verification |
+| Renton | column-per-zone, multi-file (A..I) | DEFERRED — same column-order risk |
+| Everett (NR-C/NR maxLotCoverage) | unclear from EMC 19.06.030 (may be Table 6-2 setbacks not Table 6-1 coverage) | DEFERRED — needs the right table |
+| Federal Way | n/a | BLOCKED — wrong chapter uploaded (see decision #19) |
+
+### New decisions awaiting the human owner (round 4)
+- **#23 NEW** — Auburn zone rename: pick (A)/(B)/(C) per above. Recommend (C) → (A).
+
 ### Next up
 - Owner-browser verification of decisions #21 endpoints (5-min/each).
 - Owner re-upload of Federal Way RS chart (decision #19).
-- **P0-5 batch 2** when verifications come back: clear `_unverifiedEndpoint` flags, optionally add Lakewood + smaller Pierce cities, and wire `runPhase_comp` to route to the new entries.
-- Round 4 chart-integration batch for the 5 still-`_unverified` cities (Auburn, Kirkland, Renton, Kent, Everett).
-- Owner approval of decisions #16–#22 + the P0-5 batch.
+- Owner direction on Auburn zone-rename (decision #23). If (C): I'll inspect the lot-area-per-unit row of ACC 18.07.030 (already uploaded) to draft a rename map and propose (A) entries.
+- **Round 5 chart-integration batch** — Kent / Renton / Everett with per-city column-order verification + script tuning.
+- **P0-5 batch 2** when endpoint verifications come back.
+- Owner approval of decisions #16–#23 + round-4 batch.
 
 ---
 
