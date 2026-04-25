@@ -18,12 +18,13 @@ const assert = require('node:assert/strict');
 const root = path.resolve(__dirname, '..');
 const sandbox = { window: {}, console };
 vm.createContext(sandbox);
-for (const f of ['data/zoning-matrix.js', 'data/middle-housing.js']) {
+for (const f of ['data/zoning-matrix.js', 'data/middle-housing.js', 'data/wa-statewide.js']) {
   const src = fs.readFileSync(path.join(root, f), 'utf8');
   vm.runInContext(src, sandbox, { filename: f });
 }
-const { ZONING_MATRIX_DB, MIDDLE_HOUSING_DB } = sandbox.window;
+const { ZONING_MATRIX_DB, MIDDLE_HOUSING_DB, WA_STATEWIDE_DB } = sandbox.window;
 const effectiveZoning = sandbox.window.effectiveZoning;
+const applyWaStatewide = sandbox.window.applyWaStatewide;
 
 assert.ok(ZONING_MATRIX_DB, 'ZONING_MATRIX_DB loaded');
 assert.ok(MIDDLE_HOUSING_DB, 'MIDDLE_HOUSING_DB loaded');
@@ -131,6 +132,112 @@ assert.ok(
   'Repealed redirect warning surfaced',
 );
 pass('Repealed-zone redirect (redmond R-4 → NR) works');
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WA statewide overlay (HB 1337 + SB 5184)
+// ─────────────────────────────────────────────────────────────────────────────
+
+assert.ok(WA_STATEWIDE_DB, 'WA_STATEWIDE_DB loaded');
+assert.ok(WA_STATEWIDE_DB.HB1337, 'HB1337 entry present');
+assert.ok(WA_STATEWIDE_DB.SB5184, 'SB5184 entry present');
+assert.equal(typeof applyWaStatewide, 'function', 'applyWaStatewide is a function');
+pass('WA statewide DB + applyWaStatewide loaded');
+
+// ── HB 1337 raises ADU floor to 1,000 sf when the matrix is below ──
+{
+  // Synthesize an envelope with an ADU floor below 1,000 sf
+  const env = {
+    jurisdiction: 'TestCity',
+    district: 'X',
+    baseZoning: { jurisdiction: 'TestCity', state: 'WA', district: 'X', aduMaxSqFt: 800, aduAllowed: false, parkingPerUnit: 2 },
+    middleHousing: null,
+    effective: { aduMaxSqFt: 800, aduAllowed: false, parkingPerUnit: 2, appliedRules: [] },
+    warnings: [],
+  };
+  const out = applyWaStatewide(env);
+  assert.equal(out.effective.aduMaxSqFt, 1000, 'HB 1337 raises ADU max to 1000');
+  assert.equal(out.effective.aduAllowed, true, 'HB 1337 mandates ADU allowed');
+  assert.equal(out.effective.minADUsPerLot, 2, 'HB 1337 mandates min 2 ADUs/lot');
+  assert.equal(out.effective.aduOwnerOccupancyRequired, false, 'HB 1337 prohibits owner-occupancy req');
+  assert.ok(out.effective.appliedRules.includes('HB1337:aduFloor'), 'HB 1337 rule applied');
+}
+pass('HB 1337 raises ADU floor to 1,000 sf and mandates 2/lot');
+
+// ── HB 1337 cityImplementationOverride preserves above-floor local cap ──
+{
+  const bellevueR5 = effectiveZoning('Bellevue', 'R-5');
+  const out = applyWaStatewide(bellevueR5);
+  assert.equal(out.effective.aduMaxSqFt, 1200, 'Bellevue local cap 1,200 sf preserved (above floor)');
+  assert.ok(out.effective.appliedRules.includes('HB1337:cityOverride'), 'cityOverride rule applied');
+}
+pass('HB 1337 city override preserves above-floor caps (Bellevue 1,200sf)');
+
+// ── HB 1337 transit-proximity zeroes ADU parking ──
+{
+  const env = {
+    jurisdiction: 'X', district: 'X',
+    baseZoning: { jurisdiction: 'X', state: 'WA', district: 'X', aduMaxSqFt: 1000, aduAllowed: true, parkingPerUnit: 1 },
+    middleHousing: null,
+    effective: { aduMaxSqFt: 1000, aduAllowed: true, parkingPerUnit: 1, appliedRules: [] },
+    warnings: [],
+  };
+  const noTransit = applyWaStatewide(env, { parcelNearMajorTransit: false });
+  const transit = applyWaStatewide(env, { parcelNearMajorTransit: true });
+  assert.equal(noTransit.effective.aduParkingPerUnit, 1, 'ADU parking 1 by default');
+  assert.equal(transit.effective.aduParkingPerUnit, 0, 'ADU parking 0 within 0.5mi major transit');
+}
+pass('HB 1337 zeroes ADU parking within 0.5mi of major transit');
+
+// ── SB 5184 caps SFR parking at 1/unit for >50k cities pending compliance ──
+{
+  // Federal Way is in citiesPendingCompliance with a current matrix value not 0.
+  // Synthesize a high parking value to verify the cap fires.
+  const env = {
+    jurisdiction: 'Federal Way', district: 'RS 7.2',
+    baseZoning: { jurisdiction: 'Federal Way', state: 'WA', district: 'RS 7.2', parkingPerUnit: 2, aduMaxSqFt: 1000, aduAllowed: true },
+    middleHousing: MIDDLE_HOUSING_DB['federal way,wa'],
+    effective: { parkingPerUnit: 2, aduMaxSqFt: 1000, aduAllowed: true, appliedRules: [] },
+    warnings: [],
+  };
+  const out = applyWaStatewide(env);
+  assert.equal(out.effective.parkingPerUnit, 1, 'SB 5184 caps Federal Way SFR parking 2 → 1');
+  assert.equal(out.appliedStatewide.sb5184.mode, 'statutoryCap', 'mode = statutoryCap');
+  assert.ok(
+    out.warnings.some(w => /SB 5184/.test(w)),
+    'SB 5184 cap warning surfaced',
+  );
+}
+pass('SB 5184 caps SFR parking 1/unit for cities pending compliance (Federal Way)');
+
+// ── SB 5184 'cityCodified' mode for cities that pre-codified ──
+{
+  const env = {
+    jurisdiction: 'Tacoma', district: 'UR-1',
+    baseZoning: { jurisdiction: 'Tacoma', state: 'WA', district: 'UR-1', parkingPerUnit: 0, aduMaxSqFt: 1000, aduAllowed: true },
+    middleHousing: MIDDLE_HOUSING_DB['tacoma,wa'],
+    effective: { parkingPerUnit: 0, aduMaxSqFt: 1000, aduAllowed: true, appliedRules: [] },
+    warnings: [],
+  };
+  const out = applyWaStatewide(env);
+  assert.equal(out.appliedStatewide.sb5184.mode, 'cityCodified', 'Tacoma already codified');
+  assert.equal(out.effective.parkingPerUnit, 0, 'Tacoma parking remains 0');
+}
+pass('SB 5184 cityCodified mode for Tacoma (already at 0 via Ord 28986)');
+
+// ── Non-WA envelope is left untouched ──
+{
+  const env = {
+    jurisdiction: 'Portland', district: 'R5',
+    baseZoning: { jurisdiction: 'Portland', state: 'OR', district: 'R5', parkingPerUnit: 0, aduMaxSqFt: 800, aduAllowed: true },
+    middleHousing: null,
+    effective: { parkingPerUnit: 0, aduMaxSqFt: 800, aduAllowed: true, appliedRules: [] },
+    warnings: [],
+  };
+  const out = applyWaStatewide(env);
+  assert.equal(out.effective.aduMaxSqFt, 800, 'Portland envelope untouched (non-WA)');
+  assert.equal(out.appliedStatewide, undefined, 'No appliedStatewide on non-WA envelope');
+}
+pass('applyWaStatewide is a no-op for non-WA envelopes');
 
 // ── Unknown jurisdiction ──
 const unknown = effectiveZoning('Atlantis', 'A-1');

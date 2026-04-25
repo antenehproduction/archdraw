@@ -51,12 +51,38 @@ Per session-handoff flag: WA HB 1110 statutory floor for Tier 2 (25k–75k pop) 
 ### Statewide-WA pending (carried from 2026-04-24, decision #10)
 HB 1337 (statewide ADU floor) and SB 5184 (parking minimum cap) are still per-city in `notes` fields rather than first-class data. P0-4 deliberately scoped to HB 1110 only — adding the other two is a sibling file (`data/wa-statewide.js`) and a separate batch.
 
+### Decision #18 wiring — DONE (commit 37630cd)
+- `data/middle-housing.js` registered in `index.html`.
+- `runPhase_zone` calls `effectiveZoning` three times (base, citywide-MH, transit-MH); stashes results on `z._effectiveBase / _effectiveMH / _effectiveMHTransit / _middleHousing / _middleHousingWarnings`.
+- Bellevue's 32ft middle-housing height cap (LUC 20.20.538) is auto-applied via `dimensionalOverrides.maxHeightFt`; pre-override value preserved on `z._maxHeightFtBase`.
+- Zone UI panel renders a blue HB 1110 callout with base / citywide / transit unit counts, ordinance reference, height-cap delta, and (when present) an amber warning row.
+- §P0-4 manual success criterion satisfied: site phase output now states "Base zoning: N unit. HB 1110 effective: up to N citywide / N near major transit."
+
+### Decision #10 wiring — DONE (this commit)
+- `data/wa-statewide.js` registers `window.WA_STATEWIDE_DB.{HB1337, SB5184}` + `window.applyWaStatewide(envelope, opts)`. Pure layered helper; takes the `effectiveZoning` envelope, returns a new envelope with HB 1337 (statewide ADU floor, 2 ADUs/lot, no owner-occ, ADU parking 0 within 0.5mi major transit) and SB 5184 (parking caps: SFR 1, MF 0.5, ADU 0; cities >50k pending compliance default to statutory cap with deadline warning) layered on. `cityImplementationOverrides` carry the above-floor local rules (Bellevue/Bothell/Redmond ADU caps; Tacoma/Redmond/Bothell pre-codified parking 0).
+- `runPhase_zone` consumes it: `z.aduMaxSqFt` / `z.parkingPerUnit` updated when HB 1337 / SB 5184 fire; pre-override values stashed on `z._aduMaxSqFtBase` / `z._parkingPerUnitBase`. `z._minADUsPerLot` carries the HB 1337 mandate (2). UI renders a purple statewide callout summarizing each delta.
+- Test count up from 10 → 17 groups. `node test/middle-housing.test.js` exits 0.
+
+### Manual-copy back-fill guide (drafted 2026-04-25)
+Concise per-city upload checklist below covers the 7 still-`_unverified` jurisdictions. Owner action: open the listed live URL in a regular browser, save HTML, upload to `origin/main` via GitHub UI. Same protocol that worked for Bellevue/Everett/Redmond rounds 1–2.
+
+| City | Zone(s) | Live URL (target) | Wayback fallback | Filename | Unblocks |
+|---|---|---|---|---|---|
+| Auburn | R-5, R-7 | https://auburn.municipal.codes/ACC/18.07.030 | https://web.archive.org/web/2025/https://www.codepublishing.com/WA/Auburn/html/Auburn18/Auburn1807.html | `ACC 18.07.030.txt` | all dimensional fields |
+| Kirkland | RSA 6, RSA 8 | https://www.codepublishing.com/WA/Kirkland/html/Kirkland15/Kirkland1530.html | wayback | `KZC 15.30.txt` | rearSetback, maxStories, aduMaxSqFt |
+| Renton | R-4, R-8 | https://www.codepublishing.com/WA/Renton/html/Renton04/Renton0402.html | wayback | `RMC 4-2-110A.txt` | most numeric fields |
+| Kent | SR-6, SR-8 | https://www.codepublishing.com/WA/Kent/html/Kent15/Kent1504.html | wayback | `KCC 15.04.170.txt` | most numeric fields |
+| Federal Way | RS 7.2, RS 9.6 | https://www.codepublishing.com/WA/FederalWay/html/FederalWay19/FederalWay1925.html | wayback | `FWRC RS use chart.txt` | most numeric fields |
+| Bothell (resolves #17) | R-L1, R-L2 | https://bothell.municipal.codes/BMC/12.14.030 + .140 | wayback | `BMC 12.14.030.txt` + `BMC 12.14.140.txt` | setbacks, FAR, **Tier 1/2 ambiguity** |
+| Everett (partial) | NR-C, NR | https://everett.municipal.codes/EMC/19.06.010 | wayback | `Table 6-1.txt` | maxLotCoverage |
+
+Save as "Webpage, HTML only" and rename per the filename column. Multi-table cities (Bothell): one commit with both files preferred.
+
 ### Next up
-- Owner approval of decisions #16–#18.
-- Commit + push (this batch).
-- Wire `effectiveZoning` into `index.html` (decision #18).
-- Statewide HB 1337 + SB 5184 modeling (carry-over decision #10).
-- Manual-copy back-fill for the 7 still-`_unverified` cities (carry-over from P0-3).
+- Owner approval of decisions #16–#18 + the new statewide-overlay schema.
+- Owner manual-copy uploads per the guide above (resolves Bothell tier ambiguity #17 + back-fills the 7 cities).
+- Once Bothell BMC 12.14 lands: revisit `MIDDLE_HOUSING_DB['bothell,wa'].cityImplementationUnits._unverified` — either confirm `4/6/6` or correct to statutory `2/4/4`.
+- P0-5 (WA permit portals expansion) is the next major P0.
 
 ---
 
