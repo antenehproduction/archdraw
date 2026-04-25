@@ -4,6 +4,62 @@ Daily backlog state per `PROJECT_COORDINATOR.md` §9. Most recent day at the top
 
 ---
 
+## 2026-04-25 — P0-4 HB 1110 first-class data (first batch)
+
+### Moved to done today
+- **P0-4 schema + data** — new file `data/middle-housing.js` registers `window.MIDDLE_HOUSING_DB` keyed by `<jurisdiction>,<state>` for all 10 P0-3 WA cities (Bellevue, Tacoma, Everett, Redmond, Kirkland, Auburn, Bothell, Renton, Kent, Federal Way). Each entry carries: `statuteName` ('WA HB 1110'), `statuteCite` ('RCW 36.70A.635'), `populationTier` (`tier1`/`tier2`), `statutoryFloor: { baseUnits, transitUnits, affordableUnits }`, optional `cityImplementationUnits` for cities that exceed the floor, `localOrdinance`, `transitProximityBonus`, `affordabilityBonus`, `transitStations[]`, `dimensionalOverrides`, `exceptions[]`, `codeURL`, `cityImplementationURL`, `verifiedDate`, `_sourceMethod` ('zoning-matrix-notes'), `_sourceSnapshot`, `_unverified[]`, `notes`. Source data extracted from existing `data/zoning-matrix.js` notes + densityBonus fields — no external research, all values inherited from the P0-3 sweep audit trail.
+- **P0-4 helper** — `window.effectiveZoning(jurisdiction, district, opts)` merges base zoning + middle-housing overlay and returns a single envelope `{ jurisdiction, district, baseZoning, middleHousing, effective: { maxUnits, …setbacks, maxHeightFt, …, sourceOfUnits, appliedRules }, warnings }`. opts: `{ enableMiddleHousing=true, nearMajorTransit=false, includesAffordableUnit=false, inException=false }`. Tolerates jurisdiction inputs with or without state suffix (`'Bellevue'` / `'Bellevue, WA'` / `'bellevue,wa'` all resolve), follows `_repealed` redirects with a preserved warning, prefers `cityImplementationUnits` only when not flagged `_unverified`, falls back to statutory floor with a surfaced warning otherwise.
+- **P0-4 test** — `test/middle-housing.test.js` — first test file in the project. Pure Node.js, no test framework: uses `node:assert/strict` + `node:vm` to load both data files into a sandbox without needing a build step. 10 test groups, all passing:
+  1. All 10 P0-3 cities present in overlay
+  2. Required schema fields on every overlay entry
+  3. Bothell is Tier 2 with statutory 2/4/4 floor; other 9 are Tier 1
+  4. **Manual §P0-4 success criterion** — Bellevue R-5 with HB 1110 disabled returns 1 unit; with HB 1110 enabled returns 4 units (different unit counts, same address)
+  5. Bellevue R-5 + transit → 6 units + 32ft middle-housing height cap from `dimensionalOverrides` (LUC 20.20.538)
+  6. Redmond NR exceeds the floor: 6 du base / 8 du affordable (per Ord 3186)
+  7. Bothell R-L1 unverified city claim → falls back to statutory 2/4/4 with warning surfaced
+  8. `inException` flag suppresses middle-housing override (parcel inside critical area / urban center)
+  9. Repealed-zone redirect — `redmond,wa:R-4` (`_repealed: true`, `_replacedBy: 'redmond,wa:NR'`) resolves transparently to NR's 6 units with a redirect warning
+  10. Unknown jurisdiction returns null base + warning, no crash
+
+  Run: `node test/middle-housing.test.js` — exits 0 on pass, non-zero with assertion error on fail.
+
+### Bothell Tier 1 vs Tier 2 ambiguity — RESOLVED
+Per session-handoff flag: WA HB 1110 statutory floor for Tier 2 (25k–75k pop) is **2 du citywide / 4 du transit / 4 du affordable**. Bothell pop. 48,161 (2020 Census) → Tier 2. The P0-3 zoning-matrix entries for `bothell,wa:R-L1` and `R-L2` cited "4 du citywide / 6 du transit" — that exceeds the statutory floor and was unverified due to the Cloudflare 403 wall on `bothell.municipal.codes`.
+
+**Resolution in `MIDDLE_HOUSING_DB['bothell,wa']`:**
+- `statutoryFloor: { baseUnits: 2, transitUnits: 4, affordableUnits: 4 }` — authoritative for the renderer
+- `cityImplementationUnits: { baseUnits: 4, transitUnits: 6, affordableUnits: 6, _unverified: true, _claim: '...' }` — preserves the P0-3 claim with provenance
+- `_unverified: ['cityImplementationUnits']` at top level
+- The `effectiveZoning` helper checks `_unverified` and falls back to the floor with a warning. Net behaviour: Bothell ships with conservative defaults (2/4/4) until BMC 12.14.134 can be directly read.
+
+### Schema-template alignment notes
+- `cityImplementationUnits` field added beyond the `PROJECT_COORDINATOR.md` §P0-4 template — needed to model Redmond (6 base / 8 affordable, exceeds the 4/6/6 floor) and the unverified Bothell claim. Recommend amending the manual to include this field.
+- `statutoryFloor` field added — explicit RCW-mandated minimum, separate from `baseUnits` in the template. Lets the helper know what the legal floor is even if the city has been claimed to exceed it.
+- `transitStations[]` added — concrete station list per city. Used by future `site-intel` parcel-distance check.
+- `dimensionalOverrides` added — middle-housing-specific dimensional overrides (Bellevue's 32ft flat / 35ft ridge cap is the only current instance; LUC 20.20.538).
+
+### Decisions awaiting the human owner (carried + new)
+- All 14 prior items unchanged. New P0-4 items:
+- **#16 NEW — Manual schema template amendment.** `PROJECT_COORDINATOR.md` §P0-4 schema template should be updated to include `statutoryFloor`, `cityImplementationUnits`, `transitStations[]`, `dimensionalOverrides`. Recommend yes — the template-as-shipped doesn't model the city-exceeds-floor case (Redmond) or the unverified-city-claim case (Bothell). Manual is owner-edited only (Appendix A).
+- **#17 NEW — Bothell verification path.** Confirming Bothell's actual local rule (2/4/4 statutory vs. claimed 4/6/6) needs a direct read of BMC 12.14.134 — same Cloudflare 403 wall as the rest of the P0-3 sweep. Options: (a) owner manual-copy upload of BMC 12.14 (same path that worked for Bellevue/Everett/Redmond); (b) defer to P1.5 Cloudflare bypass; (c) accept statutory floor permanently. Recommend (a) on next owner upload round.
+- **#18 NEW — `effectiveZoning()` adoption.** The helper exists but no `index.html` callsite uses it yet — the existing `runPhase_zone` and `runPhase_record` still consume the raw matrix entry. Wiring it in should happen as a follow-up PR (small, isolated). Routing: `drawing-engine` for the consumer side, `architect-advisor` to verify the disclosure block correctly references "HB 1110 effective: up to N units" when the override fires.
+
+### Launch checklist (§6) delta
+- **`HB 1110 entries in middle-housing.js for all 10 cities`** — ✓ DONE (data layer). Wiring into the pipeline is decision #18 above.
+- The §P0-4 success criterion "Site phase output explicitly states 'Base zoning: 1 unit. HB 1110 effective: up to 4 units (6 near transit).'" requires the wiring step to claim. Data-layer half is satisfied.
+
+### Statewide-WA pending (carried from 2026-04-24, decision #10)
+HB 1337 (statewide ADU floor) and SB 5184 (parking minimum cap) are still per-city in `notes` fields rather than first-class data. P0-4 deliberately scoped to HB 1110 only — adding the other two is a sibling file (`data/wa-statewide.js`) and a separate batch.
+
+### Next up
+- Owner approval of decisions #16–#18.
+- Commit + push (this batch).
+- Wire `effectiveZoning` into `index.html` (decision #18).
+- Statewide HB 1337 + SB 5184 modeling (carry-over decision #10).
+- Manual-copy back-fill for the 7 still-`_unverified` cities (carry-over from P0-3).
+
+---
+
 ## 2026-04-24 — P0-3 Tacoma + Everett + Redmond + permission unblock
 
 ### Moved to done today
