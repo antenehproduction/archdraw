@@ -189,6 +189,15 @@ git push (this commit)
 - ArcGIS endpoints (Tacoma Hub, Snohomish snoco-gis) aren't yet covered by this pipeline — Socrata only. Adding ArcGIS support is a parallel script that hits `<host>/arcgis/rest/services?f=json` to enumerate FeatureServers; planned follow-up.
 - If a host blocks GitHub Actions runners too, fall back to (a) Cloudflare Workers paid tier (different egress) or (b) the existing scripts/extract-viewsource.py + owner manual-copy path.
 
+### Round 5b — workflow tightened to auto-PR (security gate added, this commit)
+Changed the schema-fetch workflow's commit pattern from "push directly to current branch" to **"push to bot/schema-update-* branch + open PR"**. Effect:
+- **Permission scope reduced.** `contents: write` still needed to push the throwaway bot branch, but it can never overwrite source files — only humans can merge the PR.
+- **Supply-chain attack surface drops.** If a fetched host gets hijacked and returns a malicious JSON payload, the bot writes it to a PR, not to the working code. A human reviews the diff before it lands. Worst case becomes "we ignore the PR and close it."
+- **Diff is always `data/_socrata-schemas.json` only** — metadata, never executed at runtime. Even an inadvertent merge of bad metadata can't get RCE; it only feeds the offline `sync-permit-registry.py` patch report (which is also reviewed before any registry mutation).
+- **PR base auto-tracks the trigger branch.** Push from a feature branch → PR targets that branch. Cron run on `main` → PR targets `main`. Each round-trip stays inside the appropriate review surface.
+
+This is the validate-then-iterate path: ship the smallest reliable thing, watch the first run, only add the parallel ArcGIS fetcher (Tacoma, snoco-gis) and the auto-merge promoter once we've seen GitHub-runner egress actually clear the Cloudflare wall on these hosts. If the first run shows 0 successes, we pivot egress (Cloudflare Worker, paid scraper) before stacking more code on unproven infra.
+
 ### Round 5 status of decisions
 - **#21 (P0-5 endpoint verification)** — superseded by the GitHub Actions pipeline. Once the workflow runs, schemas are written to `data/_socrata-schemas.json`; sync script promotes them. Owner-browser hit no longer required for any Socrata endpoint.
 - **#16, #18, #20, #22** — pending owner approval (carried).
