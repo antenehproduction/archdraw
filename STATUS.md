@@ -189,7 +189,50 @@ git push (this commit)
 - ArcGIS endpoints (Tacoma Hub, Snohomish snoco-gis) aren't yet covered by this pipeline — Socrata only. Adding ArcGIS support is a parallel script that hits `<host>/arcgis/rest/services?f=json` to enumerate FeatureServers; planned follow-up.
 - If a host blocks GitHub Actions runners too, fall back to (a) Cloudflare Workers paid tier (different egress) or (b) the existing scripts/extract-viewsource.py + owner manual-copy path.
 
-### Round 5l — Tacoma GRADUATED, Snohomish narrowed, P0-6 RESOLVED (this commit)
+### Round 5m — Vault landing UI + §7-A / §7-C decisions accepted (this commit, FEATURE BRANCH ONLY)
+
+**Owner decisions accepted:**
+- **§7-A** — Option 2 (split data + lib only). Defer Vite/framework migration to P3. ACCEPTED.
+- **§7-C** — Per-task-class model routing (Opus for `architect-advisor` RDP detection + `zoning-legal` matrix authoring; Sonnet elsewhere). ACCEPTED.
+- **§8-Q1** — Pricing deferred. P0-1 implementation will use placeholder paywall copy until pricing is set.
+
+These decisions structurally unblock P0-1 hosted-key auth. Implementation starts on owner go-ahead — UI work is the priority redirect for now.
+
+**Vault landing UI — first build, FEATURE BRANCH ONLY for visual review:**
+
+Goal: dramatic "secret-organization access granted" feel. Blueprint background, unrolling paper that holds the existing form fields, brief "CREDENTIALS VERIFIED" flash. Implementation:
+
+- **CSS** (~140 lines added before `</style>`):
+  - `#landing.vault` background: 5-layer composite — radial center glow + 80px major grid + 16px minor grid + dark navy → ink gradient
+  - `.vault-flash` — fixed-position centered banner, animates in/out 1.6s ease-out (gain letter-spacing + scale)
+  - `.brand` — fade-rise from -14px with 3px blur, 1.1s after flash starts
+  - `.scroll-paper` — wraps the form cards. 1.5s `unroll-paper` keyframe: clip-path inset(0 0 100% 0) → 0, with perspective rotateX(8°) → 0 + scaleY(.78 → 1.02 → 1) for the "unfurl from rolled tube" feel. Paper styled with subtle fiber texture, dashed inset outline, top-edge wood-tone "rolled top" highlight via `::before`, rotating red "CONFIDENTIAL · LICENSED MEMBER · ORDER ADI-#" stamp via `::after`
+  - All form fields re-skinned for paper context: dark navy text on cream, navy-on-cream inputs, brass-accent run button with red-stamp border
+  - `prefers-reduced-motion: reduce` skips animations entirely
+
+- **HTML** wrap inside `<div class="screen" id="landing">`:
+  - New `<div class="vault-flash">CREDENTIALS VERIFIED</div>` above brand
+  - New `<div class="scroll-paper">…</div>` wrapping `#api-card` and `.acard` (all existing form fields preserved verbatim, just re-skinned)
+
+- **JS toggle** at INIT: `if (!URLSearchParams.has('legacy')) document.getElementById('landing').classList.add('vault')`. So vault is the default; `?legacy=1` query string reverts to the original dark-card landing for A/B comparison.
+
+**Static-render check — green:** all 6 overlay items + 6 feature cards present, all critical IDs (#api-card, #addr-inp, #run-btn, etc.) intact, 3 new `@keyframes` registered, no parse errors in the inline `<script>`. File size 281 KB (+1.5 KB CSS).
+
+**Preview instructions for owner:**
+1. **Vercel preview deploy** (cleanest if Vercel is connected) — feature branch `claude/start-p0-4-archdraw-4P1yC` should auto-deploy to a preview URL. Open it; vault is default. Append `?legacy=1` to compare against the old UI.
+2. **Local preview** — `git fetch origin && git checkout claude/start-p0-4-archdraw-4P1yC && open index.html`. Same `?legacy=1` toggle.
+3. **GitHub Pages** — only serves `main`, so won't show this until merge.
+
+Animation choreography (for visual reference):
+- 0ms — page paints (blueprint background visible)
+- 100ms — "CREDENTIALS VERIFIED" flash fades in centered
+- 500ms — brand title rises into place
+- 1050ms — scroll-paper begins unrolling top-down
+- 1700ms — flash fades out, paper settles, form is interactive
+
+If the rendered look needs adjustment (color tone, pacing, less-or-more dramatic), tell me and I'll iterate. **NOT merging to main until you approve.**
+
+### Round 5l — Tacoma GRADUATED, Snohomish narrowed, P0-6 RESOLVED
 
 **Owner update:** Vercel project list confirmed — only `archdraw` exists. **Decision #5 (§8-Q6) RESOLVED, P0-6 closed:** `archdraw` is canonical; no second project to delete or merge. The `production` Vercel project mentioned in `PROJECT_COORDINATOR.md` §8-Q6 was a hypothetical based on incomplete inventory.
 

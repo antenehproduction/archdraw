@@ -229,18 +229,162 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--ink);color:var
   .brand-title{font-size:22px}
   .acard,.ov-grid{padding:12px}
 }
+
+/* ═══════════════════════════════════════════════════════════════════════
+   VAULT — secret-organization landing UI
+   Toggle off with ?legacy=1 in the URL.
+   ═════════════════════════════════════════════════════════════════════ */
+#landing.vault{
+  background:
+    radial-gradient(ellipse at 50% 22%, rgba(38,90,180,.22) 0%, rgba(0,0,0,0) 55%),
+    repeating-linear-gradient(0deg,rgba(122,162,255,.07) 0 1px,transparent 1px 80px),
+    repeating-linear-gradient(90deg,rgba(122,162,255,.07) 0 1px,transparent 1px 80px),
+    repeating-linear-gradient(0deg,rgba(122,162,255,.025) 0 1px,transparent 1px 16px),
+    repeating-linear-gradient(90deg,rgba(122,162,255,.025) 0 1px,transparent 1px 16px),
+    linear-gradient(180deg,#061025 0%,#0a1929 100%);
+  position:relative;
+}
+/* Vault flash + brand fade-in choreography (only on first paint) */
+@keyframes vault-flash{
+  0%{opacity:0;transform:translateX(-50%) scale(.7);letter-spacing:1px}
+  18%{opacity:1;transform:translateX(-50%) scale(1.02);letter-spacing:6px}
+  78%{opacity:1;transform:translateX(-50%) scale(1.02);letter-spacing:6px}
+  100%{opacity:0;transform:translateX(-50%) scale(1.18);letter-spacing:9px}
+}
+#landing.vault .vault-flash{
+  position:fixed;top:32%;left:50%;transform:translateX(-50%);
+  font:600 11px/1 'JetBrains Mono',monospace;letter-spacing:6px;
+  color:rgba(180,210,255,.92);
+  border:1px solid rgba(122,162,255,.4);
+  background:rgba(6,16,37,.55);backdrop-filter:blur(2px);
+  padding:14px 32px;pointer-events:none;z-index:60;text-transform:uppercase;
+  animation:vault-flash 1.6s ease-out forwards;
+  box-shadow:0 0 32px rgba(122,162,255,.25),inset 0 0 0 1px rgba(255,255,255,.05);
+}
+@keyframes brand-rise{
+  0%{opacity:0;transform:translateY(-14px) scale(.96);filter:blur(3px)}
+  100%{opacity:1;transform:translateY(0) scale(1);filter:blur(0)}
+}
+#landing.vault .brand{animation:brand-rise 1.1s cubic-bezier(.2,.7,.3,1) backwards;animation-delay:.5s}
+/* Unrolling paper that wraps the form cards */
+@keyframes unroll-paper{
+  0%{
+    clip-path:inset(0 0 100% 0);
+    transform:perspective(1200px) rotateX(8deg) scaleY(.78);
+    box-shadow:0 4px 24px rgba(0,0,0,.7);
+  }
+  55%{
+    clip-path:inset(0 0 0 0);
+    transform:perspective(1200px) rotateX(0) scaleY(1.02);
+  }
+  100%{
+    clip-path:inset(0 0 0 0);
+    transform:perspective(1200px) rotateX(0) scaleY(1);
+    box-shadow:0 0 0 1px rgba(0,0,0,.05),0 30px 60px -20px rgba(0,0,0,.55),0 12px 28px -10px rgba(0,0,0,.4);
+  }
+}
+#landing.vault .scroll-paper{
+  position:relative;width:100%;max-width:780px;margin:0 auto;
+  background:
+    radial-gradient(circle at 18% 12%,rgba(0,0,0,.04) 0%,transparent 35%),
+    radial-gradient(circle at 82% 88%,rgba(0,0,0,.03) 0%,transparent 40%),
+    repeating-linear-gradient(0deg,rgba(20,33,61,.025) 0 1px,transparent 1px 22px),
+    repeating-linear-gradient(90deg,rgba(20,33,61,.025) 0 1px,transparent 1px 22px),
+    linear-gradient(180deg,#f6f1e2 0%,#ece5d0 100%);
+  color:#14213d;border-radius:3px;padding:38px 38px 28px;
+  outline:1px dashed rgba(20,33,61,.22);outline-offset:-10px;
+  transform-origin:top center;
+  animation:unroll-paper 1.5s cubic-bezier(.2,.7,.25,1) backwards;
+  animation-delay:1.05s;
+}
+/* Top-edge "rolled top" highlight */
+#landing.vault .scroll-paper::before{
+  content:'';position:absolute;left:0;right:0;top:-8px;height:14px;
+  background:linear-gradient(180deg,#c8b98e 0%,#a8956a 50%,rgba(168,149,106,0) 100%);
+  border-radius:3px 3px 0 0;
+  box-shadow:0 -2px 4px rgba(0,0,0,.3);
+}
+/* Stamped seal in top-right */
+#landing.vault .scroll-paper::after{
+  content:'CONFIDENTIAL · LICENSED MEMBER · ORDER ADI-#';
+  position:absolute;top:18px;right:18px;
+  font:7.5px/1.2 'JetBrains Mono',monospace;letter-spacing:1.3px;
+  color:rgba(160,30,30,.7);border:1.5px solid rgba(160,30,30,.55);
+  padding:5px 9px;border-radius:2px;background:rgba(255,250,240,.5);
+  transform:rotate(2.5deg);
+  box-shadow:inset 0 0 0 1px rgba(160,30,30,.15);
+}
+/* Re-skin the existing form cards inside the scroll */
+#landing.vault .scroll-paper #api-card,
+#landing.vault .scroll-paper .acard{
+  background:transparent;border:none;padding:0;margin:0 0 22px 0;box-shadow:none;
+}
+#landing.vault .scroll-paper .acard:last-child{margin-bottom:0}
+#landing.vault .scroll-paper .clbl,
+#landing.vault .scroll-paper .ov-lbl,
+#landing.vault .scroll-paper .fc-t{color:#14213d;font-weight:600}
+#landing.vault .scroll-paper .ov-desc,
+#landing.vault .scroll-paper .fc-d,
+#landing.vault .scroll-paper .key-note{color:rgba(20,33,61,.65)}
+#landing.vault .scroll-paper .ov-item,
+#landing.vault .scroll-paper .fc{
+  background:rgba(255,255,255,.35);
+  border:1px solid rgba(20,33,61,.18);
+}
+#landing.vault .scroll-paper .ov-item:hover{background:rgba(255,255,255,.55)}
+#landing.vault .scroll-paper .ov-item.active{
+  background:rgba(0,80,160,.12);border-color:rgba(0,80,160,.5);
+}
+#landing.vault .scroll-paper input[type="text"],
+#landing.vault .scroll-paper input[type="password"]{
+  background:rgba(255,253,247,.85);
+  border:1px solid rgba(20,33,61,.32);
+  color:#14213d;
+  font-family:'JetBrains Mono',monospace;
+}
+#landing.vault .scroll-paper input::placeholder{color:rgba(20,33,61,.42)}
+#landing.vault .scroll-paper .rbtn{
+  background:linear-gradient(180deg,#1d3a72 0%,#0e1f3f 100%);
+  border:1px solid rgba(160,30,30,.5);
+  color:#f0e8d0;letter-spacing:2px;font-weight:600;
+}
+#landing.vault .scroll-paper .rbtn:not(:disabled):hover{
+  background:linear-gradient(180deg,#2952a3 0%,#15295a 100%);
+  box-shadow:0 0 12px rgba(122,162,255,.4);
+}
+#landing.vault .scroll-paper .key-btn{background:rgba(255,253,247,.7);color:#14213d;border:1px solid rgba(20,33,61,.32)}
+#landing.vault .scroll-paper #conn-banner{background:rgba(255,255,255,.45);border:1px solid rgba(20,33,61,.2);color:#14213d}
+#landing.vault .scroll-paper #conn-msg strong{color:#14213d}
+#landing.vault .scroll-paper #conn-body{color:rgba(20,33,61,.7)}
+#landing.vault .scroll-paper a{color:#0e3d8a;font-weight:500}
+#landing.vault .brand-icon{
+  background:linear-gradient(180deg,#1d3a72 0%,#0e1f3f 100%);
+  color:#f0e8d0;border:1px solid rgba(160,30,30,.5);
+  box-shadow:0 0 18px rgba(122,162,255,.3);
+}
+#landing.vault .brand-title{color:#e8efff;text-shadow:0 0 24px rgba(122,162,255,.4)}
+#landing.vault .brand-title em{color:#a0c4ff !important}
+#landing.vault .brand-sub{color:rgba(180,200,230,.85)}
+/* Reduce-motion safety: skip the dramatic animations */
+@media (prefers-reduced-motion: reduce){
+  #landing.vault .vault-flash{animation:none;display:none}
+  #landing.vault .brand,
+  #landing.vault .scroll-paper{animation:none}
+}
 </style>
 </head>
 <body>
 
 <!-- ═══ LANDING ═══ -->
 <div class="screen" id="landing">
+  <div class="vault-flash" aria-hidden="true">CREDENTIALS VERIFIED</div>
   <div class="brand">
     <div class="brand-icon">AI</div>
     <div class="brand-title">ArchDraw <em style="color:var(--blue)">Intel</em> v14</div>
     <div class="brand-sub">Real satellite imagery · OSM parcel data · Complete printable 24"×36" permit drawing set</div>
   </div>
 
+  <div class="scroll-paper">
   <div id="api-card">
     <div id="conn-banner" class="probing cb-probing">
       <div class="cbdot"></div>
@@ -303,6 +447,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--ink);color:var
       <div class="fc"><div class="fc-t">✏️ Elevations + Sections</div><div class="fc-d">Auto-generated 4-side elevations and 2 building sections</div></div>
     </div>
   </div>
+  </div><!-- /scroll-paper -->
 </div>
 
 <!-- ═══ WORKSPACE ═══ -->
@@ -3900,6 +4045,12 @@ document.getElementById('addr-inp').addEventListener('change',e=>{
 });
 
 // ── INIT ──
+// Vault landing UI is the default. Disable with ?legacy=1 in the URL during
+// rollout testing — falls back to the original dark-card landing.
+try {
+  const useVault = !new URLSearchParams(location.search).has('legacy');
+  if (useVault) document.getElementById('landing')?.classList.add('vault');
+} catch (_) {}
 // Try the saved key first; only fall back to probeConnection() when no valid key is stored.
 bootstrapStoredKey().then(ok=>{if(!ok)probeConnection()}).catch(()=>probeConnection());
 </script>
