@@ -386,6 +386,8 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--ink);color:var
 <!-- ArchDraw Intel data registries (hand-curated) — populate window.COUNTY_REGISTRY etc. -->
 <script src="data/county-registry.js"></script>
 <script src="data/zoning-matrix.js"></script>
+<script src="data/middle-housing.js"></script>
+<script src="data/wa-statewide.js"></script>
 <script src="data/permit-registry.js"></script>
 <script src="data/overlay-registry.js"></script>
 <script>
@@ -963,6 +965,48 @@ async function runPhase_zone(){
         if(verified.notes)z.notes=(z.notes?z.notes+' · ':'')+verified.notes;
       }
     }
+    // ── MIDDLE_HOUSING_DB overlay (P0-4: WA HB 1110 / RCW 36.70A.635) ──
+    // Computes the effective unit envelope for the citywide and transit-bonus
+    // cases. Surfaces both so the Options panel can offer a transit selection
+    // downstream. Dimensional overrides (e.g. Bellevue 32ft middle-housing
+    // height cap from LUC 20.20.538) apply to the rendered z values.
+    if(window.effectiveZoning&&z.jurisdiction&&z.zoningDistrict){
+      const jKey=`${String(z.jurisdiction).toLowerCase()},${String(z.state||'').toLowerCase()}`;
+      try{
+        const eBase=window.effectiveZoning(jKey,z.zoningDistrict,{enableMiddleHousing:false});
+        const eMH=window.effectiveZoning(jKey,z.zoningDistrict,{enableMiddleHousing:true,nearMajorTransit:false});
+        const eMHTransit=window.effectiveZoning(jKey,z.zoningDistrict,{enableMiddleHousing:true,nearMajorTransit:true});
+        if(eMH.middleHousing){
+          z._effectiveBase=eBase.effective;
+          z._effectiveMH=eMH.effective;
+          z._effectiveMHTransit=eMHTransit.effective;
+          z._middleHousing=eMH.middleHousing;
+          z._middleHousingWarnings=(eMH.warnings||[]).concat(eMHTransit.warnings||[]).filter((w,i,a)=>a.indexOf(w)===i);
+          if(eMH.middleHousing.dimensionalOverrides){
+            const d=eMH.middleHousing.dimensionalOverrides;
+            if(d.maxHeightFt!=null){z._maxHeightFtBase=z.maxHeightFt;z.maxHeightFt=d.maxHeightFt;}
+          }
+          L.info(`HB 1110 (${eMH.middleHousing.populationTier}): base=${eBase.effective.maxUnits} citywide=${eMH.effective.maxUnits} transit=${eMHTransit.effective.maxUnits}`);
+          if(z._middleHousingWarnings.length)z._middleHousingWarnings.forEach(w=>L.warn('HB 1110 warning: '+w));
+        }
+      }catch(e){L.warn('effectiveZoning failed: '+e.message);}
+    }
+    // ── WA statewide overlay (HB 1337 + SB 5184) ──
+    if(window.applyWaStatewide&&z._effectiveMH){
+      try{
+        const envBase={jurisdiction:z.jurisdiction,district:z.zoningDistrict,baseZoning:{jurisdiction:z.jurisdiction,state:z.state,district:z.zoningDistrict,aduMaxSqFt:z.aduMaxSqFt,aduAllowed:z.aduAllowed,parkingPerUnit:z.parkingPerUnit},middleHousing:z._middleHousing,effective:Object.assign({},z._effectiveMH,{aduMaxSqFt:z.aduMaxSqFt,aduAllowed:z.aduAllowed,parkingPerUnit:z.parkingPerUnit}),warnings:[]};
+        const envSW=window.applyWaStatewide(envBase,{parcelNearMajorTransit:false,isMultifamily:false});
+        if(envSW&&envSW.effective){
+          z._statewide=envSW.appliedStatewide;
+          z._statewideWarnings=envSW.warnings||[];
+          if(envSW.effective.aduMaxSqFt!=null&&envSW.effective.aduMaxSqFt!==z.aduMaxSqFt){z._aduMaxSqFtBase=z.aduMaxSqFt;z.aduMaxSqFt=envSW.effective.aduMaxSqFt;}
+          if(envSW.effective.parkingPerUnit!=null&&envSW.effective.parkingPerUnit!==z.parkingPerUnit){z._parkingPerUnitBase=z.parkingPerUnit;z.parkingPerUnit=envSW.effective.parkingPerUnit;}
+          z._minADUsPerLot=envSW.effective.minADUsPerLot;
+          if(z._statewideWarnings.length)z._statewideWarnings.forEach(w=>L.warn('Statewide overlay: '+w));
+          L.info(`Statewide overlay applied: ADU max ${z.aduMaxSqFt}sf, parking ${z.parkingPerUnit}/unit, min ${z._minADUsPerLot} ADUs/lot`);
+        }
+      }catch(e){L.warn('applyWaStatewide failed: '+e.message);}
+    }
     // Initial provenance tag — runPhase_record may recalibrate from OSM after fetch
     const looksDefault=(!z.lotWidth||!z.lotDepth||(z.lotWidth===60&&z.lotDepth===120));
     z._lotSource=looksDefault?'AI default (pending OSM calibration)':'AI research';
@@ -972,7 +1016,26 @@ async function runPhase_zone(){
     phSet('zone','done',`${((Date.now()-t)/1000).toFixed(1)}s`);
     const lotNote=z._lotSource?`<div style="margin-top:6px;padding:5px 8px;border:1px dashed var(--brd);border-radius:3px;font-size:9px;color:var(--txt3)">\uD83D\uDCCE Lot dims source: <strong>${z._lotSource}</strong> \u00B7 confidence: <em>${z._lotConfidence}</em></div>`:'';
     const matrixNote=z._zoneMatrixVerified?`<div style="margin-top:4px;padding:5px 8px;border:1px solid rgba(34,224,138,.35);border-radius:3px;font-size:9px;color:var(--green)">\u2713 Zoning standards <strong>verified</strong> against ${z.jurisdiction} municipal code (${z._zoneMatrixDate}) \u00B7 <a href="${z._zoneMatrixURL}" target="_blank" style="color:var(--blue)">open code \u2192</a></div>`:'';
-    addFind('zone','📋 Zoning',fmt(zt)+buildZT(z)+lotNote+matrixNote);S._z=z;phaseRunners.zone=runPhase_zone;
+    const mhNote=(z._middleHousing&&z._effectiveMH)?(()=>{
+      const mh=z._middleHousing,b=z._effectiveBase,c=z._effectiveMH,t=z._effectiveMHTransit;
+      const ord=mh.localOrdinance||{};
+      const ordTxt=[ord.number,ord.effective?`eff. ${ord.effective}`:null].filter(Boolean).join(', ');
+      const overrideNote=(z._maxHeightFtBase!=null&&z._maxHeightFtBase!==z.maxHeightFt)?` <span style="color:var(--txt3)">(height ${z._maxHeightFtBase}→${z.maxHeightFt}ft middle-housing cap)</span>`:'';
+      const warn=(z._middleHousingWarnings&&z._middleHousingWarnings.length)?`<div style="margin-top:3px;font-size:9px;color:var(--amber)">⚠ ${z._middleHousingWarnings.join(' · ')}</div>`:'';
+      return `<div style="margin-top:4px;padding:6px 8px;border:1px solid rgba(122,162,255,.35);border-radius:3px;font-size:9px;color:var(--blue);background:rgba(122,162,255,.05)"><strong>WA HB 1110 (${mh.populationTier})</strong> · ${ordTxt}<br>Base zoning: <strong>${b.maxUnits} unit${b.maxUnits===1?'':'s'}</strong> · HB 1110 effective: up to <strong>${c.maxUnits}</strong> citywide / <strong>${t.maxUnits}</strong> near major transit${overrideNote}${warn}</div>`;
+    })():'';
+    const swNote=(z._statewide)?(()=>{
+      const parts=[];
+      if(z._aduMaxSqFtBase!=null&&z._aduMaxSqFtBase!==z.aduMaxSqFt)parts.push(`HB 1337 raises ADU max <strong>${z._aduMaxSqFtBase||0}→${z.aduMaxSqFt}sf</strong>`);
+      if(z._minADUsPerLot)parts.push(`<strong>${z._minADUsPerLot}</strong> ADUs/lot mandated`);
+      const sb=z._statewide.sb5184;
+      if(sb&&sb.mode==='statutoryCap'&&z._parkingPerUnitBase!=null&&z._parkingPerUnitBase!==z.parkingPerUnit)parts.push(`SB 5184 caps parking <strong>${z._parkingPerUnitBase}→${z.parkingPerUnit}/unit</strong> (city deadline ${sb.complianceDeadline})`);
+      else if(sb&&sb.mode==='cityCodified')parts.push(`SB 5184 already codified locally (parking ${sb.cap}/unit)`);
+      const warn=(z._statewideWarnings&&z._statewideWarnings.length)?`<div style="margin-top:3px;font-size:9px;color:var(--amber)">⚠ ${z._statewideWarnings.join(' · ')}</div>`:'';
+      if(!parts.length&&!warn)return '';
+      return `<div style="margin-top:4px;padding:6px 8px;border:1px solid rgba(180,140,255,.35);border-radius:3px;font-size:9px;color:var(--purple,#b48cff);background:rgba(180,140,255,.05)"><strong>WA statewide</strong> · ${parts.join(' · ')}${warn}</div>`;
+    })():'';
+    addFind('zone','📋 Zoning',fmt(zt)+buildZT(z)+lotNote+matrixNote+mhNote+swNote);S._z=z;phaseRunners.zone=runPhase_zone;
   }catch(e){phSet('zone','error',`${((Date.now()-t)/1000).toFixed(1)}s`);addFind('zone','📋 Zoning',`<div class="ebox">${e.message}</div>`);throw e}
 }
 

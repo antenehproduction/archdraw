@@ -136,6 +136,121 @@ window.PERMIT_PORTAL_REGISTRY = {
     radiusSearch: (lat, lon, miles = 2) =>
       `https://maps2.dcgis.dc.gov/dcgis/rest/services/FEEDS/DCRA/FeatureServer/4/query?geometry=${lon},${lat}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects&distance=${miles * 1609.34}&units=esriSRUnit_Meter&outFields=PERMIT_ID,FULL_ADDRESS,ISSUE_DATE,PERMIT_TYPE_NAME&f=json&resultRecordCount=50`,
   },
+
+  // ── P0-5: WA permit-portal expansion (2026-04-25) ──
+  // All 5 entries below ship with _unverifiedEndpoint: true. Direct REST
+  // probes from agent egress returned 403 (same Cloudflare/anti-scrape wall
+  // that hit P0-3 municipal-codes). URL patterns are best-known from public
+  // documentation + Esri Hub + Socrata canonical conventions; field names
+  // require live verification via owner-browser before the searchByAddress
+  // builder is removed from quarantine. Until verified, runPhase_comp should
+  // surface portal links to the user without auto-querying the JSON endpoint.
+
+  // MyBuildingPermit.com — single eCityGov Alliance / Accela tenant covering
+  // ~17 King County cities. One integration unlocks all of them. Public web
+  // search exists at permitsearch.mybuildingpermit.com but no public REST
+  // API surface — same pattern as Portland (web-only).
+  mybuildingpermit: {
+    city: 'eCityGov Alliance', state: 'WA',
+    portalURL: 'https://permitsearch.mybuildingpermit.com/',
+    coversCities: [
+      'Bellevue', 'Bothell', 'Carnation', 'Clyde Hill', 'Issaquah', 'Kenmore',
+      'Kirkland', 'Mercer Island', 'Newcastle', 'North Bend', 'Redmond',
+      'Sammamish', 'Snoqualmie', 'Woodinville', 'Yarrow Point',
+    ],
+    notes: 'Powered by eCityGov Alliance + Accela Citizen Access. Jurisdiction is a required search-form field; no JSON or REST endpoint surfaces from the citizen portal. checklist-auto should link the user here for any covered city; runPhase_comp should fall back to address-only AI research in covered jurisdictions until an authenticated Accela Construct API key is obtained.',
+    searchByAddress: null,
+    _verifiedDate: '2026-04-25',
+    _sourceMethod: 'public-portal-only',
+  },
+
+  // Tacoma — ArcGIS Hub dataset "Accela Permit Data (Tacoma)" updated daily.
+  // Dataset item id: a12d6fbf58e4434b8ff5070c09646f19. Underlying FeatureServer
+  // URL not yet confirmed (Hub indirection layer + 403 on direct probe).
+  tacoma: {
+    city: 'Tacoma', state: 'WA',
+    portalURL: 'https://www.tacomapermits.org/',
+    hubURL: 'https://tacomaopendata-tacoma.hub.arcgis.com/datasets/accela-permit-data-tacoma',
+    arcgisItemId: 'a12d6fbf58e4434b8ff5070c09646f19',
+    landUseHubURL: 'https://geohub.cityoftacoma.org/datasets/d3ec4be073384acbad77a9c51b519130',
+    searchByAddress: null,
+    notes: 'Accela permit data published to Tacoma Open Data Hub daily. Underlying FeatureServer URL has not been verified through agent egress (Hub redirect + 403). Owner-browser test recommended before the searchByAddress builder is wired.',
+    _verifiedDate: '2026-04-25',
+    _sourceMethod: 'public-portal-only',
+    _unverifiedEndpoint: true,
+  },
+
+  // Pierce County (unincorporated + Lakewood + smaller cities; Tacoma has its
+  // own portal above). Multiple Socrata datasets discovered via owner-browser
+  // upload of dev.socrata.com Foundry pages (round 4, 2026-04-25):
+  //   bg5p-p534  — original P0-5 best-guess (broad permits feed)
+  //   hmbh-c3hw  — internal.open.piercecountywa.gov (newer endpoint)
+  //   eugc-5pca  — open.piercecountywa.gov (embed view)
+  // The GitHub Actions schema-fetch workflow (.github/workflows/fetch-schemas.yml)
+  // resolves field names for all of these; sync-permit-registry.py picks the
+  // dataset whose schema actually advertises a permit-like address column.
+  pierce_county_unincorp: {
+    city: 'Pierce County (unincorporated)', state: 'WA',
+    portalURL: 'https://open.piercecountywa.gov/dataset/Permits-Pierce-County/bg5p-p534',
+    socrataDataset: 'https://open.piercecountywa.gov/resource/bg5p-p534.json',
+    socrataDatasetCandidates: [
+      'https://open.piercecountywa.gov/resource/bg5p-p534.json',
+      'https://internal.open.piercecountywa.gov/resource/hmbh-c3hw.json',
+      'https://open.piercecountywa.gov/resource/eugc-5pca.json',
+    ],
+    searchByAddress: (addr) =>
+      `https://open.piercecountywa.gov/resource/bg5p-p534.json?$where=upper(site_address) like '%25${encodeURIComponent(addr.toUpperCase())}%25'&$limit=20`,
+    radiusSearch: (lat, lon, miles = 2) =>
+      `https://open.piercecountywa.gov/resource/bg5p-p534.json?$where=within_circle(location,${lat},${lon},${miles * 1609.34})&$limit=50`,
+    notes: 'Pierce County PALS-Plus extract published to Open Pierce County. Permit points placed via PALS-Plus XY coords; permits without coords are not in the spatial layer. Field names assumed (site_address, permit_number, issue_date, permit_type, location); GitHub Actions schema fetch will graduate this entry once it returns the canonical column names.',
+    _verifiedDate: '2026-04-25',
+    _sourceMethod: 'documented-socrata-id',
+    _unverifiedEndpoint: true,
+  },
+
+  // Snohomish County — Active Permits dataset hosted on the snoco-gis ArcGIS
+  // Online org. The org's services6.arcgis.com host (z6WYi9VRHfgwgtyW) is
+  // confirmed for zoning + parcels; permits service name not yet verified.
+  snohomish_county_unincorp: {
+    city: 'Snohomish County (unincorporated)', state: 'WA',
+    portalURL: 'https://snohomish-county-open-data-portal-snoco-gis.hub.arcgis.com/datasets/snoco-gis::active-permits-1',
+    arcgisOrgHost: 'https://services6.arcgis.com/z6WYi9VRHfgwgtyW',
+    pdsRecordsURL: 'https://snohomishcountywa.gov/3920/Online-Permitting',
+    searchByAddress: null,
+    notes: 'snoco-gis Active Permits FeatureServer URL not yet confirmed; the org host services6.arcgis.com/z6WYi9VRHfgwgtyW is verified for sibling layers (zoning, parcels). Likely path: <orgHost>/arcgis/rest/services/Active_Permits/FeatureServer/0 — pending owner-browser verification. Site-intel can fall back to the PDS Online Records portal until then.',
+    _verifiedDate: '2026-04-25',
+    _sourceMethod: 'partial-discovery',
+    _unverifiedEndpoint: true,
+  },
+
+  // Everett — multiple Socrata datasets discovered via owner-browser upload
+  // of dev.socrata.com Foundry pages (round 4, 2026-04-25):
+  //   7fiu-4gra  — original P0-5 best-guess (Permits)
+  //   3w3u-656c  — newly discovered Everett Socrata dataset
+  //   ppic-abeb  — newly discovered Everett Socrata dataset
+  // The GitHub Actions workflow resolves all schemas; sync-permit-registry.py
+  // picks the one whose schema is actually permit-shaped. eTRAKiT online
+  // portal at onlinepermits.everettwa.gov is the citizen-facing apply/inspect
+  // surface (no public REST).
+  everett: {
+    city: 'Everett', state: 'WA',
+    portalURL: 'https://onlinepermits.everettwa.gov/etrakit/default.aspx',
+    socrataDataset: 'https://data.everettwa.gov/resource/7fiu-4gra.json',
+    socrataDatasetCandidates: [
+      'https://data.everettwa.gov/resource/7fiu-4gra.json',
+      'https://data.everettwa.gov/resource/3w3u-656c.json',
+      'https://data.everettwa.gov/resource/ppic-abeb.json',
+    ],
+    openDataURL: 'https://data.everettwa.gov/Responsive-and-Responsible-Government/Permits/7fiu-4gra',
+    searchByAddress: (addr) =>
+      `https://data.everettwa.gov/resource/7fiu-4gra.json?$where=upper(address) like '%25${encodeURIComponent(addr.toUpperCase())}%25'&$limit=20`,
+    radiusSearch: null,
+    notes: 'Everett Socrata permit dataset (id pending schema-fetch). Standard Socrata URL conventions; field name "address" assumed pending GitHub Actions schema-fetch graduation. eTRAKiT online portal is the citizen-facing apply/inspect surface.',
+    _verifiedDate: '2026-04-25',
+    _sourceMethod: 'documented-socrata-id',
+    _unverifiedEndpoint: true,
+  },
+
 };
 
 window.permitRegistryKey = function(city) {
