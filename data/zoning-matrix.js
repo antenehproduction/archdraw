@@ -512,52 +512,55 @@ window.ZONING_MATRIX_DB = {
 
   // ── Bothell, WA ──
   // ZONE-RENAME FINDING: Dec 2024 Comprehensive Plan Periodic Update (City Council
-  // approval 2024-12-10) replaced lot-size-named series (R 40,000 / R 9,600 / R 7,200
-  // / R 5,400 / R 2,800 etc.) with descriptive tier codes R-C / R-L1 / R-L2 / R-M1 /
-  // R-M2. Legacy R-9600 → R-L1; R-7200 → R-L2.
-  // HB 1110 TIER 2: Bothell pop. 48,161 (2020 Census) is below 75k Tier 1 threshold.
-  // Tier 2 still requires 4 du citywide / 6 du within 0.25mi major transit.
-  // PARKING: Bothell City Council voted 5-1 in July 2025 to eliminate ALL off-street
-  // parking minimums voluntarily — first city in King or Snohomish County to do so.
+  // ── Bothell, WA ──
+  // Dec 2024 Comprehensive Plan zone-rename: lot-size-named series replaced by
+  // descriptive tiers (R-C, R-L1, R-L2, R-M1..M4, R-AC). Round 3 owner-uploaded
+  // BMC 12.14.030 chart (2026-04-25) confirms the dimensional standards table.
+  // HB 1110 TIER 2: pop. 48,161 (2020 Census). Statutory floor 2 du citywide /
+  // 4 du transit-or-affordable. Bothell adopted EXACTLY the floor (NOT the
+  // "4 citywide / 6 transit" the P0-3 search-snippet sweep claimed — that was
+  // misreading the R-M1 multifamily column). Decision #17 RESOLVED.
+  // PARKING: Bothell City Council voted 5-1 in July 2025 to eliminate ALL
+  // off-street parking minimums voluntarily.
   'bothell,wa:R-L1': {
     jurisdiction: 'Bothell', state: 'WA', district: 'R-L1',
-    fullName: 'Low-Density Residential 1 (current code; legacy R 9,600, ~9,600 sf min lot)',
+    fullName: 'Low-Density Residential 1 (current code; legacy R 9,600 series; min lot 6,000 sf per BMC 12.14.030 chart)',
     codeURL: 'https://bothell.municipal.codes/BMC/12.14.030',
-    frontSetback: null, rearSetback: null,
+    frontSetback: 15, rearSetback: 15,
     leftSetback: 5, rightSetback: 5,
     maxHeightFt: 35, maxStories: null,
     maxFAR: null,
     maxLotCoverage: 55,
     parkingPerUnit: 0,
     aduAllowed: true, aduMaxSqFt: 1200,
-    densityBonus: 'WA HB 1110 (Tier 2, compliance eff. 2025-06-30): 4 du by right citywide in R-L1; 6 du within 0.25mi walking distance of a major transit stop. BMC 12.14.134 + 12.06.140 implement middle-housing permissions. Affordable-housing density bonus may apply via BMC 12.07 (parameters not confirmed).',
+    densityBonus: 'WA HB 1110 (Tier 2, BMC 12.14.030 + 12.14.134, eff. 2025-06-30): 2 du by right citywide; 4 du within 0.25mi major transit OR with one affordable unit (combined transit/affordable column on the chart). Matches Tier 2 statutory floor exactly. Affordable-housing density bonus may apply via BMC 12.07 (parameters not confirmed).',
     sb9Eligible: false,
-    notes: 'ZONE RENAME: Legacy "R 9,600" → "R-L1" (Dec 2024 Comprehensive Plan). Min lot ~9,600 sf (inferred from BMC 12.14.030 density-ladder rule). Hard-surface coverage 55% base, max 65% (BMC 12.14.140). Height 35ft confirmed for R-L1 with peaked roof (4:12 min pitch) or where uppermost floor is ≤50% of floor below (BMC 12.14.030). Side yards 5ft per side confirmed via ADU setback cross-references (BMC 12.14.135). MIDDLE HOUSING (duplex/triplex/fourplex): front and rear reducible to 5ft minimum in R-C/R-L1/R-L2 per BMC 12.14.134. Base SFR front/rear setbacks not directly confirmed (table inaccessible). FAR not in retrieved snippets; Bothell may not use FAR for residential. ADU per BMC 12.14.135: max 1,200 sf (exceeds HB 1337 floor of 1,000 — local rule governs); 2 ADUs/lot; detached up to 30ft (33ft over existing accessory structure); no owner-occupancy. PARKING: Bothell eliminated all off-street parking minimums July 2025 via 5-1 council vote — parkingPerUnit=0 reflects this voluntary action; preempts SB 5184 (which would impose 1/SFR cap by ~2028 for the 30k–50k band Bothell falls into). UNCAPTURED OVERLAYS: Canyon Park Subarea (BMC 12.46), Northshore Senior Services Center SSHO (BMC 12.66.060), Northwest Mobile Estates (BMC 12.44.030), Shoreline Master Program (BMC 13.07.030 — within 200ft of state-significance shorelines). Downtown Subarea Plan (BMC Ch. 12.64) is a SEPARATE downtown overlay — not applicable to R-L1 base parcels but verify via subarea boundary. FETCH NOTE: bothell.municipal.codes and bothellwa.gov DocumentCenter both 403; values via search snippet extracts.',
+    notes: 'ZONE RENAME: Legacy "R 9,600" → "R-L1" (Dec 2024 Comprehensive Plan). ROUND 3 (2026-04-25 owner upload of BMC 12.14.030): chart-confirmed values. Min lot 6,000 sf (chart, NOT 9,600 sf as P0-3 inferred). Front yard: 20ft garage door / 15ft all others. Rear yard: 15ft no-alley / 0 with alley / 3ft alley garage doors. Side yard: 5ft per side. Max building height 35ft. Max hard surface coverage 55%. Middle housing per BMC 12.14.134: base 2 du / transit-or-affordable 4 du (matches HB 1110 Tier 2 statutory floor). Max 2 ADUs/lot. ADU per BMC 12.14.135: max 1,200 sf (exceeds HB 1337 floor of 1,000 — local rule governs); 2 ADUs/lot; detached up to 30ft (33ft over existing accessory structure); no owner-occupancy. PARKING: Bothell eliminated all off-street parking minimums July 2025 via 5-1 council vote — parkingPerUnit=0; preempts SB 5184. UNCAPTURED OVERLAYS: Canyon Park Subarea (BMC 12.46), Northshore Senior Services Center SSHO (BMC 12.66.060), Northwest Mobile Estates (BMC 12.44.030), Shoreline Master Program (BMC 13.07.030). Downtown Subarea Plan (BMC Ch. 12.64) is a SEPARATE downtown overlay.',
     verifiedDate: '2026-04-25',
-    _sourceMethod: 'search-snippet',
+    _sourceMethod: 'manual',
     _sourceSnapshot: '2026-04-25',
     _legacy_key: 'bothell,wa:R-9600',
-    _unverified: ['frontSetback', 'rearSetback', 'maxStories', 'maxFAR'],
+    _unverified: [],
   },
   'bothell,wa:R-L2': {
     jurisdiction: 'Bothell', state: 'WA', district: 'R-L2',
-    fullName: 'Low-Density Residential 2 (current code; legacy R 7,200, ~7,200 sf min lot)',
+    fullName: 'Low-Density Residential 2 (current code; legacy R 7,200 series; min lot 3,600 sf per BMC 12.14.030 chart)',
     codeURL: 'https://bothell.municipal.codes/BMC/12.14.030',
-    frontSetback: null, rearSetback: null,
+    frontSetback: 15, rearSetback: 15,
     leftSetback: 5, rightSetback: 5,
     maxHeightFt: 35, maxStories: null,
     maxFAR: null,
     maxLotCoverage: 60,
     parkingPerUnit: 0,
     aduAllowed: true, aduMaxSqFt: 1200,
-    densityBonus: 'WA HB 1110 (Tier 2): 4 du by right citywide in R-L2; 6 du within 0.25mi walking distance of a major transit stop. BMC 12.14.134 + 12.06.140 implement middle-housing permissions. Corner-lot duplexes already permitted in R 7,200 zone since 2021 (pre-HB 1110 city action). Affordable-housing density bonus may apply via BMC 12.07.',
+    densityBonus: 'WA HB 1110 (Tier 2, BMC 12.14.030 + 12.14.134, eff. 2025-06-30): 2 du by right citywide; 4 du within 0.25mi major transit OR with one affordable unit. Matches Tier 2 statutory floor exactly. Corner-lot duplexes already permitted in R 7,200 zone since 2021 (pre-HB 1110 city action).',
     sb9Eligible: false,
-    notes: 'ZONE RENAME: Legacy "R 7,200" → "R-L2" (Dec 2024 Comprehensive Plan). R-L2 sits one density step above R-L1 — denser, smaller min lot (~7,200 sf inferred). Hard-surface coverage 60% base, max 65% (BMC 12.14.140) — higher than R-L1\'s 55%. Same 35ft height rule with peaked-roof / uppermost-floor condition as R-L1. Same 5ft side per BMC 12.14.135 cross-references. Middle-housing setback reduction to 5ft front/rear available per BMC 12.14.134. Lot-size averaging: subdivision lots may average above the zone minimum if no individual lot drops below the R-M1 size (BMC 12.14.030). Corner-lot duplexes legal pre-HB 1110 (since 2021). ADU rules same as R-L1 (1,200 sf max; 2/lot; no owner-occupancy). Parking: 0 (same Jul 2025 voluntary elimination). Same overlay framework as R-L1. FETCH NOTE: same 403 block.',
+    notes: 'ZONE RENAME: Legacy "R 7,200" → "R-L2" (Dec 2024 Comprehensive Plan). ROUND 3 (2026-04-25 owner upload of BMC 12.14.030): chart-confirmed values. Min lot 3,600 sf (chart, NOT 7,200 sf as P0-3 inferred — R-L2 is denser than the legacy R 7,200 mapping suggested). Same setback/side/height profile as R-L1 (front 20ft garage / 15ft all others, rear 15ft no-alley / 0 with alley / 3ft alley garage doors, side 5ft, height 35ft). Hard surface coverage 60% (vs R-L1\'s 55%). Middle housing same as R-L1: base 2 / transit-or-affordable 4 (HB 1110 Tier 2 floor). Corner-lot duplexes legal pre-HB 1110. ADU rules same as R-L1 (1,200 sf max; 2/lot; no owner-occupancy). Parking 0 (Jul 2025 voluntary elimination). Same overlay framework as R-L1.',
     verifiedDate: '2026-04-25',
-    _sourceMethod: 'search-snippet',
+    _sourceMethod: 'manual',
     _sourceSnapshot: '2026-04-25',
     _legacy_key: 'bothell,wa:R-7200',
-    _unverified: ['frontSetback', 'rearSetback', 'maxStories', 'maxFAR'],
+    _unverified: [],
   },
   // Bothell legacy stubs — graceful resolution when stale parcel data tags pre-rename codes
   'bothell,wa:R-9600': {

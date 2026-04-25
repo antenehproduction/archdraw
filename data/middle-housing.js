@@ -201,12 +201,13 @@ window.MIDDLE_HOUSING_DB = {
     statuteCite: 'RCW 36.70A.635',
     populationTier: 'tier2',
     statutoryFloor: { baseUnits: 2, transitUnits: 4, affordableUnits: 4 },
-    cityImplementationUnits: {
-      baseUnits: 4, transitUnits: 6, affordableUnits: 6,
-      _unverified: true,
-      _claim: 'zoning-legal P0-3 sweep noted 4 du citywide / 6 du transit; chart not directly read (Cloudflare 403 wall on bothell.municipal.codes). Statutory Tier 2 floor is 2/4/4. Either Bothell adopted Tier 1 baseline voluntarily or the source agent inflated; unverifiable from agent egress.',
-    },
-    localOrdinance: { number: 'BMC 12.14.134 + 12.06.140', effective: '2025-06-30' },
+    // Decision #17 RESOLVED 2026-04-25 via owner-uploaded BMC 12.14.030 chart:
+    // Bothell adopted EXACTLY the Tier 2 statutory floor (2 base / 4 transit
+    // or affordable). The P0-3 zoning-legal claim of "4 citywide / 6 transit"
+    // was misreading the R-M1 multifamily column. cityImplementationUnits
+    // null = no city excess over statute.
+    cityImplementationUnits: null,
+    localOrdinance: { number: 'BMC 12.14.030(A) + 12.14.134', effective: '2025-06-30' },
     transitProximityBonus: {
       criteria: 'within 0.25mi walking distance of a major transit stop',
       majorTransitDefinition: 'Sound Transit Stride S2 BRT (planned) + ST Express',
@@ -223,12 +224,12 @@ window.MIDDLE_HOUSING_DB = {
       'Shoreline Master Program (BMC 13.07.030, within 200ft of state-significance shorelines)',
     ],
     codeURL: 'https://app.leg.wa.gov/RCW/default.aspx?cite=36.70A.635',
-    cityImplementationURL: 'https://bothell.municipal.codes/BMC/12.14',
+    cityImplementationURL: 'https://bothell.municipal.codes/BMC/12.14.030',
     verifiedDate: '2026-04-25',
-    _sourceMethod: 'zoning-matrix-notes',
-    _sourceSnapshot: '2026-04-24',
-    _unverified: ['cityImplementationUnits'],
-    notes: 'BOTHELL TIER MISMATCH (P0-4 finding): Bothell pop. 48,161 (2020 Census) places it in HB 1110 Tier 2, statutory floor 2/4/4. The P0-3 zoning-matrix note that Bothell allows "4 du citywide / 6 du transit" exceeds the floor and is unverified due to Cloudflare 403 on bothell.municipal.codes. Renderer falls back to statutory floor (2/4/4) with a warning until cityImplementationUnits is confirmed against BMC 12.14.134.',
+    _sourceMethod: 'manual',
+    _sourceSnapshot: '2026-04-25',
+    _unverified: [],
+    notes: 'BOTHELL TIER 2 — RESOLVED 2026-04-25 via owner-uploaded BMC 12.14.030 chart. Pop. 48,161 (2020 Census). Chart middle-housing row for R-L1 / R-L2 columns: Base 2 / Transit-or-affordable 4 — matches the Tier 2 statutory floor exactly. Earlier P0-3 claim of "4 citywide / 6 transit" was misreading the R-M1 multifamily column (which IS 4/6 — but R-M1 is multifamily, not the R-L SF tier). cityImplementationUnits cleared (city does not exceed statute).',
   },
 
   'renton,wa': {

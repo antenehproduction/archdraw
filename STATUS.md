@@ -78,11 +78,52 @@ Concise per-city upload checklist below covers the 7 still-`_unverified` jurisdi
 
 Save as "Webpage, HTML only" and rename per the filename column. Multi-table cities (Bothell): one commit with both files preferred.
 
+### Round 3 owner upload — 16 chart files landed in `f95a97b` on origin/main
+Owner committed the back-fill chart files (initially to the wrong repo `Website-Farm`, then corrected to `archdraw/main`). 16 view-source HTML files merged in. All distinct (no duplicate md5s despite Bothell BMC 12.14.030 + 12.14.152 sharing the byte size). All content-bearing (no Cloudflare error pages).
+
+| File | Size | City target | Audit result |
+|---|---|---|---|
+| `view-source_https___bothell.municipal.codes_BMC_12.14.030.html` | 1.78 MB | Bothell R-L1 / R-L2 dimensional standards | ✓ INTEGRATED — see decision #17 resolution below |
+| `view-source_https___bothell.municipal.codes_BMC_12.14.152.html` | 1.78 MB | Bothell Ch. 12.14 full text | ✓ chart present (whole-chapter view; same data as .030 + .040) |
+| `view-source_https___auburn.municipal.codes_ACC_18.07.030.html` | 352 KB | Auburn R-5 / R-7 development standards | ✓ chart present, integration deferred |
+| `view-source_https___everett.municipal.codes_EMC_19.06.030.html` | 882 KB | Everett NR-C / NR table 6-X | ✓ chart present (note: requested Table 6-1 was at .010; .030 may carry a different table — needs review) |
+| `view-source_https___kirkland.municipal.codes_KZC_15.30.html` | 1.05 MB | Kirkland RSA 6 / RSA 8 dimensional standards | ✓ chart present, integration deferred |
+| `view-source_https___www.codepublishing.com_WA_Kent_html_Kent15_Kent1504.html` | 5.22 MB | Kent SR-6 / SR-8 (KCC 15.04) | ✓ chart present (large file), integration deferred |
+| Renton RMC 4-2-110 A through I (9 files) | 20K–163K | Renton R-4 / R-8 dimensional sub-tables | ✓ chart present, integration deferred |
+| `view-source_https___www.codepublishing.com_WA_FederalWay_html_FederalWay19_FederalWay1925.html#19.25.110.html` | 81 KB | Federal Way RS chart | ✗ **WRONG CHAPTER** — uploaded `Chapter 19.25 BONDS` (performance bonds for permits), NOT the RS use-zone chart. **RE-UPLOAD NEEDED** — the FWRC use-zone charts for residential are in Title 19 Division IV (Use Zone Charts). Likely correct path: `https://www.codepublishing.com/WA/FederalWay/html/FederalWay19/FederalWay19200.html` (Ch. 19.200 Use Zone Charts — Suburban Estates) OR `FederalWay19205.html` (Ch. 19.205 RS — Single Family Residential). Owner action: re-upload from Ch. 19.200 or 19.205 (whichever shows the RS 7.2 / RS 9.6 dimensional chart). |
+
+### Decision #17 RESOLVED — Bothell Tier 1/2 ambiguity
+Owner-uploaded BMC 12.14.030 chart confirms R-L1 and R-L2 use **EXACTLY the Tier 2 statutory floor**: base 2 du / transit-or-affordable 4 du. The earlier P0-3 zoning-legal claim of "4 citywide / 6 transit" was misreading the **R-M1 multifamily column** of the same chart (which IS 4/6 — but R-M1 is multifamily, not the R-L SF tier). Updates landed:
+- `data/zoning-matrix.js` — both `bothell,wa:R-L1` and `R-L2` updated with chart-confirmed setbacks (front 15ft / 20ft garage door, rear 15ft no-alley / 0 with-alley / 3ft alley garage door, side 5ft each), height 35ft, hard-surface coverage 55% (R-L1) / 60% (R-L2), min lot 6,000 sf (R-L1) / 3,600 sf (R-L2). `_sourceMethod: 'manual'`, `_sourceSnapshot: '2026-04-25'`, `_unverified: []`.
+- `data/middle-housing.js` — `MIDDLE_HOUSING_DB['bothell,wa'].cityImplementationUnits` set to `null` (city does not exceed statute), `_unverified: []` cleared, notes updated with the column-misread root cause.
+- `test/middle-housing.test.js` — Bothell test rewritten to assert the chart-confirmed Tier 2 floor instead of the unverified-fallback path. 17/17 passing.
+
+### Round 3 integration — what shipped vs deferred
+**Shipped this batch:**
+- Bothell R-L1 / R-L2 full chart integration (resolves decision #17).
+- Audit + spot-check of all 16 files (extraction script `scripts/extract-viewsource.py` checked in for reuse).
+
+**Deferred to a follow-up batch:**
+- Auburn ACC 18.07.030 → R-5 / R-7
+- Kirkland KZC 15.30 → RSA 6 / RSA 8 (rearSetback, maxStories, aduMaxSqFt)
+- Renton RMC 4-2-110A..I → R-4 / R-8
+- Kent KCC 15.04 → SR-6 / SR-8
+- Everett EMC 19.06.030 → NR-C / NR maxLotCoverage (need to confirm correct table)
+
+**Blocked, owner action required:**
+- Federal Way RS 7.2 / RS 9.6 — re-upload from Ch. 19.200 or 19.205 (uploaded chapter 19.25 was performance bonds).
+
+Per-city integration is back-fill quality lift, not blocking P0-5. The 5 deferred cities currently ship with `_unverified[]` arrays and will continue to do so until the next round of integration; the renderer warns appropriately.
+
+### New decisions awaiting the human owner (round 3)
+- **#19** Federal Way Ch. 19.25 was the wrong upload — please re-upload from Ch. 19.200 or 19.205 (RS use-zone chart). Same upload path as round 3.
+- **#20** Add `scripts/extract-viewsource.py` to the operating manual as the canonical decoder for owner-uploaded view-source HTML — small (~30 LOC) Python helper with usage docs in its docstring.
+
 ### Next up
-- Owner approval of decisions #16–#18 + the new statewide-overlay schema.
-- Owner manual-copy uploads per the guide above (resolves Bothell tier ambiguity #17 + back-fills the 7 cities).
-- Once Bothell BMC 12.14 lands: revisit `MIDDLE_HOUSING_DB['bothell,wa'].cityImplementationUnits._unverified` — either confirm `4/6/6` or correct to statutory `2/4/4`.
-- P0-5 (WA permit portals expansion) is the next major P0.
+- Owner approval of decisions #16–#20 + the round-3 batch.
+- Owner re-upload of Federal Way RS chart (decision #19).
+- **P0-5 (WA permit portals expansion) — STARTING NOW** per owner instruction.
+- Round 4 integration batch (5 deferred cities) when context allows.
 
 ---
 

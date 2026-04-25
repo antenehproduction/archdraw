@@ -103,17 +103,15 @@ assert.equal(redmondAffordable.effective.maxUnits, 8, 'Redmond NR + affordable �
 assert.match(redmondAffordable.effective.sourceOfUnits, /:city$/, 'Redmond uses cityImplementationUnits');
 pass('Redmond NR: city exceeds floor (6 base / 8 affordable)');
 
-// ── Bothell: cityImplementationUnits is _unverified → fall back to statutory floor ──
+// ── Bothell: BMC 12.14.030 chart (round-3 manual copy) confirms exactly the
+//    Tier 2 statutory floor — no city excess. cityImplementationUnits null.
 const bothellBase = effectiveZoning('Bothell', 'R-L1');
-assert.equal(bothellBase.effective.maxUnits, 2, 'Bothell R-L1 base → 2 units (Tier 2 statutory floor, not the unverified 4)');
+assert.equal(bothellBase.effective.maxUnits, 2, 'Bothell R-L1 base → 2 units (Tier 2 statutory floor)');
 const bothellTransit = effectiveZoning('Bothell', 'R-L1', { nearMajorTransit: true });
 assert.equal(bothellTransit.effective.maxUnits, 4, 'Bothell R-L1 transit → 4 units (Tier 2 statutory)');
-assert.ok(
-  bothellTransit.warnings.some(w => /unverified/i.test(w)),
-  'Bothell surfaces unverified-city-implementation warning',
-);
-assert.match(bothellBase.effective.sourceOfUnits, /:statute$/, 'Bothell uses statutoryFloor');
-pass('Bothell R-L1: unverified city claim → falls back to statutory 2/4/4 with warning');
+assert.match(bothellBase.effective.sourceOfUnits, /:statute$/, 'Bothell uses statutoryFloor (matches city implementation)');
+assert.equal(MIDDLE_HOUSING_DB['bothell,wa'].cityImplementationUnits, null, 'Bothell cityImplementationUnits null after #17 resolution');
+pass('Bothell R-L1: BMC 12.14.030 chart confirms Tier 2 floor (decision #17 resolved)');
 
 // ── inException option suppresses the HB 1110 override ──
 const redmondInException = effectiveZoning('Redmond', 'NR', { inException: true });
