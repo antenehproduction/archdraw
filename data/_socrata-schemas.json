@@ -2183,8 +2183,8 @@
       "host": "data.seattle.gov",
       "name": "Building Permits",
       "registryKey": "seattle",
-      "rowsUpdatedAt": 1777079187,
-      "viewLastModified": 1777079099
+      "rowsUpdatedAt": 1777165537,
+      "viewLastModified": 1777165453
     },
     "data.sfgov.org:i98e-djp9": {
       "addressFieldGuess": "location",
