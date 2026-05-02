@@ -85,10 +85,10 @@ Counties: `WA:King`, `WA:Pierce`, `WA:Snohomish` parcel endpoints all verified b
 
 ## Stack
 
-- **Single HTML file** (`index.html`) — zero build step, zero install. Data files split out under `data/*.js`; `lib/*` split planned for P0-1 (auth) and beyond.
+- **Mostly single HTML file** (`index.html`) — zero build step, zero install. Per §7-A decision, P0-1 added a small `lib/` split for auth (`lib/auth.js`, `lib/proxy.js`); data registries continue under `data/*.js`.
 - **Anthropic Claude** — Sonnet 4.6 for fast deterministic research; Opus 4.7 routing planned for high-stakes reasoning (RDP detection, zoning interpretation)
-- **Supabase** — Auth + Postgres + Edge Functions, connected and ready for the hosted-key path (P0-1)
-- **Vercel Edge Functions** (`api/[...path].js`) — CORS proxy for FEMA, county ArcGIS, Socrata, municipal codes
+- **Supabase** — Auth + Postgres + RLS for the hosted-key path. P0-1 scaffolding shipped (`lib/auth.js`, `supabase/migrations/0001_p0_1_auth_schema.sql`); flip on by pasting Supabase URL+anon key into `data/auth-config.js` and setting Vercel env vars per `supabase/README.md`. Default is BYOK so existing users see no change.
+- **Vercel Edge Functions** (`api/[...path].js`) — CORS proxy for FEMA, county ArcGIS, Socrata, municipal codes; extended in P0-1 with `/api/ai/messages` (JWT-gated, server-side Anthropic key, per-plan quota)
 - **GitHub Actions** — schema-fetch + smoke-test workflows that auto-PR new permit-portal schemas to the registry; bypasses Cloudflare anti-scrape walls via runner egress
 - **Leaflet.js** — satellite map (Esri World Imagery tiles)
 - **Three.js** — 3D massing model
@@ -127,8 +127,9 @@ The client uses `localStorage.ADI_PROXY` to point at a deployed proxy URL. **No 
 ## Repository layout
 
 ```
-index.html              ~282 KB single-file app
+index.html              ~290 KB orchestration shell
 data/
+  auth-config.js            P0-1 Supabase URL + anon key + HOSTED_KEY flag (placeholder values)
   zoning-matrix.js          56 entries × ~30 fields each
   middle-housing.js         WA HB 1110 overlay (10 cities)
   wa-statewide.js           HB 1337 + SB 5184
@@ -138,7 +139,13 @@ data/
   cost-index.js             BLS PPI inflation multiplier (quarterly)
   _socrata-schemas.json     bot-maintained Socrata field schemas
   _arcgis-schemas.json      bot-maintained ArcGIS layer schemas
-api/[...path].js        Vercel Edge proxy (catch-all route)
+lib/                      P0-1 split (per §7-A decision)
+  auth.js                   ADIAuth — Supabase client wrapper, sign-in/up/out, isHostedMode
+  proxy.js                  ADIProxy — hosted-AI client (JWT → /api/ai/messages)
+api/[...path].js        Vercel Edge proxy + /api/ai/messages (P0-1)
+supabase/
+  migrations/0001_p0_1_auth_schema.sql   profiles + analyses + usage_events + RLS
+  README.md                               owner setup guide
 workers/proxy.js        Cloudflare Worker alternative
 scripts/
   fetch-socrata-schemas.py  Pulls + normalizes Socrata dataset metadata

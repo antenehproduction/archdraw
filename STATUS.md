@@ -4,6 +4,58 @@ Daily backlog state per `PROJECT_COORDINATOR.md` §9. Most recent day at the top
 
 ---
 
+## 2026-05-02 — P0-1 hosted-key authentication scaffolding shipped
+
+### Moved to done today
+- **P0-1 — Supabase Auth + Edge AI proxy + per-plan quota — code complete.** Scaffolding lands feature-flagged off (`enabled:false` in `data/auth-config.js`); BYOK path remains the default. Owner enables hosted mode by following `supabase/README.md` (paste URL+anon, run migration, set Vercel env vars, flip flag).
+
+### Files added
+- `supabase/migrations/0001_p0_1_auth_schema.sql` — `profiles`, `analyses`, `usage_events` tables; auto-create-profile trigger on `auth.users`; RLS policies (users read only own rows, `usage_events` writes restricted to service-role); helpers `current_period_usage(uid)`, `plan_quota(plan)`, `can_run_analysis(uid)`. Trial = 1 analysis lifetime; Pro = 50/30d; Team = 250/30d.
+- `supabase/README.md` — owner setup guide (migration → paste anon → set Vercel env vars → enable).
+- `data/auth-config.js` — `window.ADI_AUTH_CONFIG` with placeholder `supabaseUrl`/`supabaseAnonKey` and `enabled:false`. Per-session opt-in via `localStorage.ADI_HOSTED_KEY=1`.
+- `lib/auth.js` — `window.ADIAuth.{ isHostedMode, isConfigured, client, getSession, getAccessToken, getUser, getProfile, usage, signUp, signIn, signInWithGoogle, sendPasswordReset, signOut, onAuthChange }`. Lazy-init Supabase client; warns once per session if config missing.
+- `lib/proxy.js` — `window.ADIProxy.{ callAI, callJSON, callAIWithImg, startAnalysis, completeAnalysis }`. Mirrors `index.html` callAI signatures byte-for-byte. Adds Bearer JWT to every `/api/ai/messages` POST; surfaces 401 (session expired), 402 (quota — sets `e.quotaExceeded=true`), 429 (upstream rate limit). `startAnalysis` opens an `analyses` row; `completeAnalysis` flips `status=completed/errored`.
+
+### Files modified
+- `api/[...path].js` — bumped `PROXY_VERSION` 6→7. CORS: `POST` allowed, `Authorization` header allowed. New routes:
+  - `POST /api/ai/messages` — validates Supabase JWT against `${SUPABASE_URL}/auth/v1/user`, looks up plan + 30-day usage via service-role REST queries, rejects with 402 when over quota, proxies to `api.anthropic.com/v1/messages` with server-side `ANTHROPIC_KEY`, fail-soft logs a `usage_events` row on success.
+  - `GET /api/ai/whoami` — debug endpoint returning `{user, plan, used, quota}` for the current JWT.
+  - `/api/health` now reports `aiHosted: true` when both env vars are present.
+- `index.html`:
+  - Added `<script>` tags for `data/auth-config.js`, jsDelivr `@supabase/supabase-js@2`, `lib/auth.js`, `lib/proxy.js`.
+  - `S.mode==='hosted'` branch added at the top of `callAI` and `callAIWithImg` — delegates to `ADIProxy.*`. BYOK path otherwise unchanged.
+  - `startAnalysis()` now opens an audit row via `ADIProxy.startAnalysis({address})` when hosted; finalizes via `ADIProxy.completeAnalysis(...)` with `completed`/`errored` in `finally`. Refreshes the usage banner via `adiOnSignedIn(session)` after a successful run. On `e.quotaExceeded`, surfaces the paywall.
+  - INIT block replaced: `adiInitAuth()` runs first. When hosted mode is on AND configured, it picks between `getSession()` (→ `adiOnSignedIn`) and `adiShowAuthModal('signin')`. When hosted is off OR config missing, falls back to the legacy `bootstrapStoredKey → probeConnection` chain.
+  - New auth modal CSS (cream paper, brass-blue accents matching the vault aesthetic) + HTML markup (sign-in / sign-up tabs, Google OAuth button, password reset, disclosure block).
+  - Sign-out wiring on the `setBanner` "sign out" link.
+- `CLAUDE.md` — architecture diagram updated to show `data/`/`lib/`/`api/`/`supabase/` split. Critical rules #7 amended (single-file → split allowed for `data/*` + `lib/*`). Rules #8 and #9 added (hosted mode is additive; service-role keys never leave Edge runtime). Active-bugs section reflects all closed P0 + P0-1 ship state. Testing checklist split into BYOK + hosted lanes.
+- `README.md` — stack section mentions Supabase scaffolding shipped + flip-on path. Repo layout shows `lib/` and `supabase/`.
+
+### Surface-area parity
+- BYOK path is byte-untouched when `localStorage.ADI_HOSTED_KEY` is absent and `enabled:false`. `node test/middle-housing.test.js` → all 17 groups still PASS. `index.html` inline parses cleanly via `new Function(...)`. `lib/*.js` and `data/auth-config.js` parse cleanly. `api/[...path].js` imports cleanly under Node ESM.
+
+### Owner-blocking acceptance criteria (per PROJECT_COORDINATOR.md §P0-1)
+1. Paste Supabase URL + anon key into `data/auth-config.js`.
+2. Run `supabase/migrations/0001_p0_1_auth_schema.sql` in the SQL editor.
+3. Set `ANTHROPIC_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` as Vercel env vars; redeploy.
+4. (Optional) Configure Google OAuth in Supabase Auth → Providers.
+5. Flip `enabled:true` in `data/auth-config.js` (or `localStorage.ADI_HOSTED_KEY=1` per-session) to roll out.
+
+Smoke-test path: sign up → confirm email → run analysis → see 1/1 in banner → second analysis → 402 → paywall.
+
+### Architectural decisions accepted (Section 7)
+- §7-A: split data + lib only (Option 2). `lib/auth.js` and `lib/proxy.js` are the first lib/* files. Inline orchestration stays in `index.html`.
+- §7-B (TypeScript): deferred to P1 phase. P0-1 stays vanilla JS to minimize delta.
+- §7-C (Opus 4.7 routing for high-stakes calls): not yet wired. The hosted Edge fn forwards whatever `model` the client sends — opens the door for per-task-class routing without a code change. Default remains `claude-sonnet-4-6`.
+
+### Still pending (out of P0-1 scope)
+- P1-1 Stripe billing — placeholder paywall copy in place.
+- P1-3 Sentry / observability.
+- P1-4 Postgres caching layer for vision parcel-trace results.
+- Owner: which Vercel project is canonical (P0-6).
+
+---
+
 ## 2026-04-25 — P0-4 HB 1110 first-class data (first batch)
 
 ### Moved to done today

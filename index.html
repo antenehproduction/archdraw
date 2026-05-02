@@ -371,6 +371,28 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--ink);color:var
   #landing.vault .brand,
   #landing.vault .scroll-paper{animation:none}
 }
+
+/* ═══ P0-1 hosted-key auth modal ═══ */
+#auth-modal{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(8,12,20,.78);backdrop-filter:blur(6px);z-index:10000}
+#auth-modal .auth-card{width:380px;max-width:92vw;background:#fffdf3;color:#14213d;border-radius:8px;box-shadow:0 24px 80px rgba(0,0,0,.5);padding:28px 30px;font-family:var(--serif,Crimson Pro,serif)}
+#auth-modal .auth-title{font-size:18px;font-weight:600;letter-spacing:.5px;margin:0 0 4px}
+#auth-modal .auth-sub{font-size:11px;color:rgba(20,33,61,.65);margin:0 0 18px}
+#auth-modal .auth-tabs{display:flex;gap:0;border-bottom:1px solid rgba(20,33,61,.18);margin-bottom:14px}
+#auth-modal .auth-tab{flex:1;padding:9px 10px;font-size:11px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;cursor:pointer;color:rgba(20,33,61,.55);border-bottom:2px solid transparent;background:none;border-top:none;border-left:none;border-right:none;font-family:var(--mono,monospace)}
+#auth-modal .auth-tab.active{color:#14213d;border-bottom-color:#0e3d8a}
+#auth-modal label{display:block;font-size:9.5px;letter-spacing:.5px;text-transform:uppercase;color:rgba(20,33,61,.65);margin:10px 0 4px;font-family:var(--mono,monospace)}
+#auth-modal input{width:100%;padding:9px 10px;background:#fff;border:1px solid rgba(20,33,61,.25);border-radius:5px;color:#14213d;font-size:13px;font-family:inherit;box-sizing:border-box}
+#auth-modal input:focus{outline:none;border-color:#0e3d8a;box-shadow:0 0 0 2px rgba(14,61,138,.15)}
+#auth-modal .auth-btn{display:block;width:100%;margin-top:14px;padding:11px;background:#0e3d8a;color:#fffdf3;border:none;border-radius:5px;font-size:12px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;cursor:pointer;font-family:var(--mono,monospace)}
+#auth-modal .auth-btn:hover{background:#0a2d6a}
+#auth-modal .auth-btn.alt{background:#fff;color:#14213d;border:1px solid rgba(20,33,61,.3);margin-top:8px}
+#auth-modal .auth-btn.alt:hover{background:#f5f1e3}
+#auth-modal .auth-msg{margin:10px 0 0;font-size:11px;min-height:14px;color:#14213d}
+#auth-modal .auth-foot{margin-top:14px;font-size:10px;color:rgba(20,33,61,.55);display:flex;justify-content:space-between;align-items:center}
+#auth-modal .auth-foot a{color:#0e3d8a;cursor:pointer;text-decoration:none}
+#auth-modal .auth-foot a:hover{text-decoration:underline}
+#auth-modal .auth-divider{text-align:center;font-size:9px;letter-spacing:1px;color:rgba(20,33,61,.45);margin:10px 0;text-transform:uppercase;font-family:var(--mono,monospace)}
+#auth-modal .auth-disclosure{margin-top:14px;padding-top:12px;border-top:1px solid rgba(20,33,61,.12);font-size:9px;line-height:1.45;color:rgba(20,33,61,.6)}
 </style>
 </head>
 <body>
@@ -523,6 +545,48 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--ink);color:var
   </div>
 </div>
 
+<!-- ═══ P0-1 auth modal (hosted-key path only) ═══ -->
+<div id="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-title">
+  <div class="auth-card">
+    <h2 id="auth-title" class="auth-title">ArchDraw Intel</h2>
+    <p class="auth-sub">Sign in to run a new permit analysis. Your free trial covers 1 analysis.</p>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="auth-tab-signin" onclick="adiSwitchAuthTab('signin')">Sign in</button>
+      <button class="auth-tab" id="auth-tab-signup" onclick="adiSwitchAuthTab('signup')">Create account</button>
+    </div>
+    <div id="auth-pane-signin">
+      <label for="auth-email-in">Email</label>
+      <input id="auth-email-in" type="email" autocomplete="email" placeholder="you@example.com">
+      <label for="auth-pw-in">Password</label>
+      <input id="auth-pw-in" type="password" autocomplete="current-password" onkeydown="if(event.key==='Enter')adiSubmitSignIn()">
+      <button class="auth-btn" onclick="adiSubmitSignIn()">Sign in</button>
+      <div class="auth-divider">or</div>
+      <button class="auth-btn alt" onclick="adiSignInGoogle()">Continue with Google</button>
+      <div class="auth-foot">
+        <a onclick="adiPasswordReset()">Forgot password?</a>
+        <a onclick="adiSwitchAuthTab('signup')">Create account →</a>
+      </div>
+    </div>
+    <div id="auth-pane-signup" style="display:none">
+      <label for="auth-email-up">Email</label>
+      <input id="auth-email-up" type="email" autocomplete="email" placeholder="you@example.com">
+      <label for="auth-pw-up">Password (≥ 8 characters)</label>
+      <input id="auth-pw-up" type="password" autocomplete="new-password" onkeydown="if(event.key==='Enter')adiSubmitSignUp()">
+      <button class="auth-btn" onclick="adiSubmitSignUp()">Create account</button>
+      <div class="auth-divider">or</div>
+      <button class="auth-btn alt" onclick="adiSignInGoogle()">Continue with Google</button>
+      <div class="auth-foot">
+        <span>Already have an account?</span>
+        <a onclick="adiSwitchAuthTab('signin')">Sign in →</a>
+      </div>
+    </div>
+    <div id="auth-msg" class="auth-msg"></div>
+    <div class="auth-disclosure">
+      ArchDraw output is generated for design study and pre-application review only. Drawings and analysis must be reviewed and stamped by a registered design professional before any permit submission. By signing in you accept these terms.
+    </div>
+  </div>
+</div>
+
 <div id="log-panel"></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -536,6 +600,11 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--ink);color:var
 <script src="data/cost-index.js"></script>
 <script src="data/permit-registry.js"></script>
 <script src="data/overlay-registry.js"></script>
+<!-- P0-1 hosted-key auth (additive; legacy BYOK path remains the default) -->
+<script src="data/auth-config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="lib/auth.js"></script>
+<script src="lib/proxy.js"></script>
 <script>
 // ═══ STATE ═══
 // ═══ ADI_PROXY configuration ═══
@@ -699,6 +768,10 @@ Always give your most experienced professional opinion. Specific, bold, code-ref
 
 
 async function callAI(msgs,sys,maxTok=2200,timeoutMs=90000){
+  // P0-1 hosted-key path: when the user is signed in via Supabase, all AI
+  // calls go through /api/ai/messages with a Bearer JWT. The browser never
+  // sees an Anthropic key. Falls through to BYOK if hosted mode is off.
+  if(S.mode==='hosted'&&window.ADIProxy){return ADIProxy.callAI(msgs,sys,maxTok,timeoutMs)}
   const headers={'Content-Type':'application/json'};
   if(S.mode==='standalone'&&S.apiKey){headers['x-api-key']=S.apiKey;headers['anthropic-version']='2023-06-01';headers['anthropic-dangerous-direct-browser-access']='true'}
   const body={model:'claude-sonnet-4-6',max_tokens:maxTok,messages:msgs};
@@ -752,6 +825,7 @@ async function callJSON(msgs,sys,maxTok=2200,timeoutMs=90000){
 }
 
 async function callAIWithImg(prompt,b64,mime,sys,maxTok=1000){
+  if(S.mode==='hosted'&&window.ADIProxy){return ADIProxy.callAIWithImg(prompt,b64,mime,sys,maxTok)}
   const headers={'Content-Type':'application/json'};
   if(S.mode==='standalone'&&S.apiKey){headers['x-api-key']=S.apiKey;headers['anthropic-version']='2023-06-01';headers['anthropic-dangerous-direct-browser-access']='true'}
   const body={model:'claude-sonnet-4-6',max_tokens:maxTok,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:mime,data:b64}},{type:'text',text:prompt}]}]};
@@ -1085,9 +1159,13 @@ async function startAnalysis(){
   if(MAP_INSTANCE){MAP_INSTANCE.eachLayer(l=>{if(l._isArchDraw||l._isOSM)MAP_INSTANCE.removeLayer(l)})}
   LOG.length=0;
   L.info(`=== v12 ANALYSIS START: ${S.addr} ===`);
+  // P0-1: open an analyses row in Supabase when running in hosted mode
+  S._adiAnalysisId=null;
+  if(S.mode==='hosted'&&window.ADIProxy){try{S._adiAnalysisId=await ADIProxy.startAnalysis({address:S.addr})}catch(e){L.warn('analyses insert failed:',e?.message)}}
   showScreen('workspace');document.getElementById('rp-addr').textContent=S.addr;
   document.getElementById('findings').innerHTML='';buildPhases();
   PHASES.forEach(p=>phSet(p.id,'pending'));setOvl('STARTING','Initializing');
+  let _failure=null;
   try{
     // Phase 1: Site Research + geocode
     await runPhase_site(); await delay(400);
@@ -1105,8 +1183,15 @@ async function startAnalysis(){
     // Phase 7: Permit Checklist
     await runPhase_chk();
     L.info('=== ANALYSIS COMPLETE ===');
-  }catch(e){L.error('Pipeline stopped:',e.message);console.error('Pipeline:',e)}
-  finally{S.analyzing=false;document.getElementById('run-btn').disabled=!S.apiReady;document.getElementById('run-btn').textContent='ANALYZE →';hideOvl()}
+  }catch(e){_failure=e;L.error('Pipeline stopped:',e.message);console.error('Pipeline:',e);
+    // P0-1: surface paywall when an AI call rejected for quota
+    if(e.quotaExceeded&&S.mode==='hosted'){try{const u=await window.ADIAuth.usage();adiShowPaywall(u)}catch(_){}}}
+  finally{
+    if(S._adiAnalysisId&&window.ADIProxy){try{await ADIProxy.completeAnalysis(S._adiAnalysisId,_failure?'errored':'completed',_failure?.message||null)}catch(_){}}
+    // Refresh usage counter in the banner after a successful run
+    if(!_failure&&S.mode==='hosted'&&window.ADIAuth){try{const sess=await window.ADIAuth.getSession();if(sess)adiOnSignedIn(sess)}catch(_){}}
+    S.analyzing=false;document.getElementById('run-btn').disabled=!S.apiReady;document.getElementById('run-btn').textContent='ANALYZE →';hideOvl();
+  }
 }
 
 async function runPhase_site(){
@@ -4097,8 +4182,123 @@ try {
   const useVault = !new URLSearchParams(location.search).has('legacy');
   if (useVault) document.getElementById('landing')?.classList.add('vault');
 } catch (_) {}
-// Try the saved key first; only fall back to probeConnection() when no valid key is stored.
-bootstrapStoredKey().then(ok=>{if(!ok)probeConnection()}).catch(()=>probeConnection());
+
+// ── P0-1 hosted-key bootstrap ──
+// When ADIAuth.isHostedMode() is true:
+//   - skip BYOK probe entirely
+//   - if a Supabase session exists → mark connected, ready to analyze
+//   - else show the auth modal (sign-in / sign-up)
+// When hosted mode is off, the legacy BYOK path (bootstrapStoredKey →
+// probeConnection) runs unchanged.
+async function adiInitAuth() {
+  const A = window.ADIAuth;
+  if (!A || !A.isHostedMode()) {
+    bootstrapStoredKey().then(ok => { if (!ok) probeConnection(); }).catch(() => probeConnection());
+    return;
+  }
+  if (!A.isConfigured()) {
+    setBanner('needs-key', '⚠ Hosted mode not configured',
+      'data/auth-config.js is missing supabaseUrl / supabaseAnonKey. Falling back to BYOK. Owner: paste credentials per supabase/README.md.');
+    bootstrapStoredKey().then(ok => { if (!ok) probeConnection(); }).catch(() => probeConnection());
+    return;
+  }
+  try {
+    const session = await A.getSession();
+    if (session) {
+      adiOnSignedIn(session);
+    } else {
+      adiShowAuthModal('signin');
+    }
+  } catch (e) {
+    L.error('adiInitAuth threw:', e?.message);
+    adiShowAuthModal('signin');
+  }
+  // React to auth changes (token refresh, sign-out from another tab)
+  A.onAuthChange((event, sess) => {
+    if (event === 'SIGNED_OUT') {
+      S.mode = 'embedded'; S.apiReady = false;
+      document.getElementById('run-btn').disabled = true;
+      adiShowAuthModal('signin');
+    } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+      adiOnSignedIn(sess);
+    }
+  });
+}
+
+async function adiOnSignedIn(session) {
+  S.mode = 'hosted'; S.apiReady = true;
+  const u = session?.user;
+  let usage = { used: 0, quota: 1, plan: 'trial' };
+  try { usage = await window.ADIAuth.usage(); } catch (_) {}
+  const remaining = Math.max(0, (usage.quota || 0) - (usage.used || 0));
+  setBanner('ok', '✓ Signed in',
+    `${u?.email || 'authenticated'} · ${usage.plan} plan · ${usage.used}/${usage.quota} used <a href="#" onclick="adiSignOut();return false" style="color:var(--txt3);font-size:8px;margin-left:6px">sign out</a>`);
+  document.getElementById('run-btn').disabled = (remaining <= 0);
+  if (remaining <= 0) adiShowPaywall(usage);
+  adiHideAuthModal();
+}
+
+async function adiSignOut() {
+  try { await window.ADIAuth.signOut(); } catch (_) {}
+  S.mode = 'embedded'; S.apiReady = false;
+  adiShowAuthModal('signin');
+}
+
+function adiShowAuthModal(tab) {
+  const m = document.getElementById('auth-modal');
+  if (!m) return;
+  m.style.display = 'flex';
+  adiSwitchAuthTab(tab || 'signin');
+}
+function adiHideAuthModal() {
+  const m = document.getElementById('auth-modal'); if (m) m.style.display = 'none';
+}
+function adiSwitchAuthTab(tab) {
+  document.getElementById('auth-tab-signin').classList.toggle('active', tab === 'signin');
+  document.getElementById('auth-tab-signup').classList.toggle('active', tab === 'signup');
+  document.getElementById('auth-pane-signin').style.display = tab === 'signin' ? 'block' : 'none';
+  document.getElementById('auth-pane-signup').style.display = tab === 'signup' ? 'block' : 'none';
+  document.getElementById('auth-msg').textContent = '';
+}
+async function adiSubmitSignIn() {
+  const email = document.getElementById('auth-email-in').value.trim();
+  const pw = document.getElementById('auth-pw-in').value;
+  if (!email || !pw) { document.getElementById('auth-msg').textContent = 'Email and password required.'; return; }
+  document.getElementById('auth-msg').textContent = 'Signing in…';
+  const { user, session, error } = await window.ADIAuth.signIn(email, pw);
+  if (error) { document.getElementById('auth-msg').textContent = '✗ ' + error.message; return; }
+  if (session) adiOnSignedIn(session);
+}
+async function adiSubmitSignUp() {
+  const email = document.getElementById('auth-email-up').value.trim();
+  const pw = document.getElementById('auth-pw-up').value;
+  if (!email || !pw) { document.getElementById('auth-msg').textContent = 'Email and password required.'; return; }
+  if (pw.length < 8) { document.getElementById('auth-msg').textContent = 'Password must be ≥ 8 characters.'; return; }
+  document.getElementById('auth-msg').textContent = 'Creating account…';
+  const { user, session, error } = await window.ADIAuth.signUp(email, pw);
+  if (error) { document.getElementById('auth-msg').textContent = '✗ ' + error.message; return; }
+  if (session) { adiOnSignedIn(session); return; }
+  document.getElementById('auth-msg').textContent = '✓ Account created. Check your email to confirm, then sign in.';
+}
+async function adiSignInGoogle() {
+  document.getElementById('auth-msg').textContent = 'Redirecting to Google…';
+  const { error } = await window.ADIAuth.signInWithGoogle();
+  if (error) document.getElementById('auth-msg').textContent = '✗ ' + error.message;
+}
+async function adiPasswordReset() {
+  const email = document.getElementById('auth-email-in').value.trim();
+  if (!email) { document.getElementById('auth-msg').textContent = 'Enter your email above first.'; return; }
+  const { error } = await window.ADIAuth.sendPasswordReset(email);
+  document.getElementById('auth-msg').textContent = error ? ('✗ ' + error.message) : '✓ Reset email sent.';
+}
+function adiShowPaywall(usage) {
+  const cfg = window.ADI_AUTH_CONFIG || {};
+  const planLabel = cfg.plans?.[usage.plan]?.label || usage.plan;
+  setBanner('needs-key', '⛔ Plan limit reached',
+    `${usage.used}/${usage.quota} on ${planLabel}. Upgrade to continue. <a href="#" onclick="alert('Stripe billing arrives in P1. Contact support for early upgrade.');return false" style="color:var(--blue);font-size:8px;margin-left:6px">Upgrade →</a>`);
+}
+
+adiInitAuth();
 </script>
 </body>
 </html>
