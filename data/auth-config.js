@@ -27,9 +27,9 @@
 
 window.ADI_AUTH_CONFIG = {
   // PASTE: https://<your-ref>.supabase.co
-  supabaseUrl: '',
+  supabaseUrl: 'https://jfiafdeppfsksxrzqumw.supabase.co',
   // PASTE: eyJhbGciOi... (the anon / public key, NOT service-role)
-  supabaseAnonKey: '',
+  supabaseAnonKey: 'sb_publishable_3KyuJYc3PTBbo3rpQsk3XQ_ikTL7Mu6',
 
   // P0-1 rollout flag. Default false until env vars + migration are live.
   // Per-session override: localStorage.ADI_HOSTED_KEY = '1'
