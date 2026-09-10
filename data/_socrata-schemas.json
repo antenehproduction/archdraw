@@ -487,8 +487,8 @@
       "host": "data.austintexas.gov",
       "name": "Issued Construction Permits",
       "registryKey": "austin",
-      "rowsUpdatedAt": 1788955223,
-      "viewLastModified": 1788953764
+      "rowsUpdatedAt": 1789042609,
+      "viewLastModified": 1789040168
     },
     "data.cityofchicago.org:ydr8-5enu": {
       "addressFieldGuess": "location",
@@ -1233,7 +1233,7 @@
       "host": "data.cityofchicago.org",
       "name": "Building Permits",
       "registryKey": "chicago",
-      "rowsUpdatedAt": 1788955957,
+      "rowsUpdatedAt": 1789043178,
       "viewLastModified": 1780080970
     },
     "data.cityofnewyork.us:ipu4-2q9a": {
@@ -1607,8 +1607,8 @@
       "host": "data.cityofnewyork.us",
       "name": "DOB Permit Issuance",
       "registryKey": "nyc",
-      "rowsUpdatedAt": 1788910828,
-      "viewLastModified": 1788906648
+      "rowsUpdatedAt": 1788997447,
+      "viewLastModified": 1788993055
     },
     "data.everettwa.gov:3w3u-656c": {
       "addressFieldGuess": "siteaddress",
@@ -1747,8 +1747,8 @@
       "host": "data.everettwa.gov",
       "name": "Trakit Permits",
       "registryKey": "everett",
-      "rowsUpdatedAt": 1788948963,
-      "viewLastModified": 1788948940
+      "rowsUpdatedAt": 1789035482,
+      "viewLastModified": 1789035368
     },
     "data.sandiegocounty.gov:dyzh-7eat": {
       "addressFieldGuess": "full_address",
@@ -2175,6 +2175,12 @@
           "description": "The type of created housing created such as single-family rebuilds, pre-approved DADUs, 'middle' multifamily housing, and 'large' multifamily housing.",
           "fieldName": "housingcategory",
           "name": "HousingCategory"
+        },
+        {
+          "dataTypeName": "text",
+          "description": "A Development Site, referenced using a Development Site Number, is a property boundary that SDCI uses to apply code standards. A Development Site may overlap with one or more King County tax parcels.",
+          "fieldName": "development_site",
+          "name": "Development Site"
         }
       ],
       "datasetId": "76t5-zqzr",
@@ -2183,8 +2189,8 @@
       "host": "data.seattle.gov",
       "name": "Building Permits",
       "registryKey": "seattle",
-      "rowsUpdatedAt": 1788830058,
-      "viewLastModified": 1788829944
+      "rowsUpdatedAt": 1788967571,
+      "viewLastModified": 1788967674
     },
     "data.sfgov.org:i98e-djp9": {
       "addressFieldGuess": "location",
@@ -2515,7 +2521,7 @@
       "host": "data.sfgov.org",
       "name": "Building Permits",
       "registryKey": "sf",
-      "rowsUpdatedAt": 1788957743,
+      "rowsUpdatedAt": 1789043604,
       "viewLastModified": 1755626161
     },
     "internal.open.piercecountywa.gov:nhnt-v7ka": {
