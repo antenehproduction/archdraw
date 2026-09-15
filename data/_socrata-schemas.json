@@ -488,7 +488,7 @@
       "name": "Issued Construction Permits",
       "registryKey": "austin",
       "rowsUpdatedAt": 1789301344,
-      "viewLastModified": 1789385794
+      "viewLastModified": 1789472300
     },
     "data.cityofchicago.org:ydr8-5enu": {
       "addressFieldGuess": "location",
@@ -1233,7 +1233,7 @@
       "host": "data.cityofchicago.org",
       "name": "Building Permits",
       "registryKey": "chicago",
-      "rowsUpdatedAt": 1789389495,
+      "rowsUpdatedAt": 1789475603,
       "viewLastModified": 1780080970
     },
     "data.cityofnewyork.us:ipu4-2q9a": {
@@ -1608,7 +1608,7 @@
       "name": "DOB Permit Issuance",
       "registryKey": "nyc",
       "rowsUpdatedAt": 1789342873,
-      "viewLastModified": 1789338648
+      "viewLastModified": 1789480198
     },
     "data.everettwa.gov:3w3u-656c": {
       "addressFieldGuess": "siteaddress",
@@ -1747,8 +1747,8 @@
       "host": "data.everettwa.gov",
       "name": "Trakit Permits",
       "registryKey": "everett",
-      "rowsUpdatedAt": 1789380951,
-      "viewLastModified": 1789380938
+      "rowsUpdatedAt": 1789467431,
+      "viewLastModified": 1789467355
     },
     "data.sandiegocounty.gov:dyzh-7eat": {
       "addressFieldGuess": "full_address",
@@ -2521,12 +2521,12 @@
       "host": "data.sfgov.org",
       "name": "Building Permits",
       "registryKey": "sf",
-      "rowsUpdatedAt": 1789389799,
+      "rowsUpdatedAt": 1789475513,
       "viewLastModified": 1755626161
     },
     "internal.open.piercecountywa.gov:nhnt-v7ka": {
       "addressFieldGuess": "siteaddress",
-      "category": null,
+      "category": "Maps and Geospatial",
       "columns": [
         {
           "dataTypeName": "point",
@@ -2542,187 +2542,187 @@
         },
         {
           "dataTypeName": "number",
-          "description": null,
+          "description": "A unique, system generated number that identifies the application/permit.",
           "fieldName": "applicationnumber",
           "name": "applicationNumber"
         },
         {
           "dataTypeName": "text",
-          "description": null,
+          "description": "Text that describes the type of application/permit.",
           "fieldName": "applicationtype",
           "name": "applicationType"
         },
         {
           "dataTypeName": "text",
-          "description": null,
+          "description": "Text that describes the current status of the application/permit. This provides a general description of where the application/permit is in the process.",
           "fieldName": "applicationstatus",
           "name": "applicationStatus"
         },
         {
           "dataTypeName": "text",
-          "description": null,
+          "description": "Tax parcel number that the application/permit was associated with at time the application was submitted. Tax Parcel numbers in this permit data may not match the Assessor-Treasurer's tax parcel spatial data in the permit point location. An ",
           "fieldName": "parcelnumber",
           "name": "parcelNumber"
         },
         {
           "dataTypeName": "text",
-          "description": null,
+          "description": "Text that describes the type of work being permitted. It is used to classify and group building permits for reporting purposes.",
           "fieldName": "worktype",
           "name": "workType"
         },
         {
           "dataTypeName": "text",
-          "description": null,
+          "description": "Text that describes the type of building and/or building code construction type being permitted. It is used to classify and group building permits for reporting purposes as well as calculating the valuation.",
           "fieldName": "buildingtype",
           "name": "buildingType"
         },
         {
           "dataTypeName": "text",
-          "description": null,
+          "description": "Text that describes the type of dwelling being permitted (standard, senior housing, ADU, etc.). It is used to classify and group building permits for reporting purposes.",
           "fieldName": "housingtype",
           "name": "housingType"
         },
         {
           "dataTypeName": "number",
-          "description": null,
+          "description": "The sum of the various square footage entries (1st floor, 2nd floor, garage, etc.) that exist on the application/permit.",
           "fieldName": "sqfttotal",
           "name": "sqFtTotal"
         },
         {
           "dataTypeName": "number",
-          "description": null,
+          "description": "The valuation in dollars of the work or structure being permitted. It is used to calculate fees and for reporting purposes.",
           "fieldName": "buildingvaluation",
           "name": "buildingValuation"
         },
         {
           "dataTypeName": "text",
-          "description": null,
+          "description": "The number of dwelling units in the structure that the application/permit is adding, removing, or modifying. It is used for reporting purposes.",
           "fieldName": "dwellingunits",
           "name": "dwellingUnits"
         },
         {
           "dataTypeName": "text",
-          "description": null,
+          "description": "The number of stories in the structure that the application/permit is adding, removing, or modifying. It is used for reporting purposes.",
           "fieldName": "stories",
           "name": "stories"
         },
         {
           "dataTypeName": "text",
-          "description": null,
+          "description": "The name of the power company, as identified by the applicant, providing electricity to the structure that the application/permit is adding, removing, or modifying. It is used for reporting purposes.",
           "fieldName": "powercompany",
           "name": "powerCompany"
         },
         {
           "dataTypeName": "text",
-          "description": null,
+          "description": "The method of sewage disposal, if applicable, used by the structure that the application/permit is adding, removing, or modifying. It is used for reporting purposes and to potentially trigger other types of review.",
           "fieldName": "sewagedisposal",
           "name": "sewageDisposal"
         },
         {
           "dataTypeName": "number",
-          "description": null,
+          "description": "The total number of acres impacted by a proposed land use or platting application. It is used for reporting/grouping purposes as well as some fee calculations.",
           "fieldName": "acreage",
           "name": "acreage"
         },
         {
           "dataTypeName": "number",
-          "description": null,
+          "description": "The total value, in dollars, of a proposed land use action within a designated shoreline environment. It is used for reporting/grouping purposes as well as some fee calculations.",
           "fieldName": "projectvalue",
           "name": "projectValue"
         },
         {
           "dataTypeName": "number",
-          "description": null,
+          "description": "A system generated number that groups one or more application/permit into a single project. For example a project might have a building permit and a site development permit, both of them will have a different applicationNumber but the same ",
           "fieldName": "projectid",
           "name": "projectId"
         },
         {
           "dataTypeName": "text",
-          "description": null,
+          "description": "Text that groups the various applicationType by the code or discipline that is responsible for regulating the activity. Some examples include: application types for land use or platting activity will have a value of \"PLAN\", application type",
           "fieldName": "applicationdept",
           "name": "applicationDept"
         },
         {
           "dataTypeName": "date",
-          "description": null,
+          "description": "A date/time that indicates when the application was formally accepted and triggered the review process to start.",
           "fieldName": "applicationdate",
           "name": "applicationDate"
         },
         {
           "dataTypeName": "date",
-          "description": null,
+          "description": "A date/time that indicates when the materials needed to process an application was received by the department. This triggers the intake process to start.",
           "fieldName": "submittaldate",
           "name": "submittalDate"
         },
         {
           "dataTypeName": "date",
-          "description": null,
+          "description": "A date/time that indicates when an application enters the \"Approved\" status. This indicates an end to the review process.",
           "fieldName": "approvaldate",
           "name": "approvalDate"
         },
         {
           "dataTypeName": "date",
-          "description": null,
+          "description": "A date/time that indicates when an application enteres the \"Denied\" status. This indicates an end to the review process.",
           "fieldName": "denialdate",
           "name": "denialDate"
         },
         {
           "dataTypeName": "date",
-          "description": null,
+          "description": "A date/time that indicates when an application enters the \"Issued\" status. This indicates a beginning of the inspection phase of a project.",
           "fieldName": "issueddate",
           "name": "issuedDate"
         },
         {
           "dataTypeName": "date",
-          "description": null,
+          "description": "A date/time that indicates when an application enters the \"Final\" status. This indicates the completion of a construction type project, from the County perspective this project is done.",
           "fieldName": "finaldate",
           "name": "finalDate"
         },
         {
           "dataTypeName": "text",
-          "description": null,
+          "description": "Text that provides a short description of the project.",
           "fieldName": "workdescription",
           "name": "workDescription"
         },
         {
           "dataTypeName": "text",
-          "description": null,
+          "description": "Text that provides the physical street address of the project covered by the application/permit.",
           "fieldName": "siteaddress",
           "name": "siteAddress"
         },
         {
           "dataTypeName": "text",
-          "description": null,
+          "description": "The name of the project.",
           "fieldName": "projectname",
           "name": "projectName"
         },
         {
           "dataTypeName": "number",
-          "description": null,
+          "description": "X coordinate in Washington State plane South HARN",
           "fieldName": "xcoord",
           "name": "XCoord"
         },
         {
           "dataTypeName": "number",
-          "description": null,
+          "description": "Y coordinate in Washington State plane South HARN",
           "fieldName": "ycoord",
           "name": "YCoord"
         },
         {
           "dataTypeName": "text",
-          "description": null,
+          "description": "Y/N text that indicates if the project is on a public water system or not.",
           "fieldName": "publicwater",
           "name": "publicWater"
         },
         {
           "dataTypeName": "text",
-          "description": null,
+          "description": "URL or website link to the application/permit in the public facing Online Permits application. Online Permits is a public web application and no user login is required. The URL is generated using the applicationNumber field.",
           "fieldName": "urlonlinepermits",
           "name": "urlOnlinePermits"
         },
         {
           "dataTypeName": "text",
-          "description": null,
+          "description": "URL or website link to the application/permit in the internal PALS+. PALS+ is an internal application and requires County employee credentials to access. The URL is generated using the applicationNumber field.",
           "fieldName": "lotssubmitted",
           "name": "lotsSubmitted"
         }
@@ -2734,7 +2734,7 @@
       "name": "Permits - Pierce County",
       "registryKey": "pierce_county_unincorp",
       "rowsUpdatedAt": 1789175336,
-      "viewLastModified": 1783549965
+      "viewLastModified": 1789426710
     }
   }
 }
