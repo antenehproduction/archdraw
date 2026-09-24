@@ -487,8 +487,8 @@
       "host": "data.austintexas.gov",
       "name": "Issued Construction Permits",
       "registryKey": "austin",
-      "rowsUpdatedAt": 1790166485,
-      "viewLastModified": 1790163563
+      "rowsUpdatedAt": 1790255965,
+      "viewLastModified": 1790249917
     },
     "data.cityofchicago.org:ydr8-5enu": {
       "addressFieldGuess": "location",
@@ -1233,7 +1233,7 @@
       "host": "data.cityofchicago.org",
       "name": "Building Permits",
       "registryKey": "chicago",
-      "rowsUpdatedAt": 1790165769,
+      "rowsUpdatedAt": 1790251640,
       "viewLastModified": 1780080970
     },
     "data.cityofnewyork.us:ipu4-2q9a": {
@@ -1607,8 +1607,8 @@
       "host": "data.cityofnewyork.us",
       "name": "DOB Permit Issuance",
       "registryKey": "nyc",
-      "rowsUpdatedAt": 1790120515,
-      "viewLastModified": 1790116251
+      "rowsUpdatedAt": 1790207003,
+      "viewLastModified": 1790202648
     },
     "data.everettwa.gov:3w3u-656c": {
       "addressFieldGuess": "siteaddress",
@@ -1747,8 +1747,8 @@
       "host": "data.everettwa.gov",
       "name": "Trakit Permits",
       "registryKey": "everett",
-      "rowsUpdatedAt": 1790158741,
-      "viewLastModified": 1790158533
+      "rowsUpdatedAt": 1790245127,
+      "viewLastModified": 1790245114
     },
     "data.sandiegocounty.gov:dyzh-7eat": {
       "addressFieldGuess": "full_address",
@@ -2189,8 +2189,8 @@
       "host": "data.seattle.gov",
       "name": "Building Permits",
       "registryKey": "seattle",
-      "rowsUpdatedAt": 1790125872,
-      "viewLastModified": 1790125595
+      "rowsUpdatedAt": 1790257503,
+      "viewLastModified": 1790256908
     },
     "data.sfgov.org:i98e-djp9": {
       "addressFieldGuess": "location",
@@ -2273,6 +2273,18 @@
           "description": "Description of permit scope of work",
           "fieldName": "description",
           "name": "Description"
+        },
+        {
+          "dataTypeName": "text",
+          "description": "Indicates the primary priority to be used for SLA",
+          "fieldName": "primary_priority",
+          "name": "primary_priority"
+        },
+        {
+          "dataTypeName": "text",
+          "description": "List all priorities assigned to the permit",
+          "fieldName": "all_priority_types",
+          "name": "all_priority_types"
         },
         {
           "dataTypeName": "text",
@@ -2521,8 +2533,8 @@
       "host": "data.sfgov.org",
       "name": "Building Permits",
       "registryKey": "sf",
-      "rowsUpdatedAt": 1790167168,
-      "viewLastModified": 1755626161
+      "rowsUpdatedAt": 1790253096,
+      "viewLastModified": 1790199063
     },
     "internal.open.piercecountywa.gov:nhnt-v7ka": {
       "addressFieldGuess": "siteaddress",
