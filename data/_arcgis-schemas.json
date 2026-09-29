@@ -10,22 +10,10 @@
       "kind": "org",
       "orgHost": "https://services6.arcgis.com/z6WYi9VRHfgwgtyW",
       "registryKey": "snohomish_county_unincorp",
-      "serviceCountTotal": 432,
+      "serviceCountTotal": 362,
       "services": [
         {
-          "name": "Building_Applications_Under_Review",
-          "type": "FeatureServer"
-        },
-        {
-          "name": "Building_Permits_Under_Construction",
-          "type": "FeatureServer"
-        },
-        {
           "name": "Building_Roofprints",
-          "type": "FeatureServer"
-        },
-        {
-          "name": "Current_Building_Inspection_Areas",
           "type": "FeatureServer"
         },
         {
@@ -33,27 +21,7 @@
           "type": "FeatureServer"
         },
         {
-          "name": "D8_Permits",
-          "type": "FeatureServer"
-        },
-        {
-          "name": "Future_Land_Use_Transfer_of_Development_Rights",
-          "type": "FeatureServer"
-        },
-        {
           "name": "GIS_FEATURES_GDBA_buildings_schools",
-          "type": "FeatureServer"
-        },
-        {
-          "name": "Issued_Permits",
-          "type": "FeatureServer"
-        },
-        {
-          "name": "Land_Use_Applications_Under_Review",
-          "type": "FeatureServer"
-        },
-        {
-          "name": "Land_Use_in_Process",
           "type": "FeatureServer"
         },
         {
@@ -66,10 +34,6 @@
         },
         {
           "name": "LandScan_Population_Counts_2021_Night",
-          "type": "FeatureServer"
-        },
-        {
-          "name": "LDA_and_ROW_Permits_Under_Construction",
           "type": "FeatureServer"
         },
         {
@@ -129,10 +93,6 @@
           "type": "FeatureServer"
         },
         {
-          "name": "pds_planning_permit_bia_feature",
-          "type": "FeatureServer"
-        },
-        {
           "name": "Everett_Land_Use",
           "type": "FeatureServer"
         },
@@ -167,60 +127,11 @@
       "layers": [
         {
           "addressFieldGuess": null,
-          "fields": [
-            {
-              "alias": "OBJECTID",
-              "length": null,
-              "name": "OBJECTID",
-              "type": "esriFieldTypeOID"
-            },
-            {
-              "alias": "PFN",
-              "length": 20,
-              "name": "PFN",
-              "type": "esriFieldTypeString"
-            },
-            {
-              "alias": "foldertype",
-              "length": 5,
-              "name": "foldertype",
-              "type": "esriFieldTypeString"
-            },
-            {
-              "alias": "Sub",
-              "length": 26,
-              "name": "Sub",
-              "type": "esriFieldTypeString"
-            },
-            {
-              "alias": "Work",
-              "length": 26,
-              "name": "Work_",
-              "type": "esriFieldTypeString"
-            },
-            {
-              "alias": "__of_Lots_or_Units",
-              "length": 5,
-              "name": "F__of_Lots_or_Units",
-              "type": "esriFieldTypeString"
-            },
-            {
-              "alias": "propgisid1",
-              "length": null,
-              "name": "propgisid1",
-              "type": "esriFieldTypeDouble"
-            },
-            {
-              "alias": "PARCEL_ID",
-              "length": 14,
-              "name": "PARCEL_ID",
-              "type": "esriFieldTypeString"
-            }
-          ],
-          "geometryType": "esriGeometryPoint",
-          "layerIndex": 0,
-          "name": "Points_Issued_Permits",
-          "type": "Feature Layer"
+          "fields": [],
+          "geometryType": null,
+          "layerIndex": null,
+          "name": null,
+          "type": null
         }
       ],
       "registryKey": "snohomish_county_unincorp",
