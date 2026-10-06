@@ -134,7 +134,7 @@
       "serviceURL": "https://services6.arcgis.com/z6WYi9VRHfgwgtyW/arcgis/rest/services/Issued_Permits/FeatureServer/0"
     },
     "tacoma:hub:a12d6fbf58e4434b8ff5070c09646f19": {
-      "itemDescription": "<div style='text-align:Left;'><p><span>Permit data extracted from Accela permitting system.\u00a0</span>The script runs daily and pulls all of yesterday's Accela updates. Some of them are new records, but the majority are updates to the status of existing records.\u00a0</p><p>Users can also search for records via the\u00a0<a href='https://aca-prod.accela.com/TACOMA/Default.aspx' target='_blank' rel='nofollow ugc noopener noreferrer'>Customer Access Portal</a>.</p><p>Contact:<br />Nathan Connors &amp; Jason Hildreth (IT)<br /><br /></p></div>",
+      "itemDescription": "<div style='text-align:Left;'><p><span>Permit data extracted from Accela permitting system.\u00a0</span>The script runs daily and pulls all of yesterday's Accela updates. Some of them are new records, but the majority are updates to the status of existing records.\u00a0</p><p>Users can also search for records via the\u00a0<a href='https://aca-prod.accela.com/TACOMA/Default.aspx' target='_blank' rel='nofollow ugc noopener noreferrer'>Customer Access Portal</a>.</p><p>Contact:<br />Nathan Connors &amp; Jason Schotman (ITD)<br /><br /></p></div>",
       "itemId": "a12d6fbf58e4434b8ff5070c09646f19",
       "itemName": "Accela Permit Data (Tacoma)",
       "itemType": "Feature Service",
