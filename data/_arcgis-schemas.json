@@ -10,7 +10,7 @@
       "kind": "org",
       "orgHost": "https://services6.arcgis.com/z6WYi9VRHfgwgtyW",
       "registryKey": "snohomish_county_unincorp",
-      "serviceCountTotal": 354,
+      "serviceCountTotal": 353,
       "services": [
         {
           "name": "Building_Roofprints",
@@ -109,11 +109,11 @@
           "type": "FeatureServer"
         },
         {
-          "name": "Building_Address_Points",
+          "name": "Future_Land_Use",
           "type": "FeatureServer"
         },
         {
-          "name": "Future_Land_Use",
+          "name": "Building_Address_Points",
           "type": "FeatureServer"
         }
       ]
