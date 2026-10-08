@@ -10,7 +10,7 @@
       "kind": "org",
       "orgHost": "https://services6.arcgis.com/z6WYi9VRHfgwgtyW",
       "registryKey": "snohomish_county_unincorp",
-      "serviceCountTotal": 353,
+      "serviceCountTotal": 351,
       "services": [
         {
           "name": "Building_Roofprints",
@@ -18,10 +18,6 @@
         },
         {
           "name": "GIS_FEATURES_GDBA_buildings_schools",
-          "type": "FeatureServer"
-        },
-        {
-          "name": "Landfill_Boundaries",
           "type": "FeatureServer"
         },
         {
@@ -109,11 +105,11 @@
           "type": "FeatureServer"
         },
         {
-          "name": "Future_Land_Use",
+          "name": "Building_Address_Points",
           "type": "FeatureServer"
         },
         {
-          "name": "Building_Address_Points",
+          "name": "Future_Land_Use",
           "type": "FeatureServer"
         }
       ]
