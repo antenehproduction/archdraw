@@ -10,10 +10,34 @@
       "kind": "org",
       "orgHost": "https://services6.arcgis.com/z6WYi9VRHfgwgtyW",
       "registryKey": "snohomish_county_unincorp",
-      "serviceCountTotal": 351,
+      "serviceCountTotal": 352,
       "services": [
         {
+          "name": "Active_Permits",
+          "type": "FeatureServer"
+        },
+        {
+          "name": "Agricultural_Land",
+          "type": "FeatureServer"
+        },
+        {
+          "name": "Building_Address_Points",
+          "type": "FeatureServer"
+        },
+        {
           "name": "Building_Roofprints",
+          "type": "FeatureServer"
+        },
+        {
+          "name": "Conservation_Lands",
+          "type": "FeatureServer"
+        },
+        {
+          "name": "Everett_Land_Use",
+          "type": "FeatureServer"
+        },
+        {
+          "name": "Future_Land_Use",
           "type": "FeatureServer"
         },
         {
@@ -34,6 +58,10 @@
         },
         {
           "name": "LiquefactionLandslidePoly",
+          "type": "FeatureServer"
+        },
+        {
+          "name": "MillCreek_LandUse",
           "type": "FeatureServer"
         },
         {
@@ -65,6 +93,10 @@
           "type": "FeatureServer"
         },
         {
+          "name": "SCN_FairPermenantBuildings",
+          "type": "FeatureServer"
+        },
+        {
           "name": "SmithIsland_ProjectArea",
           "type": "FeatureServer"
         },
@@ -78,38 +110,6 @@
         },
         {
           "name": "Urban_Heat_Island",
-          "type": "FeatureServer"
-        },
-        {
-          "name": "SCN_FairPermenantBuildings",
-          "type": "FeatureServer"
-        },
-        {
-          "name": "Everett_Land_Use",
-          "type": "FeatureServer"
-        },
-        {
-          "name": "MillCreek_LandUse",
-          "type": "FeatureServer"
-        },
-        {
-          "name": "Conservation_Lands",
-          "type": "FeatureServer"
-        },
-        {
-          "name": "Active_Permits",
-          "type": "FeatureServer"
-        },
-        {
-          "name": "Agricultural_Land",
-          "type": "FeatureServer"
-        },
-        {
-          "name": "Building_Address_Points",
-          "type": "FeatureServer"
-        },
-        {
-          "name": "Future_Land_Use",
           "type": "FeatureServer"
         }
       ]
