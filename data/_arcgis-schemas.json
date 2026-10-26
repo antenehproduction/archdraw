@@ -97,10 +97,6 @@
           "type": "FeatureServer"
         },
         {
-          "name": "Future_Land_Use",
-          "type": "FeatureServer"
-        },
-        {
           "name": "Active_Permits",
           "type": "FeatureServer"
         },
@@ -110,6 +106,10 @@
         },
         {
           "name": "Building_Address_Points",
+          "type": "FeatureServer"
+        },
+        {
+          "name": "Future_Land_Use",
           "type": "FeatureServer"
         }
       ]
