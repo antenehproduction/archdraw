@@ -487,8 +487,8 @@
       "host": "data.austintexas.gov",
       "name": "Issued Construction Permits",
       "registryKey": "austin",
-      "rowsUpdatedAt": 1793025733,
-      "viewLastModified": 1793014753
+      "rowsUpdatedAt": 1793103510,
+      "viewLastModified": 1793101261
     },
     "data.cityofchicago.org:ydr8-5enu": {
       "addressFieldGuess": "location",
@@ -1233,8 +1233,8 @@
       "host": "data.cityofchicago.org",
       "name": "Building Permits",
       "registryKey": "chicago",
-      "rowsUpdatedAt": 1793016350,
-      "viewLastModified": 1780080970
+      "rowsUpdatedAt": 1793102937,
+      "viewLastModified": 1793057831
     },
     "data.cityofnewyork.us:ipu4-2q9a": {
       "addressFieldGuess": null,
@@ -1607,8 +1607,8 @@
       "host": "data.cityofnewyork.us",
       "name": "DOB Permit Issuance",
       "registryKey": "nyc",
-      "rowsUpdatedAt": 1792971479,
-      "viewLastModified": 1792967450
+      "rowsUpdatedAt": 1793057172,
+      "viewLastModified": 1793053857
     },
     "data.everettwa.gov:3w3u-656c": {
       "addressFieldGuess": "siteaddress",
@@ -1747,8 +1747,8 @@
       "host": "data.everettwa.gov",
       "name": "Trakit Permits",
       "registryKey": "everett",
-      "rowsUpdatedAt": 1793009792,
-      "viewLastModified": 1793009725
+      "rowsUpdatedAt": 1793096183,
+      "viewLastModified": 1793096154
     },
     "data.sandiegocounty.gov:dyzh-7eat": {
       "addressFieldGuess": "full_address",
@@ -2189,8 +2189,8 @@
       "host": "data.seattle.gov",
       "name": "Building Permits",
       "registryKey": "seattle",
-      "rowsUpdatedAt": 1792977367,
-      "viewLastModified": 1792977209
+      "rowsUpdatedAt": 1793063843,
+      "viewLastModified": 1793063742
     },
     "data.sfgov.org:i98e-djp9": {
       "addressFieldGuess": "location",
@@ -2533,7 +2533,7 @@
       "host": "data.sfgov.org",
       "name": "Building Permits",
       "registryKey": "sf",
-      "rowsUpdatedAt": 1793018388,
+      "rowsUpdatedAt": 1793104255,
       "viewLastModified": 1790199063
     },
     "internal.open.piercecountywa.gov:nhnt-v7ka": {
