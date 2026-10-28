@@ -487,8 +487,8 @@
       "host": "data.austintexas.gov",
       "name": "Issued Construction Permits",
       "registryKey": "austin",
-      "rowsUpdatedAt": 1793103510,
-      "viewLastModified": 1793101261
+      "rowsUpdatedAt": 1793188537,
+      "viewLastModified": 1793187396
     },
     "data.cityofchicago.org:ydr8-5enu": {
       "addressFieldGuess": "location",
@@ -583,6 +583,12 @@
           "description": "Conditions or comments added by reviewing department(s)",
           "fieldName": "permit_condition",
           "name": "PERMIT_CONDITION"
+        },
+        {
+          "dataTypeName": "number",
+          "description": "The net change in residential units as a result of the permit.",
+          "fieldName": "residential_unit_change",
+          "name": "RESIDENTIAL_UNIT_CHANGE"
         },
         {
           "dataTypeName": "number",
@@ -1228,13 +1234,13 @@
         }
       ],
       "datasetId": "ydr8-5enu",
-      "description": "This dataset includes information about building permits issued by the City of Chicago from 2006 to the present, excluding permits that have been voided or revoked after issuance. Most types of permits are issued subject to payment of the applicable permit fee. Work under a permit may not begin until the applicable permit fee is paid. \n\nFor more information about building permits, see http://www.chicago.gov/permit.",
+      "description": "<b>Note, 10/27/2026:</b> We have added a RESIDENTIAL_UNIT_CHANGE column. See <a href=\"https://data.cityofchicago.org/stories/s/at9p-zwgd\" target=\"_blank\">this post</a> for more details.\n\nThis dataset includes information about building permits issued by the City of Chicago from 2006 to the present, excluding permits that have been voided or revoked after issuance. Most types of permits are issued subject to payment of the applicable permit fee. Work under a permit may not begin until the applicable permit fee is paid. \n\nFor more information about building permits, see http://www.chicago.gov/pe",
       "geoFieldGuess": "location",
       "host": "data.cityofchicago.org",
       "name": "Building Permits",
       "registryKey": "chicago",
-      "rowsUpdatedAt": 1793102937,
-      "viewLastModified": 1793057831
+      "rowsUpdatedAt": 1793189321,
+      "viewLastModified": 1793135810
     },
     "data.cityofnewyork.us:ipu4-2q9a": {
       "addressFieldGuess": null,
@@ -1607,8 +1613,8 @@
       "host": "data.cityofnewyork.us",
       "name": "DOB Permit Issuance",
       "registryKey": "nyc",
-      "rowsUpdatedAt": 1793057172,
-      "viewLastModified": 1793053857
+      "rowsUpdatedAt": 1793144267,
+      "viewLastModified": 1793140255
     },
     "data.everettwa.gov:3w3u-656c": {
       "addressFieldGuess": "siteaddress",
@@ -1747,8 +1753,8 @@
       "host": "data.everettwa.gov",
       "name": "Trakit Permits",
       "registryKey": "everett",
-      "rowsUpdatedAt": 1793096183,
-      "viewLastModified": 1793096154
+      "rowsUpdatedAt": 1793182676,
+      "viewLastModified": 1793182530
     },
     "data.sandiegocounty.gov:dyzh-7eat": {
       "addressFieldGuess": "full_address",
@@ -2189,8 +2195,8 @@
       "host": "data.seattle.gov",
       "name": "Building Permits",
       "registryKey": "seattle",
-      "rowsUpdatedAt": 1793063843,
-      "viewLastModified": 1793063742
+      "rowsUpdatedAt": 1793199307,
+      "viewLastModified": 1793199249
     },
     "data.sfgov.org:i98e-djp9": {
       "addressFieldGuess": "location",
@@ -2533,7 +2539,7 @@
       "host": "data.sfgov.org",
       "name": "Building Permits",
       "registryKey": "sf",
-      "rowsUpdatedAt": 1793104255,
+      "rowsUpdatedAt": 1793191276,
       "viewLastModified": 1790199063
     },
     "internal.open.piercecountywa.gov:nhnt-v7ka": {
