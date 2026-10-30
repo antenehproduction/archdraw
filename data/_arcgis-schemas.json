@@ -97,11 +97,11 @@
           "type": "FeatureServer"
         },
         {
-          "name": "Active_Permits",
+          "name": "Building_Address_Points",
           "type": "FeatureServer"
         },
         {
-          "name": "Building_Address_Points",
+          "name": "Active_Permits",
           "type": "FeatureServer"
         },
         {
