@@ -132,6 +132,71 @@ assert.ok(
 pass('Repealed-zone redirect (redmond R-4 → NR) works');
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Build step 1: Seattle + Shoreline NR/MUR zones + HB 1110 overlays
+// ─────────────────────────────────────────────────────────────────────────────
+
+// ── Seattle + Shoreline carry HB 1110 overlays with the right tiers ──
+assert.ok(MIDDLE_HOUSING_DB['seattle,wa'], 'MIDDLE_HOUSING_DB has seattle,wa');
+assert.ok(MIDDLE_HOUSING_DB['shoreline,wa'], 'MIDDLE_HOUSING_DB has shoreline,wa');
+assert.equal(MIDDLE_HOUSING_DB['seattle,wa'].populationTier, 'tier1', 'Seattle tier1');
+assert.equal(MIDDLE_HOUSING_DB['shoreline,wa'].populationTier, 'tier2', 'Shoreline tier2');
+for (const c of ['seattle,wa', 'shoreline,wa']) {
+  const o = MIDDLE_HOUSING_DB[c];
+  assert.equal(o.statuteName, 'WA HB 1110', `${c}: statuteName`);
+  assert.ok(o.statutoryFloor && typeof o.statutoryFloor.baseUnits === 'number', `${c}: statutoryFloor`);
+  assert.ok(o.localOrdinance && o.codeURL && o.cityImplementationURL && o.verifiedDate, `${c}: required fields`);
+}
+pass('Seattle (Tier 1) + Shoreline (Tier 2) HB 1110 overlays present and well-formed');
+
+// ── Seattle NR1/NR2/NR3 unified under CB 120993: identical 32ft / 50% standards ──
+for (const z of ['NR1', 'NR2', 'NR3']) {
+  const e = ZONING_MATRIX_DB['seattle,wa:' + z];
+  assert.ok(e, `Seattle ${z} present`);
+  assert.equal(e.maxHeightFt, 32, `Seattle ${z} height 32ft (CB 120993)`);
+  assert.equal(e.maxLotCoverage, 50, `Seattle ${z} coverage 50% (CB 120993)`);
+}
+pass('Seattle NR1/NR2/NR3 unified to CB 120993 standards (32ft, 50% coverage)');
+
+// ── Seattle NR3: HB 1110 toggle 1 -> 4 units; near transit -> 6 ──
+assert.equal(effectiveZoning('Seattle', 'NR3', { enableMiddleHousing: false }).effective.maxUnits, 1,
+  'Seattle NR3 without HB 1110 -> 1 unit');
+assert.equal(effectiveZoning('Seattle', 'NR3').effective.maxUnits, 4,
+  'Seattle NR3 with HB 1110 -> 4 units');
+assert.equal(effectiveZoning('Seattle', 'NR3', { nearMajorTransit: true }).effective.maxUnits, 6,
+  'Seattle NR3 near transit -> 6 units');
+pass('Seattle NR3: HB 1110 gives 4 units base, 6 near transit');
+
+// ── Shoreline NR present; numbering INVERTED vs Seattle (NR1 densest/tallest) ──
+for (const z of ['NR1', 'NR2', 'NR3']) {
+  assert.ok(ZONING_MATRIX_DB['shoreline,wa:' + z], `Shoreline ${z} present`);
+}
+assert.equal(ZONING_MATRIX_DB['shoreline,wa:NR1'].maxHeightFt, 35, 'Shoreline NR1 (densest) height 35ft');
+assert.equal(ZONING_MATRIX_DB['shoreline,wa:NR3'].maxHeightFt, 23, 'Shoreline NR3 (least dense) height 23ft');
+assert.ok(
+  ZONING_MATRIX_DB['shoreline,wa:NR1'].maxHeightFt > ZONING_MATRIX_DB['shoreline,wa:NR3'].maxHeightFt,
+  'Shoreline NR numbering inverted vs Seattle (NR1 taller/denser than NR3)',
+);
+pass('Shoreline NR1/NR2/NR3 present with inverted (NR1-densest) numbering');
+
+// ── Shoreline MUR-35/45/70 station-area zones present with ascending height ──
+const mur35 = ZONING_MATRIX_DB["shoreline,wa:MUR-35'"];
+const mur45 = ZONING_MATRIX_DB["shoreline,wa:MUR-45'"];
+const mur70 = ZONING_MATRIX_DB["shoreline,wa:MUR-70'"];
+assert.ok(mur35 && mur45 && mur70, 'Shoreline MUR-35/45/70 present');
+assert.equal(mur35.maxHeightFt, 35, 'MUR-35 height 35ft');
+assert.equal(mur45.maxHeightFt, 45, 'MUR-45 height 45ft');
+assert.equal(mur70.maxHeightFt, 70, 'MUR-70 height 70ft');
+pass('Shoreline MUR-35/45/70 station-area zones present (35/45/70 ft)');
+
+// ── Shoreline (Tier 2) effectiveZoning returns the conservative floor 2 -> 4 ──
+const shoNR2 = effectiveZoning('Shoreline', 'NR2');
+assert.equal(shoNR2.effective.maxUnits, 2, 'Shoreline NR2 base -> 2 (Tier 2 floor; per-zone max lives in matrix)');
+assert.equal(effectiveZoning('Shoreline', 'NR2', { nearMajorTransit: true }).effective.maxUnits, 4,
+  'Shoreline NR2 near transit -> 4 (Tier 2 statutory)');
+assert.match(shoNR2.effective.sourceOfUnits, /tier2/, 'Shoreline uses the Tier 2 overlay');
+pass('Shoreline NR2 via HB 1110 Tier 2 floor (2 base / 4 transit)');
+
+// ─────────────────────────────────────────────────────────────────────────────
 // WA statewide overlay (HB 1337 + SB 5184)
 // ─────────────────────────────────────────────────────────────────────────────
 
