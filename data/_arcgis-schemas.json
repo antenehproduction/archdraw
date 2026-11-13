@@ -130,25 +130,348 @@
       "serviceURL": "https://services6.arcgis.com/z6WYi9VRHfgwgtyW/arcgis/rest/services/Issued_Permits/FeatureServer/0"
     },
     "tacoma:hub:a12d6fbf58e4434b8ff5070c09646f19": {
-      "itemDescription": null,
+      "itemDescription": "<div style='text-align:Left;'><p><span>Accela Permit data extracted from Snowflake</span><span style='background-color:rgb(24, 26, 27); color:rgb(184, 178, 169);'>.\u00a0</span><span style='background-color:rgb(24, 26, 27); color:rgb(184, 178, 169);'>The script runs nightly and bulk overwrites data to be current with Snowflake.\u00a0\u00a0</span></p><p>Users can also search for records via the\u00a0<a href='https://aca-prod.accela.com/TACOMA/Default.aspx' target='_blank' rel='nofollow ugc noopener noreferrer'>Customer Access Portal</a>.</p><p>Contact:<br />Nathan Connors &amp; Jason Schotman (ITD)<br /><br /></p>",
       "itemId": "a12d6fbf58e4434b8ff5070c09646f19",
-      "itemName": null,
-      "itemType": null,
+      "itemName": "Accela Permit Data (Tacoma)",
+      "itemType": "Feature Service",
       "kind": "hub",
-      "layers": [],
+      "layers": [
+        {
+          "addressFieldGuess": "address_line_1",
+          "fields": [
+            {
+              "alias": "permit_number",
+              "length": 1073741822,
+              "name": "permit_number",
+              "type": "esriFieldTypeString"
+            },
+            {
+              "alias": "permit_group",
+              "length": 1073741822,
+              "name": "permit_group",
+              "type": "esriFieldTypeString"
+            },
+            {
+              "alias": "permit_type",
+              "length": 1073741822,
+              "name": "permit_type",
+              "type": "esriFieldTypeString"
+            },
+            {
+              "alias": "permit_subtype",
+              "length": 1073741822,
+              "name": "permit_subtype",
+              "type": "esriFieldTypeString"
+            },
+            {
+              "alias": "permit_category",
+              "length": 1073741822,
+              "name": "permit_category",
+              "type": "esriFieldTypeString"
+            },
+            {
+              "alias": "current_status",
+              "length": 1073741822,
+              "name": "current_status",
+              "type": "esriFieldTypeString"
+            },
+            {
+              "alias": "application_date",
+              "length": 8,
+              "name": "application_date",
+              "type": "esriFieldTypeDate"
+            },
+            {
+              "alias": "issued_date",
+              "length": 8,
+              "name": "issued_date",
+              "type": "esriFieldTypeDate"
+            },
+            {
+              "alias": "applicant_name",
+              "length": 1073741822,
+              "name": "applicant_name",
+              "type": "esriFieldTypeString"
+            },
+            {
+              "alias": "address_line_1",
+              "length": 1073741822,
+              "name": "address_line_1",
+              "type": "esriFieldTypeString"
+            },
+            {
+              "alias": "address_line_2",
+              "length": 1073741822,
+              "name": "address_line_2",
+              "type": "esriFieldTypeString"
+            },
+            {
+              "alias": "description",
+              "length": 4000,
+              "name": "description",
+              "type": "esriFieldTypeString"
+            },
+            {
+              "alias": "fees_paid",
+              "length": null,
+              "name": "fees_paid",
+              "type": "esriFieldTypeDouble"
+            },
+            {
+              "alias": "latitude",
+              "length": null,
+              "name": "latitude",
+              "type": "esriFieldTypeDouble"
+            },
+            {
+              "alias": "longitude",
+              "length": null,
+              "name": "longitude",
+              "type": "esriFieldTypeDouble"
+            },
+            {
+              "alias": "parcel_number",
+              "length": 1073741822,
+              "name": "parcel_number",
+              "type": "esriFieldTypeString"
+            },
+            {
+              "alias": "zip",
+              "length": 20,
+              "name": "zip",
+              "type": "esriFieldTypeString"
+            },
+            {
+              "alias": "valuation",
+              "length": null,
+              "name": "valuation",
+              "type": "esriFieldTypeBigInteger"
+            },
+            {
+              "alias": "housing_units",
+              "length": null,
+              "name": "housing_units",
+              "type": "esriFieldTypeSmallInteger"
+            },
+            {
+              "alias": "link",
+              "length": 1073741822,
+              "name": "link",
+              "type": "esriFieldTypeString"
+            },
+            {
+              "alias": "council_district_number",
+              "length": null,
+              "name": "council_district_number",
+              "type": "esriFieldTypeInteger"
+            },
+            {
+              "alias": "project_name",
+              "length": 1073741822,
+              "name": "project_name",
+              "type": "esriFieldTypeString"
+            },
+            {
+              "alias": "application_status_date",
+              "length": 8,
+              "name": "application_status_date",
+              "type": "esriFieldTypeDate"
+            },
+            {
+              "alias": "workflow_date",
+              "length": 8,
+              "name": "workflow_date",
+              "type": "esriFieldTypeDate"
+            },
+            {
+              "alias": "OBJECTID",
+              "length": null,
+              "name": "objectid",
+              "type": "esriFieldTypeOID"
+            },
+            {
+              "alias": "globalid",
+              "length": 38,
+              "name": "globalid",
+              "type": "esriFieldTypeGlobalID"
+            }
+          ],
+          "geometryType": "esriGeometryPoint",
+          "layerIndex": 0,
+          "name": "Accela Permit Data",
+          "type": "Feature Layer"
+        }
+      ],
       "registryKey": "tacoma",
-      "serviceURL": ""
+      "serviceURL": "https://services3.arcgis.com/SCwJH1pD8WSn5T5y/arcgis/rest/services/accela_permit_data/FeatureServer"
     },
     "tacoma:service:https://services3.arcgis.com/SCwJH1pD8WSn5T5y/arcgis/rest/services/accela_permit_data/FeatureServer/0": {
       "kind": "service",
       "layers": [
         {
-          "addressFieldGuess": null,
-          "fields": [],
-          "geometryType": null,
-          "layerIndex": null,
-          "name": null,
-          "type": null
+          "addressFieldGuess": "address_line_1",
+          "fields": [
+            {
+              "alias": "permit_number",
+              "length": 1073741822,
+              "name": "permit_number",
+              "type": "esriFieldTypeString"
+            },
+            {
+              "alias": "permit_group",
+              "length": 1073741822,
+              "name": "permit_group",
+              "type": "esriFieldTypeString"
+            },
+            {
+              "alias": "permit_type",
+              "length": 1073741822,
+              "name": "permit_type",
+              "type": "esriFieldTypeString"
+            },
+            {
+              "alias": "permit_subtype",
+              "length": 1073741822,
+              "name": "permit_subtype",
+              "type": "esriFieldTypeString"
+            },
+            {
+              "alias": "permit_category",
+              "length": 1073741822,
+              "name": "permit_category",
+              "type": "esriFieldTypeString"
+            },
+            {
+              "alias": "current_status",
+              "length": 1073741822,
+              "name": "current_status",
+              "type": "esriFieldTypeString"
+            },
+            {
+              "alias": "application_date",
+              "length": 8,
+              "name": "application_date",
+              "type": "esriFieldTypeDate"
+            },
+            {
+              "alias": "issued_date",
+              "length": 8,
+              "name": "issued_date",
+              "type": "esriFieldTypeDate"
+            },
+            {
+              "alias": "applicant_name",
+              "length": 1073741822,
+              "name": "applicant_name",
+              "type": "esriFieldTypeString"
+            },
+            {
+              "alias": "address_line_1",
+              "length": 1073741822,
+              "name": "address_line_1",
+              "type": "esriFieldTypeString"
+            },
+            {
+              "alias": "address_line_2",
+              "length": 1073741822,
+              "name": "address_line_2",
+              "type": "esriFieldTypeString"
+            },
+            {
+              "alias": "description",
+              "length": 4000,
+              "name": "description",
+              "type": "esriFieldTypeString"
+            },
+            {
+              "alias": "fees_paid",
+              "length": null,
+              "name": "fees_paid",
+              "type": "esriFieldTypeDouble"
+            },
+            {
+              "alias": "latitude",
+              "length": null,
+              "name": "latitude",
+              "type": "esriFieldTypeDouble"
+            },
+            {
+              "alias": "longitude",
+              "length": null,
+              "name": "longitude",
+              "type": "esriFieldTypeDouble"
+            },
+            {
+              "alias": "parcel_number",
+              "length": 1073741822,
+              "name": "parcel_number",
+              "type": "esriFieldTypeString"
+            },
+            {
+              "alias": "zip",
+              "length": 20,
+              "name": "zip",
+              "type": "esriFieldTypeString"
+            },
+            {
+              "alias": "valuation",
+              "length": null,
+              "name": "valuation",
+              "type": "esriFieldTypeBigInteger"
+            },
+            {
+              "alias": "housing_units",
+              "length": null,
+              "name": "housing_units",
+              "type": "esriFieldTypeSmallInteger"
+            },
+            {
+              "alias": "link",
+              "length": 1073741822,
+              "name": "link",
+              "type": "esriFieldTypeString"
+            },
+            {
+              "alias": "council_district_number",
+              "length": null,
+              "name": "council_district_number",
+              "type": "esriFieldTypeInteger"
+            },
+            {
+              "alias": "project_name",
+              "length": 1073741822,
+              "name": "project_name",
+              "type": "esriFieldTypeString"
+            },
+            {
+              "alias": "application_status_date",
+              "length": 8,
+              "name": "application_status_date",
+              "type": "esriFieldTypeDate"
+            },
+            {
+              "alias": "workflow_date",
+              "length": 8,
+              "name": "workflow_date",
+              "type": "esriFieldTypeDate"
+            },
+            {
+              "alias": "OBJECTID",
+              "length": null,
+              "name": "objectid",
+              "type": "esriFieldTypeOID"
+            },
+            {
+              "alias": "globalid",
+              "length": 38,
+              "name": "globalid",
+              "type": "esriFieldTypeGlobalID"
+            }
+          ],
+          "geometryType": "esriGeometryPoint",
+          "layerIndex": 0,
+          "name": "Accela Permit Data",
+          "type": "Feature Layer"
         }
       ],
       "registryKey": "tacoma",
