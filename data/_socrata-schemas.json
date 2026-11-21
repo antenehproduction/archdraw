@@ -487,8 +487,8 @@
       "host": "data.austintexas.gov",
       "name": "Issued Construction Permits",
       "registryKey": "austin",
-      "rowsUpdatedAt": 1795182620,
-      "viewLastModified": 1795178213
+      "rowsUpdatedAt": 1795265733,
+      "viewLastModified": 1795264633
     },
     "data.cityofchicago.org:ydr8-5enu": {
       "addressFieldGuess": "location",
@@ -1239,7 +1239,7 @@
       "host": "data.cityofchicago.org",
       "name": "Building Permits",
       "registryKey": "chicago",
-      "rowsUpdatedAt": 1795180004,
+      "rowsUpdatedAt": 1795267766,
       "viewLastModified": 1793135810
     },
     "data.cityofnewyork.us:ipu4-2q9a": {
@@ -1613,8 +1613,8 @@
       "host": "data.cityofnewyork.us",
       "name": "DOB Permit Issuance",
       "registryKey": "nyc",
-      "rowsUpdatedAt": 1795140639,
-      "viewLastModified": 1795137341
+      "rowsUpdatedAt": 1795245198,
+      "viewLastModified": 1795238508
     },
     "data.everettwa.gov:3w3u-656c": {
       "addressFieldGuess": "siteaddress",
@@ -1753,8 +1753,8 @@
       "host": "data.everettwa.gov",
       "name": "Trakit Permits",
       "registryKey": "everett",
-      "rowsUpdatedAt": 1795173430,
-      "viewLastModified": 1795173368
+      "rowsUpdatedAt": 1795259767,
+      "viewLastModified": 1795259747
     },
     "data.sandiegocounty.gov:dyzh-7eat": {
       "addressFieldGuess": "full_address",
@@ -2195,8 +2195,8 @@
       "host": "data.seattle.gov",
       "name": "Building Permits",
       "registryKey": "seattle",
-      "rowsUpdatedAt": 1795141123,
-      "viewLastModified": 1795140634
+      "rowsUpdatedAt": 1795227844,
+      "viewLastModified": 1795227322
     },
     "data.sfgov.org:i98e-djp9": {
       "addressFieldGuess": "location",
@@ -2539,7 +2539,7 @@
       "host": "data.sfgov.org",
       "name": "Building Permits",
       "registryKey": "sf",
-      "rowsUpdatedAt": 1795181328,
+      "rowsUpdatedAt": 1795267568,
       "viewLastModified": 1790199063
     },
     "internal.open.piercecountywa.gov:nhnt-v7ka": {
@@ -2751,7 +2751,7 @@
       "host": "internal.open.piercecountywa.gov",
       "name": "Permits - Pierce County",
       "registryKey": "pierce_county_unincorp",
-      "rowsUpdatedAt": 1794604305,
+      "rowsUpdatedAt": 1795196268,
       "viewLastModified": 1789501838
     }
   }
