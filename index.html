@@ -858,7 +858,7 @@ async function callAIWithImg(prompt,b64,mime,sys,maxTok=1000){
 }
 
 // ═══ CONNECTION ═══
-function adiEscapeHtml(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]}
+function adiEscapeHtml(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c])}
 function setBanner(state,title,body,retry=false){
   const b=document.getElementById('conn-banner');b.className=`${state} cb-${state}`;
   document.getElementById('conn-title').innerHTML=title;document.getElementById('conn-body').innerHTML=body;
