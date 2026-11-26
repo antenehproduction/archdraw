@@ -487,8 +487,8 @@
       "host": "data.austintexas.gov",
       "name": "Issued Construction Permits",
       "registryKey": "austin",
-      "rowsUpdatedAt": 1777118096,
-      "viewLastModified": 1777116968
+      "rowsUpdatedAt": 1795698962,
+      "viewLastModified": 1795696534
     },
     "data.cityofchicago.org:ydr8-5enu": {
       "addressFieldGuess": "location",
@@ -583,6 +583,12 @@
           "description": "Conditions or comments added by reviewing department(s)",
           "fieldName": "permit_condition",
           "name": "PERMIT_CONDITION"
+        },
+        {
+          "dataTypeName": "number",
+          "description": "The net change in residential units as a result of the permit.",
+          "fieldName": "residential_unit_change",
+          "name": "RESIDENTIAL_UNIT_CHANGE"
         },
         {
           "dataTypeName": "number",
@@ -1228,13 +1234,13 @@
         }
       ],
       "datasetId": "ydr8-5enu",
-      "description": "<b>Note, 10/15/2025:</b> We have added a PERMIT_CONDITION column.\n\nThis dataset includes information about building permits issued by the City of Chicago from 2006 to the present, excluding permits that have been voided or revoked after issuance. Most types of permits are issued subject to payment of the applicable permit fee. Work under a permit may not begin until the applicable permit fee is paid. \n\nFor more information about building permits, see http://www.chicago.gov/permit.",
+      "description": "<b>Note, 10/27/2026:</b> We have added a RESIDENTIAL_UNIT_CHANGE column. See <a href=\"https://data.cityofchicago.org/stories/s/at9p-zwgd\" target=\"_blank\">this post</a> for more details.\n\nThis dataset includes information about building permits issued by the City of Chicago from 2006 to the present, excluding permits that have been voided or revoked after issuance. Most types of permits are issued subject to payment of the applicable permit fee. Work under a permit may not begin until the applicable permit fee is paid. \n\nFor more information about building permits, see http://www.chicago.gov/pe",
       "geoFieldGuess": "location",
       "host": "data.cityofchicago.org",
       "name": "Building Permits",
       "registryKey": "chicago",
-      "rowsUpdatedAt": 1777118872,
-      "viewLastModified": 1773951276
+      "rowsUpdatedAt": 1795698557,
+      "viewLastModified": 1793135810
     },
     "data.cityofnewyork.us:ipu4-2q9a": {
       "addressFieldGuess": null,
@@ -1554,18 +1560,6 @@
         },
         {
           "dataTypeName": "text",
-          "description": "Owner's Phone #",
-          "fieldName": "owner_s_phone__",
-          "name": "Owner's Phone #"
-        },
-        {
-          "dataTypeName": "text",
-          "description": "Date when query is run and pushed to Open Data. Could be used to differentiate report dates.",
-          "fieldName": "dobrundate",
-          "name": "DOBRunDate"
-        },
-        {
-          "dataTypeName": "text",
           "description": null,
           "fieldName": "permit_si_no",
           "name": "PERMIT_SI_NO"
@@ -1595,10 +1589,22 @@
           "name": "CENSUS_TRACT"
         },
         {
+          "dataTypeName": "number",
+          "description": null,
+          "fieldName": "bbl",
+          "name": "BBL"
+        },
+        {
           "dataTypeName": "text",
           "description": null,
           "fieldName": "gis_nta_name",
           "name": "NTA_NAME"
+        },
+        {
+          "dataTypeName": "calendar_date",
+          "description": "Date when query is run and pushed to Open Data. Could be used to differentiate report dates.",
+          "fieldName": "dobrundate",
+          "name": "DOBRunDate"
         }
       ],
       "datasetId": "ipu4-2q9a",
@@ -1607,8 +1613,8 @@
       "host": "data.cityofnewyork.us",
       "name": "DOB Permit Issuance",
       "registryKey": "nyc",
-      "rowsUpdatedAt": 1777147576,
-      "viewLastModified": 1764798554
+      "rowsUpdatedAt": 1795661096,
+      "viewLastModified": 1795735852
     },
     "data.everettwa.gov:3w3u-656c": {
       "addressFieldGuess": "siteaddress",
@@ -1747,8 +1753,8 @@
       "host": "data.everettwa.gov",
       "name": "Trakit Permits",
       "registryKey": "everett",
-      "rowsUpdatedAt": 1777112145,
-      "viewLastModified": 1777112127
+      "rowsUpdatedAt": 1795691762,
+      "viewLastModified": 1795691730
     },
     "data.sandiegocounty.gov:dyzh-7eat": {
       "addressFieldGuess": "full_address",
@@ -2175,6 +2181,12 @@
           "description": "The type of created housing created such as single-family rebuilds, pre-approved DADUs, 'middle' multifamily housing, and 'large' multifamily housing.",
           "fieldName": "housingcategory",
           "name": "HousingCategory"
+        },
+        {
+          "dataTypeName": "text",
+          "description": "A Development Site, referenced using a Development Site Number, is a property boundary that SDCI uses to apply code standards. A Development Site may overlap with one or more King County tax parcels.",
+          "fieldName": "development_site",
+          "name": "Development Site"
         }
       ],
       "datasetId": "76t5-zqzr",
@@ -2183,8 +2195,8 @@
       "host": "data.seattle.gov",
       "name": "Building Permits",
       "registryKey": "seattle",
-      "rowsUpdatedAt": 1777079187,
-      "viewLastModified": 1777079099
+      "rowsUpdatedAt": 1795659016,
+      "viewLastModified": 1795658887
     },
     "data.sfgov.org:i98e-djp9": {
       "addressFieldGuess": "location",
@@ -2267,6 +2279,18 @@
           "description": "Description of permit scope of work",
           "fieldName": "description",
           "name": "Description"
+        },
+        {
+          "dataTypeName": "text",
+          "description": "Indicates the primary priority to be used for SLA",
+          "fieldName": "primary_priority",
+          "name": "primary_priority"
+        },
+        {
+          "dataTypeName": "text",
+          "description": "List all priorities assigned to the permit",
+          "fieldName": "all_priority_types",
+          "name": "all_priority_types"
         },
         {
           "dataTypeName": "text",
@@ -2515,12 +2539,12 @@
       "host": "data.sfgov.org",
       "name": "Building Permits",
       "registryKey": "sf",
-      "rowsUpdatedAt": 1777120178,
-      "viewLastModified": 1755626161
+      "rowsUpdatedAt": 1795700820,
+      "viewLastModified": 1790199063
     },
     "internal.open.piercecountywa.gov:nhnt-v7ka": {
       "addressFieldGuess": "siteaddress",
-      "category": null,
+      "category": "Maps and Geospatial",
       "columns": [
         {
           "dataTypeName": "point",
@@ -2536,187 +2560,187 @@
         },
         {
           "dataTypeName": "number",
-          "description": null,
+          "description": "A unique, system generated number that identifies the application/permit.",
           "fieldName": "applicationnumber",
           "name": "applicationNumber"
         },
         {
           "dataTypeName": "text",
-          "description": null,
+          "description": "Text that describes the type of application/permit.",
           "fieldName": "applicationtype",
           "name": "applicationType"
         },
         {
           "dataTypeName": "text",
-          "description": null,
+          "description": "Text that describes the current status of the application/permit. This provides a general description of where the application/permit is in the process.",
           "fieldName": "applicationstatus",
           "name": "applicationStatus"
         },
         {
           "dataTypeName": "text",
-          "description": null,
+          "description": "Tax parcel number that the application/permit was associated with at time the application was submitted. Tax Parcel numbers in this permit data may not match the Assessor-Treasurer's tax parcel spatial data in the permit point location. An ",
           "fieldName": "parcelnumber",
           "name": "parcelNumber"
         },
         {
           "dataTypeName": "text",
-          "description": null,
+          "description": "Text that describes the type of work being permitted. It is used to classify and group building permits for reporting purposes.",
           "fieldName": "worktype",
           "name": "workType"
         },
         {
           "dataTypeName": "text",
-          "description": null,
+          "description": "Text that describes the type of building and/or building code construction type being permitted. It is used to classify and group building permits for reporting purposes as well as calculating the valuation.",
           "fieldName": "buildingtype",
           "name": "buildingType"
         },
         {
           "dataTypeName": "text",
-          "description": null,
+          "description": "Text that describes the type of dwelling being permitted (standard, senior housing, ADU, etc.). It is used to classify and group building permits for reporting purposes.",
           "fieldName": "housingtype",
           "name": "housingType"
         },
         {
           "dataTypeName": "number",
-          "description": null,
+          "description": "The sum of the various square footage entries (1st floor, 2nd floor, garage, etc.) that exist on the application/permit.",
           "fieldName": "sqfttotal",
           "name": "sqFtTotal"
         },
         {
           "dataTypeName": "number",
-          "description": null,
+          "description": "The valuation in dollars of the work or structure being permitted. It is used to calculate fees and for reporting purposes.",
           "fieldName": "buildingvaluation",
           "name": "buildingValuation"
         },
         {
           "dataTypeName": "text",
-          "description": null,
+          "description": "The number of dwelling units in the structure that the application/permit is adding, removing, or modifying. It is used for reporting purposes.",
           "fieldName": "dwellingunits",
           "name": "dwellingUnits"
         },
         {
           "dataTypeName": "text",
-          "description": null,
+          "description": "The number of stories in the structure that the application/permit is adding, removing, or modifying. It is used for reporting purposes.",
           "fieldName": "stories",
           "name": "stories"
         },
         {
           "dataTypeName": "text",
-          "description": null,
+          "description": "The name of the power company, as identified by the applicant, providing electricity to the structure that the application/permit is adding, removing, or modifying. It is used for reporting purposes.",
           "fieldName": "powercompany",
           "name": "powerCompany"
         },
         {
           "dataTypeName": "text",
-          "description": null,
+          "description": "The method of sewage disposal, if applicable, used by the structure that the application/permit is adding, removing, or modifying. It is used for reporting purposes and to potentially trigger other types of review.",
           "fieldName": "sewagedisposal",
           "name": "sewageDisposal"
         },
         {
           "dataTypeName": "number",
-          "description": null,
+          "description": "The total number of acres impacted by a proposed land use or platting application. It is used for reporting/grouping purposes as well as some fee calculations.",
           "fieldName": "acreage",
           "name": "acreage"
         },
         {
           "dataTypeName": "number",
-          "description": null,
+          "description": "The total value, in dollars, of a proposed land use action within a designated shoreline environment. It is used for reporting/grouping purposes as well as some fee calculations.",
           "fieldName": "projectvalue",
           "name": "projectValue"
         },
         {
           "dataTypeName": "number",
-          "description": null,
+          "description": "A system generated number that groups one or more application/permit into a single project. For example a project might have a building permit and a site development permit, both of them will have a different applicationNumber but the same ",
           "fieldName": "projectid",
           "name": "projectId"
         },
         {
           "dataTypeName": "text",
-          "description": null,
+          "description": "Text that groups the various applicationType by the code or discipline that is responsible for regulating the activity. Some examples include: application types for land use or platting activity will have a value of \"PLAN\", application type",
           "fieldName": "applicationdept",
           "name": "applicationDept"
         },
         {
           "dataTypeName": "date",
-          "description": null,
+          "description": "A date/time that indicates when the application was formally accepted and triggered the review process to start.",
           "fieldName": "applicationdate",
           "name": "applicationDate"
         },
         {
           "dataTypeName": "date",
-          "description": null,
+          "description": "A date/time that indicates when the materials needed to process an application was received by the department. This triggers the intake process to start.",
           "fieldName": "submittaldate",
           "name": "submittalDate"
         },
         {
           "dataTypeName": "date",
-          "description": null,
+          "description": "A date/time that indicates when an application enters the \"Approved\" status. This indicates an end to the review process.",
           "fieldName": "approvaldate",
           "name": "approvalDate"
         },
         {
           "dataTypeName": "date",
-          "description": null,
+          "description": "A date/time that indicates when an application enteres the \"Denied\" status. This indicates an end to the review process.",
           "fieldName": "denialdate",
           "name": "denialDate"
         },
         {
           "dataTypeName": "date",
-          "description": null,
+          "description": "A date/time that indicates when an application enters the \"Issued\" status. This indicates a beginning of the inspection phase of a project.",
           "fieldName": "issueddate",
           "name": "issuedDate"
         },
         {
           "dataTypeName": "date",
-          "description": null,
+          "description": "A date/time that indicates when an application enters the \"Final\" status. This indicates the completion of a construction type project, from the County perspective this project is done.",
           "fieldName": "finaldate",
           "name": "finalDate"
         },
         {
           "dataTypeName": "text",
-          "description": null,
+          "description": "Text that provides a short description of the project.",
           "fieldName": "workdescription",
           "name": "workDescription"
         },
         {
           "dataTypeName": "text",
-          "description": null,
+          "description": "Text that provides the physical street address of the project covered by the application/permit.",
           "fieldName": "siteaddress",
           "name": "siteAddress"
         },
         {
           "dataTypeName": "text",
-          "description": null,
+          "description": "The name of the project.",
           "fieldName": "projectname",
           "name": "projectName"
         },
         {
           "dataTypeName": "number",
-          "description": null,
+          "description": "X coordinate in Washington State plane South HARN",
           "fieldName": "xcoord",
           "name": "XCoord"
         },
         {
           "dataTypeName": "number",
-          "description": null,
+          "description": "Y coordinate in Washington State plane South HARN",
           "fieldName": "ycoord",
           "name": "YCoord"
         },
         {
           "dataTypeName": "text",
-          "description": null,
+          "description": "Y/N text that indicates if the project is on a public water system or not.",
           "fieldName": "publicwater",
           "name": "publicWater"
         },
         {
           "dataTypeName": "text",
-          "description": null,
+          "description": "URL or website link to the application/permit in the public facing Online Permits application. Online Permits is a public web application and no user login is required. The URL is generated using the applicationNumber field.",
           "fieldName": "urlonlinepermits",
           "name": "urlOnlinePermits"
         },
         {
           "dataTypeName": "text",
-          "description": null,
+          "description": "URL or website link to the application/permit in the internal PALS+. PALS+ is an internal application and requires County employee credentials to access. The URL is generated using the applicationNumber field.",
           "fieldName": "lotssubmitted",
           "name": "lotsSubmitted"
         }
@@ -2727,8 +2751,8 @@
       "host": "internal.open.piercecountywa.gov",
       "name": "Permits - Pierce County",
       "registryKey": "pierce_county_unincorp",
-      "rowsUpdatedAt": 1777123148,
-      "viewLastModified": 1749281817
+      "rowsUpdatedAt": 1795196268,
+      "viewLastModified": 1789501838
     }
   }
 }
