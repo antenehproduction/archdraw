@@ -4225,7 +4225,11 @@ async function adiInitAuth() {
         setBanner('ok','✓ Local mode','Anthropic key loaded from .env — enter address to analyze.');
         document.getElementById('run-btn').disabled=false;
         return;
-      }}
+      }
+      // server.js is running but no key in .env — bypass auth modal, use BYOK
+      bootstrapStoredKey().then(ok=>{if(!ok)probeConnection()}).catch(()=>probeConnection());
+      return;
+      }
     }catch(_){}
   }
   const A = window.ADIAuth;

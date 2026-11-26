@@ -21,9 +21,21 @@ const url   = require('url');
 
 // ─── Load .env ──────────────────────────────────────────────────────────────
 try {
-  fs.readFileSync(path.join(__dirname, '.env'), 'utf8').split('\n').forEach(line => {
-    const m = line.match(/^([A-Z_][A-Z0-9_]*)=(.+)$/);
-    if (m) process.env[m[1]] = m[2].trim();
+  let raw = fs.readFileSync(path.join(__dirname, '.env'), 'utf8');
+  // Strip UTF-8 BOM that Windows Notepad adds
+  if (raw.charCodeAt(0) === 0xFEFF) raw = raw.slice(1);
+  raw.split(/\r?\n/).forEach(line => {
+    if (!line || line.startsWith('#')) return;
+    const eq = line.indexOf('=');
+    if (eq < 1) return;
+    const key = line.slice(0, eq).trim();
+    let val   = line.slice(eq + 1).trim();
+    // Strip surrounding quotes: "value" or 'value'
+    if ((val.startsWith('"') && val.endsWith('"')) ||
+        (val.startsWith("'") && val.endsWith("'"))) {
+      val = val.slice(1, -1);
+    }
+    if (key && val) process.env[key] = val;
   });
 } catch (_) {}
 
