@@ -17,7 +17,7 @@ window.PERMIT_PORTAL_REGISTRY = {
     searchByAddress: (addr) =>
       `https://data.seattle.gov/resource/76t5-zqzr.json?$where=upper(originaladdress1) like '%25${encodeURIComponent(addr.toUpperCase())}%25'&$limit=20`,
     radiusSearch: (lat, lon, miles = 2) =>
-      `https://data.seattle.gov/resource/76t5-zqzr.json?$where=within_circle(point,${lat},${lon},${miles * 1609.34})&$limit=50`,
+      `https://data.seattle.gov/resource/76t5-zqzr.json?$where=within_circle(location1,${lat},${lon},${miles * 1609.34})&$limit=50`,
   },
   sf: {
     city: 'San Francisco', state: 'CA',
