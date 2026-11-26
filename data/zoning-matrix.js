@@ -32,6 +32,24 @@ window.ZONING_MATRIX_DB = {
     densityBonus: null, sb9Eligible: false,
     verifiedDate: '2025-01',
   },
+  'seattle,wa:NR3': {
+    jurisdiction: 'Seattle', state: 'WA', district: 'NR3',
+    fullName: 'Neighborhood Residential 3',
+    codeURL: 'https://library.municode.com/wa/seattle/codes/municipal_code?nodeId=TIT23LAUSCO',
+    frontSetback: 15, rearSetback: 25, leftSetback: 5, rightSetback: 5,
+    maxHeightFt: 30, maxStories: 2, maxFAR: 0.5, maxLotCoverage: 35,
+    parkingPerUnit: 1, aduAllowed: true, aduMaxSqFt: 1000,
+    densityBonus: null, sb9Eligible: false,
+    notes: 'Large-lot SFR tier (legacy SF 9600 equivalent). Same height/setbacks as NR1; slightly lower coverage than NR2.',
+    verifiedDate: '2025-01',
+  },
+  // Seattle legacy zone aliases — renamed 2022 Comprehensive Plan update
+  'seattle,wa:SF 5000': { _replacedBy: 'seattle,wa:NR1' },
+  'seattle,wa:SF 7200': { _replacedBy: 'seattle,wa:NR2' },
+  'seattle,wa:SF 9600': { _replacedBy: 'seattle,wa:NR3' },
+  'seattle,wa:SF5000':  { _replacedBy: 'seattle,wa:NR1' },
+  'seattle,wa:SF7200':  { _replacedBy: 'seattle,wa:NR2' },
+  'seattle,wa:SF9600':  { _replacedBy: 'seattle,wa:NR3' },
 
   // ── Shoreline, WA ──
   'shoreline,wa:R-6': {

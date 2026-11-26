@@ -1054,7 +1054,9 @@ function drawMapOverlay(lat,lon,z){
 async function fetchOSMBuildings(lat,lon){
   try{
     const q=`[out:json][timeout:12];(way["building"](around:150,${lat},${lon}););out geom;`;
-    const r=await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(q)}`);
+    const qEnc=encodeURIComponent(q);
+    let r=await fetch(`https://overpass-api.de/api/interpreter?data=${qEnc}`);
+    if(!r.ok) r=await fetch(`https://overpass.kumi.systems/api/interpreter?data=${qEnc}`);
     const d=await r.json();
     S.osmBuildings=d.elements||[];
     L.info(`OSM: ${S.osmBuildings.length} existing buildings`);
@@ -1248,8 +1250,9 @@ async function runPhase_zone(){
     // ── ZONING_MATRIX_DB override — verified development standards ──
     if(window.ZONING_MATRIX_DB&&window.zoningMatrixKey){
       const mk=window.zoningMatrixKey(z.jurisdiction,z.state,z.zoningDistrict);
-      const verified=window.ZONING_MATRIX_DB[mk];
-      if(verified){
+      let verified=window.ZONING_MATRIX_DB[mk];
+      if(verified?._replacedBy) verified=window.ZONING_MATRIX_DB[verified._replacedBy];
+      if(verified&&!verified._replacedBy){
         L.info(`Zoning matrix hit: ${mk} \u2192 overriding AI values with verified ${verified.verifiedDate}`);
         // Override numeric fields only; keep AI text for narrative
         ['frontSetback','rearSetback','leftSetback','rightSetback','maxHeightFt','maxStories','maxFAR','maxLotCoverage','parkingPerUnit','aduAllowed','aduMaxSqFt'].forEach(f=>{if(verified[f]!==undefined)z[f]=verified[f]});
@@ -1344,7 +1347,9 @@ async function runPhase_record(){
   if(S.lat&&S.lon){
     try{
       const q=`[out:json][timeout:15];(way["building"](around:80,${S.lat},${S.lon});way["landuse"](around:80,${S.lat},${S.lon});node["addr:housenumber"](around:30,${S.lat},${S.lon}););out geom tags;`;
-      const r=await fetch(`https://overpass-api.de/api/interpreter?data=${encodeURIComponent(q)}`);
+      const qEnc=encodeURIComponent(q);
+      let r=await fetch(`https://overpass-api.de/api/interpreter?data=${qEnc}`);
+      if(!r.ok) r=await fetch(`https://overpass.kumi.systems/api/interpreter?data=${qEnc}`);
       const d=await r.json();S.osmBuildings=d.elements||[];
       if(S.osmBuildings.length){
         osmFound=true;
@@ -1396,27 +1401,30 @@ async function runPhase_record(){
           // Build the query URL — request Esri JSON (more universally supported than
           // f=geojson on older ArcGIS Server installations like King Co WA).
           // Geometry comes back as Esri rings; we normalize to GeoJSON-style below.
-          // distance=20m buffer snaps geocoded street-centerline points (Nominatim
-          // typically returns ROW points) to the adjacent parcel polygon. 20m is
-          // wider than the typical street ROW (~12m to centerline) and tighter
-          // than residential lot widths so a single parcel matches, not two
-          // adjacent. Same pattern proven by scripts/smoke-snohomish-parcels.py.
-          const q=`?geometry=${S.lon},${S.lat}&geometryType=esriGeometryPoint&spatialRel=esriSpatialRelIntersects&distance=20&units=esriSRUnit_Meter&outFields=*&returnGeometry=true&f=json&inSR=4326&outSR=4326`;
-          const url=reg.parcelQuery+(reg.parcelQuery.includes('?')?q.replace(/^\?/,'&'):q);
-          try{
-            const rr=await Promise.race([proxyFetch(`/arcgis?url=${encodeURIComponent(url)}`,url),new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),8000))]);
-            // Read body as text first so we can give a useful error if it's not JSON
+          // Strategy: exact point-on-parcel first (handles parcels containing the
+          // geocoded point), fall back to 20m buffer for Nominatim street-
+          // centerline geocodes. If the buffer returns multiple parcels, prefer
+          // the one whose ADDR_FULL starts with the search address house number.
+          const fetchParcels=async(distParam)=>{
+            const q=`?geometry=${S.lon},${S.lat}&geometryType=esriGeometryPoint&spatialRel=esriSpatialRelIntersects${distParam}&outFields=*&returnGeometry=true&f=json&inSR=4326&outSR=4326`;
+            const pUrl=reg.parcelQuery+(reg.parcelQuery.includes('?')?q.replace(/^\?/,'&'):q);
+            const rr=await Promise.race([proxyFetch(`/arcgis?url=${encodeURIComponent(pUrl)}`,pUrl),new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),8000))]);
             const txt=await rr.text();
             let dd;try{dd=JSON.parse(txt)}catch(_){throw new Error(`non-JSON response (status ${rr.status}): ${txt.substring(0,80)}`)}
-            // Handle our proxy's structured upstream errors gracefully
-            if(dd?.error){throw new Error(`proxy_${dd.error}: ${dd.upstreamStatus||rr.status} ${(dd.preview||'').substring(0,60)}`)}
-            const f=dd.features?.[0];
+            if(dd?.error){const eMsg=typeof dd.error==='string'?`proxy_${dd.error}: ${dd.upstreamStatus||rr.status} ${(dd.preview||'').substring(0,60)}`:`ArcGIS error ${dd.error.code||''}: ${dd.error.message||JSON.stringify(dd.error)}`;throw new Error(eMsg)}
+            return dd.features||[];
+          };
+          try{
+            let feats=await fetchParcels('');
+            if(!feats.length) feats=await fetchParcels('&distance=20&units=esriSRUnit_Meter');
+            let f=feats[0];
+            if(feats.length>1&&S.addr){const hn=(S.addr.match(/^\d+/)||[])[0];if(hn){const m=feats.find(ft=>{const a=(ft.properties||ft.attributes||{}).ADDR_FULL||'';return String(a).startsWith(hn)});if(m)f=m;}}
             if(f){
               const attrs=f.properties||f.attributes||{};
               const fmap=reg.fields||{};
               const apn=attrs[fmap.apn]||attrs.APN||attrs.PARCELNO||attrs.PIN;
-              const use=attrs[fmap.useClass]||attrs.USE_CLASS;
-              const yr=attrs[fmap.yearBuilt]||attrs.YearBuilt;
+              const use=String(attrs[fmap.useClass]||attrs.USE_CLASS||'').trim()||undefined;
+              const yr=fmap.yearBuilt?attrs[fmap.yearBuilt]:attrs.YearBuilt;
               findings.push(`\u2705 **Verified County Assessor Record** (${reg.county} Co, ${reg.state}): APN ${apn||'—'}, Use: ${use||'—'}${yr?`, Year Built: ${yr}`:''}`);
               S.countyRecord={...(S.countyRecord||{}),esri:attrs,verified:true,source:`${reg.county} Co ArcGIS`,assessorURL:reg.assessorURL};
               // Normalize geometry: Esri returns {rings:[[[x,y],...]]}, GeoJSON returns {coordinates:[[[x,y],...]]}
