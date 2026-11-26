@@ -23,9 +23,9 @@ window.COUNTY_REGISTRY = {
     state: 'WA', county: 'King',
     assessorURL: 'https://gismaps.kingcounty.gov/',
     parcelQuery: 'https://gismaps.kingcounty.gov/arcgis/rest/services/Property/KingCo_PropertyInfo/MapServer/2/query',
-    fields: { apn: 'PIN', lotArea: 'LOTSQFT', useClass: 'PREUSE_DESC', yearBuilt: null },
+    fields: { apn: 'PIN', lotArea: 'LOTSQFT', useClass: 'PREUSE_DESC', yearBuilt: null, zoning: 'KCA_ZONING' },
     corsOk: true,
-    notes: 'King Co ArcGIS PropertyInfo layer 2 (replaces stale KingCo_Parcels_Public/0). PREUSE_DESC may have trailing spaces — trim() applied. KCA_ZONING available as bonus field.',
+    notes: 'King Co ArcGIS PropertyInfo layer 2 (replaces stale KingCo_Parcels_Public/0). PREUSE_DESC may have trailing spaces — trim() applied. KCA_ZONING = King County zoning code.',
   },
   'WA:Pierce': {
     state: 'WA', county: 'Pierce',

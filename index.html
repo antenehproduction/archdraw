@@ -1220,6 +1220,49 @@ async function startAnalysis(){
   }
 }
 
+// Pre-fetches the county parcel record so runPhase_zone can seed the AI prompt
+// with real lot area and zoning code before the AI makes its guess.
+// Uses S._geoAddr (set by Nominatim during site phase).
+async function fetchCountyParcelData(){
+  if(!S.lat||!S.lon||!window.COUNTY_REGISTRY||!window.countyRegistryKey)return null;
+  try{
+    const gAddr=S._geoAddr||{};
+    const county=String(gAddr.county||'');
+    const state=normalizeState(gAddr.state||'');
+    if(!county||!state)return null;
+    const key=window.countyRegistryKey(county,state);
+    const reg=window.COUNTY_REGISTRY[key];
+    if(!reg){L.info(`County pre-fetch: no registry entry for "${key}"`);return null;}
+    L.info(`County pre-fetch: ${key}`);
+    const doFetch=async(distParam)=>{
+      const q=`?geometry=${S.lon},${S.lat}&geometryType=esriGeometryPoint&spatialRel=esriSpatialRelIntersects${distParam}&outFields=*&returnGeometry=true&f=json&inSR=4326&outSR=4326`;
+      const pUrl=reg.parcelQuery+(reg.parcelQuery.includes('?')?q.replace(/^\?/,'&'):q);
+      const rr=await Promise.race([proxyFetch(`/arcgis?url=${encodeURIComponent(pUrl)}`,pUrl),new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),10000))]);
+      const txt=await rr.text();
+      let dd;try{dd=JSON.parse(txt)}catch(_){throw new Error('non-JSON: '+txt.substring(0,60))}
+      if(dd?.error){throw new Error(typeof dd.error==='string'?`proxy_${dd.error}`:(dd.error.message||JSON.stringify(dd.error)))}
+      return dd.features||[];
+    };
+    let feats=await doFetch('');
+    if(!feats.length)feats=await doFetch('&distance=20&units=esriSRUnit_Meter');
+    if(!feats.length){L.info('County pre-fetch: 0 features');return null;}
+    let f=feats[0];
+    if(feats.length>1&&S.addr){const hn=(S.addr.match(/^\d+/)||[])[0];if(hn){const m=feats.find(ft=>{const a=(ft.properties||ft.attributes||{}).ADDR_FULL||'';return String(a).startsWith(hn)});if(m)f=m;}}
+    const attrs=f.properties||f.attributes||{};
+    const fmap=reg.fields||{};
+    const result={
+      apn:attrs[fmap.apn]||attrs.APN||attrs.PARCELNO||attrs.PIN,
+      lotSqft:Number(attrs[fmap.lotArea])||null,
+      zoning:String(attrs[fmap.zoning]||'').trim()||null,
+      useClass:String(attrs[fmap.useClass]||attrs.USE_CLASS||'').trim()||null,
+      attrs,fmap,reg,f,
+      source:`${reg.county} Co ArcGIS`,
+    };
+    L.info(`County pre-fetch result: APN=${result.apn} lotSqft=${result.lotSqft} zoning=${result.zoning} use=${result.useClass}`);
+    return result;
+  }catch(e){L.warn('County parcel pre-fetch failed:',e.message.substring(0,80));return null;}
+}
+
 async function runPhase_site(){
   L.info('--- Phase 1: Site ---');phSet('site','active');setOvl('SITE RESEARCH','Identifying parcel, jurisdiction & conditions');const t=Date.now();
   try{
@@ -1238,6 +1281,9 @@ async function runPhase_site(){
         L.info(`Geocoded: ${S.lat.toFixed(5)}, ${S.lon.toFixed(5)} — ${JSON.stringify(S._geoAddr)}`);
       }
     }catch(e){L.warn('Geocode failed:',e.message)}
+    // Pre-fetch county parcel so runPhase_zone gets real lot/zone data before the AI call
+    S._countyParcel=null;
+    if(S.lat&&S.lon){try{S._countyParcel=await fetchCountyParcelData()}catch(_){}}
     phSet('site','done',`${((Date.now()-t)/1000).toFixed(1)}s`);addFind('site','📍 Site Identification',fmt(res));S._siteRes=res;phaseRunners.site=runPhase_site;
   }catch(e){phSet('site','error',`${((Date.now()-t)/1000).toFixed(1)}s`);addFind('site','📍 Site',`<div class="ebox">${e.message}</div>`);throw e}
 }
@@ -1245,7 +1291,9 @@ async function runPhase_site(){
 async function runPhase_zone(){
   L.info('--- Phase 2: Zoning ---');phSet('zone','active');setOvl('ZONING','Pulling setbacks, FAR, height limits, ADU rights');const t=Date.now();
   try{
-    const z=await callJSON([{role:'user',content:`For property "${S.addr}", return ONLY JSON with ACCURATE values for this EXACT address "${S.addr}" — do NOT use placeholder/example values:\n{"lotWidth":0,"lotDepth":0,"frontSetback":0,"rearSetback":0,"leftSetback":0,"rightSetback":0,"maxHeightFt":0,"maxStories":0,"maxFAR":0,"maxLotCoverage":0,"parkingPerUnit":0,"zoningDistrict":"","zoningFullName":"","jurisdiction":"","county":"","state":"","permittedUses":["SFR","ADU","duplex"],"conditionalUses":[],"specialOverlays":[],"aduAllowed":true,"aduMaxSqFt":1200,"densityBonusEligible":true,"sb9Eligible":false,"notes":""}`}],SYS,1500);
+    const _cpz=S._countyParcel;
+    const _cpHint=_cpz?`\n\nCOUNTY ASSESSOR VERIFIED DATA — use as ground truth, override your estimates with these exact values:`+(_cpz.lotSqft?`\n- Lot area: ${_cpz.lotSqft} SF (use this to derive realistic lotWidth×lotDepth)`:'')+ (_cpz.zoning?`\n- Zoning code: ${_cpz.zoning} (use this exact string for zoningDistrict)`:'')+ (_cpz.useClass?`\n- Current use: ${_cpz.useClass}`:'')+(_cpz.apn?`\n- APN: ${_cpz.apn}`:'')+`\n- Source: ${_cpz.source}`:'';
+    const z=await callJSON([{role:'user',content:`For property "${S.addr}", return ONLY JSON with ACCURATE values for this EXACT address "${S.addr}" — do NOT use placeholder/example values:${_cpHint}\n{"lotWidth":0,"lotDepth":0,"frontSetback":0,"rearSetback":0,"leftSetback":0,"rightSetback":0,"maxHeightFt":0,"maxStories":0,"maxFAR":0,"maxLotCoverage":0,"parkingPerUnit":0,"zoningDistrict":"","zoningFullName":"","jurisdiction":"","county":"","state":"","permittedUses":["SFR","ADU","duplex"],"conditionalUses":[],"specialOverlays":[],"aduAllowed":true,"aduMaxSqFt":1200,"densityBonusEligible":true,"sb9Eligible":false,"notes":""}`}],SYS,1500);
     if(!Array.isArray(z.specialOverlays))z.specialOverlays=[];if(!Array.isArray(z.permittedUses))z.permittedUses=[];if(!Array.isArray(z.conditionalUses))z.conditionalUses=[];
     // ── ZONING_MATRIX_DB override — verified development standards ──
     if(window.ZONING_MATRIX_DB&&window.zoningMatrixKey){
@@ -1391,21 +1439,16 @@ async function runPhase_record(){
       }
     }
 
-    // Strategy 3: COUNTY_REGISTRY lookup (verified ArcGIS parcel endpoints)
-    if(z&&window.COUNTY_REGISTRY&&window.countyRegistryKey){
+    // Strategy 3: COUNTY_REGISTRY — use pre-fetched parcel (from site phase) or live-fetch
+    const _cp=S._countyParcel;
+    const _cpFallbackReg=(!_cp&&z&&window.COUNTY_REGISTRY&&window.countyRegistryKey)?window.COUNTY_REGISTRY[window.countyRegistryKey(z.county,normalizeState(z.state))]:null;
+    if(_cp||_cpFallbackReg){
       try{
-        const key=window.countyRegistryKey(z.county,normalizeState(z.state));
-        const reg=window.COUNTY_REGISTRY[key];
-        if(reg){
-          L.info(`County registry hit: ${key}`);
-          // Build the query URL — request Esri JSON (more universally supported than
-          // f=geojson on older ArcGIS Server installations like King Co WA).
-          // Geometry comes back as Esri rings; we normalize to GeoJSON-style below.
-          // Strategy: exact point-on-parcel first (handles parcels containing the
-          // geocoded point), fall back to 20m buffer for Nominatim street-
-          // centerline geocodes. If the buffer returns multiple parcels, prefer
-          // the one whose ADDR_FULL starts with the search address house number.
-          const fetchParcels=async(distParam)=>{
+        let parcelF=_cp?.f||null,parcelAttrs=_cp?.attrs||null,parcelFmap=_cp?.fmap||{},parcelReg=_cp?.reg||_cpFallbackReg;
+        if(!parcelF){
+          const reg=_cpFallbackReg;
+          L.info(`County registry live fetch: ${reg.county}`);
+          const doFetch=async(distParam)=>{
             const q=`?geometry=${S.lon},${S.lat}&geometryType=esriGeometryPoint&spatialRel=esriSpatialRelIntersects${distParam}&outFields=*&returnGeometry=true&f=json&inSR=4326&outSR=4326`;
             const pUrl=reg.parcelQuery+(reg.parcelQuery.includes('?')?q.replace(/^\?/,'&'):q);
             const rr=await Promise.race([proxyFetch(`/arcgis?url=${encodeURIComponent(pUrl)}`,pUrl),new Promise((_,r)=>setTimeout(()=>r(new Error('timeout')),8000))]);
@@ -1414,55 +1457,49 @@ async function runPhase_record(){
             if(dd?.error){const eMsg=typeof dd.error==='string'?`proxy_${dd.error}: ${dd.upstreamStatus||rr.status} ${(dd.preview||'').substring(0,60)}`:`ArcGIS error ${dd.error.code||''}: ${dd.error.message||JSON.stringify(dd.error)}`;throw new Error(eMsg)}
             return dd.features||[];
           };
-          try{
-            let feats=await fetchParcels('');
-            if(!feats.length) feats=await fetchParcels('&distance=20&units=esriSRUnit_Meter');
-            let f=feats[0];
-            if(feats.length>1&&S.addr){const hn=(S.addr.match(/^\d+/)||[])[0];if(hn){const m=feats.find(ft=>{const a=(ft.properties||ft.attributes||{}).ADDR_FULL||'';return String(a).startsWith(hn)});if(m)f=m;}}
-            if(f){
-              const attrs=f.properties||f.attributes||{};
-              const fmap=reg.fields||{};
-              const apn=attrs[fmap.apn]||attrs.APN||attrs.PARCELNO||attrs.PIN;
-              const use=String(attrs[fmap.useClass]||attrs.USE_CLASS||'').trim()||undefined;
-              const yr=fmap.yearBuilt?attrs[fmap.yearBuilt]:attrs.YearBuilt;
-              findings.push(`\u2705 **Verified County Assessor Record** (${reg.county} Co, ${reg.state}): APN ${apn||'—'}, Use: ${use||'—'}${yr?`, Year Built: ${yr}`:''}`);
-              S.countyRecord={...(S.countyRecord||{}),esri:attrs,verified:true,source:`${reg.county} Co ArcGIS`,assessorURL:reg.assessorURL};
-              // Normalize geometry: Esri returns {rings:[[[x,y],...]]}, GeoJSON returns {coordinates:[[[x,y],...]]}
-              const rings=f.geometry?.rings||(f.geometry?.coordinates?[f.geometry.coordinates[0]||f.geometry.coordinates]:null);
-              if(rings&&S._z&&(S._z._lotConfidence==='unverified'||S._z._lotConfidence==='low')){
-                const ring=rings[0]||rings;
-                if(Array.isArray(ring)&&ring.length>=3){
-                  const lats=ring.map(p=>p[1]),lons=ring.map(p=>p[0]);
-                  const ftLat=364000,ftLon=364000*Math.cos(S.lat*Math.PI/180);
-                  const w=Math.round((Math.max(...lons)-Math.min(...lons))*ftLon);
-                  const d=Math.round((Math.max(...lats)-Math.min(...lats))*ftLat);
-                  if(w>0&&d>0){
-                    S._z.lotWidth=w;S._z.lotDepth=d;
-                    S._z._lotSource=`County Assessor (${reg.county} Co ArcGIS) \u2014 verified parcel polygon`;
-                    S._z._lotConfidence='verified';
-                    // MAP-6: store polygon in local feet-coords (origin
-                    // bbox min-lon / max-lat; Y flipped so canvas top-down
-                    // matches geographic north-up). drawSitePlanSheet uses
-                    // _lotPolygon instead of a rectangle when present.
-                    const minLon=Math.min(...lons),maxLat=Math.max(...lats);
-                    S._z._lotPolygon=ring.map(p=>[(p[0]-minLon)*ftLon,(maxLat-p[1])*ftLat]);
-                    L.info(`Lot dims from county polygon: ${w}\u00D7${d}ft (VERIFIED)`);
-                    findings.push(`\u2705 **Lot dimensions from county polygon:** ${w}' \u00D7 ${d}' (verified surveyed data)`);
-                  }
-                }
+          let feats=await doFetch('');
+          if(!feats.length)feats=await doFetch('&distance=20&units=esriSRUnit_Meter');
+          let f=feats[0];
+          if(f&&feats.length>1&&S.addr){const hn=(S.addr.match(/^\d+/)||[])[0];if(hn){const m=feats.find(ft=>{const a=(ft.properties||ft.attributes||{}).ADDR_FULL||'';return String(a).startsWith(hn)});if(m)f=m;}}
+          if(f){parcelF=f;parcelAttrs=f.properties||f.attributes||{};parcelFmap=reg.fields||{};}
+        }else{L.info(`County record using pre-fetched parcel: ${parcelReg?.county}`);}
+        if(parcelF&&parcelAttrs){
+          const fmap=parcelFmap;const reg=parcelReg;
+          const apn=parcelAttrs[fmap.apn]||parcelAttrs.APN||parcelAttrs.PARCELNO||parcelAttrs.PIN;
+          const use=String(parcelAttrs[fmap.useClass]||parcelAttrs.USE_CLASS||'').trim()||undefined;
+          const yr=fmap.yearBuilt?parcelAttrs[fmap.yearBuilt]:parcelAttrs.YearBuilt;
+          const lotSqft=Number(parcelAttrs[fmap.lotArea])||null;
+          const countyZoning=String(parcelAttrs[fmap.zoning]||'').trim()||null;
+          findings.push(`\u2705 **Verified County Assessor Record** (${reg.county} Co, ${reg.state}): APN ${apn||'\u2014'}, Use: ${use||'\u2014'}${yr?`, Year Built: ${yr}`:''}${lotSqft?`, Lot: ${lotSqft.toLocaleString()} SF`:''}${countyZoning?`, Zone: ${countyZoning}`:''}`);
+          S.countyRecord={...(S.countyRecord||{}),esri:parcelAttrs,verified:true,source:`${reg.county} Co ArcGIS`,assessorURL:reg.assessorURL};
+          if(lotSqft&&S._z){S._z.lotArea=lotSqft;if(S._z._lotConfidence!=='verified')S._z._lotConfidence='low';}
+          if(countyZoning&&S._z){S._z._countyZoning=countyZoning;S._z._zoneSource=`${reg.county} Co Assessor`;}
+          const rings=parcelF.geometry?.rings||(parcelF.geometry?.coordinates?[parcelF.geometry.coordinates[0]||parcelF.geometry.coordinates]:null);
+          if(rings&&S._z&&S._z._lotConfidence!=='verified'){
+            const ring=rings[0]||rings;
+            if(Array.isArray(ring)&&ring.length>=3){
+              const lats=ring.map(p=>p[1]),lons=ring.map(p=>p[0]);
+              const ftLat=364000,ftLon=364000*Math.cos(S.lat*Math.PI/180);
+              const w=Math.round((Math.max(...lons)-Math.min(...lons))*ftLon);
+              const d=Math.round((Math.max(...lats)-Math.min(...lats))*ftLat);
+              if(w>0&&d>0){
+                S._z.lotWidth=w;S._z.lotDepth=d;
+                S._z._lotSource=`County Assessor (${reg.county} Co ArcGIS) \u2014 verified parcel polygon`;
+                S._z._lotConfidence='verified';
+                const minLon=Math.min(...lons),maxLat=Math.max(...lats);
+                S._z._lotPolygon=ring.map(p=>[(p[0]-minLon)*ftLon,(maxLat-p[1])*ftLat]);
+                L.info(`Lot dims from county polygon: ${w}\u00D7${d}ft (VERIFIED)`);
+                findings.push(`\u2705 **Lot dimensions from county polygon:** ${w}' \u00D7 ${d}' (verified surveyed data)`);
               }
             }
-          }catch(e){
-            L.warn(`County registry fetch failed for ${key}: ${e.message.substring(0,100)}`);
-            // Surface distinct state for provenance — avoids the misleading
-            // 'NO_PUBLIC_ENDPOINT' message when an endpoint IS registered
-            // but couldn't be reached from the current client.
-            S.countyRecord={...(S.countyRecord||{}),esriStatus:'unreachable',esriEndpoint:reg.parcelQuery,esriError:e.message.substring(0,100)};
           }
-        }else{
-          L.info(`County registry miss: ${key||'(no county)'} \u2014 generic ArcGIS fallback not attempted to avoid false positives`);
         }
-      }catch(e){L.info('County registry lookup error:',e.message)}
+      }catch(e){
+        L.warn(`County registry fetch failed: ${e.message.substring(0,100)}`);
+        S.countyRecord={...(S.countyRecord||{}),esriStatus:'unreachable',esriError:e.message.substring(0,100)};
+      }
+    }else{
+      L.info(`County registry miss: ${z?.county||'(no county)'} \u2014 generic ArcGIS fallback not attempted to avoid false positives`);
     }
   }else{findings.push('Address geocoding required to query site records. Enter address with city/state.')}
 
