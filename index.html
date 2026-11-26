@@ -773,6 +773,7 @@ async function callAI(msgs,sys,maxTok=2200,timeoutMs=90000){
   // P0-1 hosted-key path: when the user is signed in via Supabase, all AI
   // calls go through /api/ai/messages with a Bearer JWT. The browser never
   // sees an Anthropic key. Falls through to BYOK if hosted mode is off.
+  if(S.mode==='local')    return callAILocal(msgs,sys,maxTok,timeoutMs);
   if(S.mode==='hosted'&&window.ADIProxy){return ADIProxy.callAI(msgs,sys,maxTok,timeoutMs)}
   const headers={'Content-Type':'application/json'};
   if(S.mode==='standalone'&&S.apiKey){headers['x-api-key']=S.apiKey;headers['anthropic-version']='2023-06-01';headers['anthropic-dangerous-direct-browser-access']='true'}
@@ -826,7 +827,27 @@ async function callJSON(msgs,sys,maxTok=2200,timeoutMs=90000){
   throw new Error('JSON parse failed. Preview: '+raw.substring(0,200));
 }
 
+async function callAILocal(msgs,sys,maxTok=2200,timeoutMs=90000){
+  const body={model:'claude-sonnet-4-6',max_tokens:maxTok,messages:msgs};
+  if(sys)body.system=sys;
+  const fp=fetch('/api/ai/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(async r=>{
+    if(!r.ok){const e=await r.text();throw new Error('Local AI '+r.status+': '+e.substring(0,120))}
+    const d=await r.json();
+    return(d.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n');
+  });
+  return Promise.race([fp,new Promise((_,rej)=>setTimeout(()=>rej(new Error('Timeout after '+Math.round(timeoutMs/1000)+'s')),timeoutMs))]);
+}
+async function callAIWithImgLocal(prompt,b64,mime,sys,maxTok=1000){
+  const body={model:'claude-sonnet-4-6',max_tokens:maxTok,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:mime,data:b64}},{type:'text',text:prompt}]}]};
+  if(sys)body.system=sys;
+  const fp=fetch('/api/ai/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)}).then(async r=>{
+    if(!r.ok)throw new Error('Local AI img '+r.status);
+    const d=await r.json();return(d.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n');
+  });
+  return Promise.race([fp,new Promise((_,rej)=>setTimeout(()=>rej(new Error('Image timeout')),60000))]);
+}
 async function callAIWithImg(prompt,b64,mime,sys,maxTok=1000){
+  if(S.mode==='local')    return callAIWithImgLocal(prompt,b64,mime,sys,maxTok);
   if(S.mode==='hosted'&&window.ADIProxy){return ADIProxy.callAIWithImg(prompt,b64,mime,sys,maxTok)}
   const headers={'Content-Type':'application/json'};
   if(S.mode==='standalone'&&S.apiKey){headers['x-api-key']=S.apiKey;headers['anthropic-version']='2023-06-01';headers['anthropic-dangerous-direct-browser-access']='true'}
@@ -4194,6 +4215,19 @@ try {
 // When hosted mode is off, the legacy BYOK path (bootstrapStoredKey →
 // probeConnection) runs unchanged.
 async function adiInitAuth() {
+  // LOCAL MODE: running against server.js on localhost — no sign-in needed
+  if(['localhost','127.0.0.1'].includes(location?.hostname)){
+    const tp=new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),2000));
+    try{
+      const r=await Promise.race([fetch('/api/local-auth'),tp]);
+      if(r.ok){const d=await r.json();if(d.keyAvailable){
+        S.mode='local';S.apiReady=true;
+        setBanner('ok','✓ Local mode','Anthropic key loaded from .env — enter address to analyze.');
+        document.getElementById('run-btn').disabled=false;
+        return;
+      }}
+    }catch(_){}
+  }
   const A = window.ADIAuth;
   if (!A || !A.isHostedMode()) {
     bootstrapStoredKey().then(ok => { if (!ok) probeConnection(); }).catch(() => probeConnection());
