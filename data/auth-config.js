@@ -33,7 +33,7 @@ window.ADI_AUTH_CONFIG = {
 
   // P0-1 rollout flag. Default false until env vars + migration are live.
   // Per-session override: localStorage.ADI_HOSTED_KEY = '1'
-  enabled: false,
+  enabled: true,
 
   // Plan labels surfaced in the paywall + account UI. Quotas are enforced
   // server-side by public.plan_quota() in the migration.
