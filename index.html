@@ -2507,8 +2507,31 @@ async function runPhase_feasibility(){
   const _psftMap=C.NEW_CONST_PSFT_BY_ZIP;
   const _psft=_psftMap?(_psftMap[zip5]||C.PSFT_DEFAULT||null):null;
   const finValMarket=_psft?Math.round(_psft*totalSF):0;
-  const valSrc=finValMarket>0?'market $/SF':'AI option estimate';
-  const finValPrimary=finValMarket>0?finValMarket:finValMid;
+  let valSrc=finValMarket>0?'market $/SF':'AI option estimate';
+  let finValPrimary=finValMarket>0?finValMarket:finValMid;
+  let tiComps=null,tiUW=null,tiData=null;
+
+  // ── Phase 3: Trade-Intel API (live KC comps + 8-strategy underwriting) ──
+  const _tiBase=getProxyBase();
+  if(_tiBase){
+    const _tiAddrEl=document.getElementById('addr-inp');
+    const _tiAddr=_tiAddrEl?_tiAddrEl.value.trim():'';
+    if(_tiAddr){
+      const _tiTimeout=new Promise(res=>setTimeout(()=>res(null),60000));
+      const _tiFetch=fetch(`${_tiBase}/comps`,{
+        method:'POST',
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({address:_tiAddr})
+      }).then(r=>{if(!r.ok)return null;return r.json().catch(()=>null)}).catch(()=>null);
+      tiData=await Promise.race([_tiFetch,_tiTimeout]);
+    }
+  }
+  if(tiData&&!tiData.error&&tiData.underwriting&&tiData.underwriting.gross>0){
+    tiUW=tiData.underwriting;
+    tiComps=(tiData.comps&&tiData.comps.townhome)||null;
+    finValPrimary=Math.round(tiUW.gross);
+    valSrc='Trade-Intel comps';
+  }
 
   // ── WA REET (graduated) + 0.5% local ──
   function waReet(price){
@@ -2557,6 +2580,13 @@ async function runPhase_feasibility(){
     else gradeDesc='Net profit is negative at current estimates.';
   }
 
+  // ── Override with Trade-Intel grade when available ──
+  if(tiUW&&tiData&&tiData.grade){
+    grade=tiData.grade;
+    gradeTitle=tiData.grade_why||tiData.grade;
+    gradeDesc='Trade-Intel 8-strategy underwriting (SOP 2-3)';
+  }
+
   // ── Timeline ──
   const permitMo=cityCfg.permit_months||10;
   const totalMo=C.COSTS.months.design+permitMo+C.COSTS.months.build+C.COSTS.months.sale;
@@ -2582,8 +2612,9 @@ ${row('Soft contingency 10%',''+f$(softCont),'')}
 <div class="feas-total"><span>Total construction cost</span><span>${f$(totalConst)}</span></div>
 <div class="feas-sec">Finished Value (${adiEscapeHtml(valSrc)}${finValMarket>0?` — $${_psft}/SF \xd7 ${totalSF.toLocaleString()} SF`:''})</div>
 ${finValMarket>0?row('Market estimate (new const $/SF)',''+f$(finValMarket),`$${_psft}/SF \xd7 ${totalSF.toLocaleString()} SF  •  ZIP ${zip5}`):''}
+${tiComps?row('Trade-Intel comps (townhome)',`${f$(tiComps.low)} – ${f$(tiComps.high)}`,`base ${f$(tiComps.base)} \xb7 $${tiComps.per_sf}/SF \xb7 ${tiComps.count} comps`):''}
 ${row('AI option range',''+adiEscapeHtml(opt.value),'from development options')}
-${row('Proforma uses',''+f$(finValPrimary),finValMarket>0?'market estimate':'AI mid-point')}
+${row('Proforma uses',''+f$(finValPrimary),tiUW?'Trade-Intel comps base':finValMarket>0?'market estimate':'AI mid-point')}
 ${row('Selling costs (comm + close + '+(isWA?'WA REET':'transfer tax')+')',''+f$(totalSell),'')}
 <div class="feas-sec">Build-to-Sell Proforma</div>
 ${row('Net profit',''+f$(netProfit),netProfit>=C.CRITERIA.profit_min_net?'✓ exceeds $250K target':netProfit<0?'✗ negative':'⚠ below $250K target')}
@@ -2594,13 +2625,18 @@ ${noi>0?`<div class="feas-sec">Hold / Rental NOI</div>
 ${row('Gross annual rent',''+f$(Math.round(noi/(1-C.COSTS.vacancy-C.COSTS.upkeep-C.COSTS.management))),rentDesc)}
 ${row('Net operating income',''+f$(noi),'after vacancy 5%, upkeep 7%, mgmt 8%')}
 ${row('Gross yield',`${finValPrimary>0?(noi/finValPrimary*100).toFixed(1):'—'}%`,'NOI / finished value')}` :''}
+${tiUW?`<div class="feas-sec">Trade-Intel Underwriting</div>
+${row('Best strategy',adiEscapeHtml(tiUW.name||'build strategy'),tiUW.units?`${tiUW.units} homes \xb7 ${(tiUW.unit_sf||0).toLocaleString()} SF each`:'')}
+${tiUW.max_offer_base!=null?row('Max offer (base)',''+f$(tiUW.max_offer_base),'ceiling at 70% rule + 20% ROC'):''}
+${tiUW.max_offer_owner!=null?row('Max offer (owner-builder)',''+f$(tiUW.max_offer_owner),'lower hard cost raises ceiling'):''}`:``}
+${tiData&&tiData.hard_stops&&tiData.hard_stops.length?`<div class="feas-sec" style="color:#c0392b">Hard Stops (${tiData.hard_stops.length})</div>${tiData.hard_stops.map(s=>`<div class="feas-row"><span class="feas-label">${adiEscapeHtml(s.check)}</span><span class="feas-val" style="color:#c0392b">STOP<span class="feas-note-inline">${adiEscapeHtml(s.detail)}</span></span></div>`).join('')}`:``}
 <div class="feas-score">
   <div class="feas-grade grade-${grade}">${grade}</div>
   <div class="feas-score-desc"><strong style="color:var(--txt)">${adiEscapeHtml(gradeTitle)}</strong><br>${adiEscapeHtml(gradeDesc)}</div>
 </div>
 <div class="feas-caveat">
-  ⚠ ${finValMarket>0?`<strong>Phase 2 — Market $/SF.</strong> Finished value uses KC new construction comps ($${_psft}/SF, ZIP ${zip5}, 2024-2025 sales). AI option range shown for reference.`:`<strong>Phase 1 — Cost Engine.</strong> ZIP ${zip5} not in KC target area; finished value is the AI option estimate.`}
-  Phase 3 connects the Trade-Intel API for full KC comps + 8-strategy underwriting. Land / acquisition cost not included — actual ROC depends on purchase price.
+  ⚠ ${tiData&&tiUW?`<strong>Phase 3 — Trade-Intel Comps.</strong> Finished value from full KC comps + 8-strategy underwriting. Grade from Trade-Intel model; AI option range shown for reference.`:finValMarket>0?`<strong>Phase 2 — Market $/SF.</strong> Finished value uses KC new construction comps ($${_psft}/SF, ZIP ${zip5}, 2024-2025 sales). AI option range shown for reference.`:`<strong>Phase 1 — Cost Engine.</strong> ZIP ${zip5} not in KC target area; finished value is the AI option estimate.`}
+  Land / acquisition cost not included — actual ROC depends on purchase price.
   Hard costs anchored to Oct 2026 KC studies ($${hardRate}/SF hired). Verify with builder quotes before making an offer.
 </div>
 </div>`;
