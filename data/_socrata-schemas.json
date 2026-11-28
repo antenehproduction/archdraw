@@ -1613,8 +1613,8 @@
       "host": "data.cityofnewyork.us",
       "name": "DOB Permit Issuance",
       "registryKey": "nyc",
-      "rowsUpdatedAt": 1795739720,
-      "viewLastModified": 1795735852
+      "rowsUpdatedAt": 1795826024,
+      "viewLastModified": 1795822251
     },
     "data.everettwa.gov:3w3u-656c": {
       "addressFieldGuess": "siteaddress",
