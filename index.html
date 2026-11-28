@@ -185,6 +185,21 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--ink);color:var
 .badge-blue{background:rgba(61,139,255,.12);border:1px solid rgba(61,139,255,.3);color:var(--blue)}
 .badge-amber{background:rgba(245,200,66,.12);border:1px solid rgba(245,200,66,.3);color:var(--amber)}
 .badge-purple{background:rgba(167,139,250,.12);border:1px solid rgba(167,139,250,.3);color:var(--purple)}
+.feas-row{display:flex;justify-content:space-between;align-items:baseline;padding:3px 0;border-bottom:1px dashed var(--brd);font-size:10.5px;line-height:1.5;gap:6px}
+.feas-row:last-child{border-bottom:none}
+.feas-label{color:var(--txt2);flex-shrink:0}
+.feas-val{color:var(--txt);font-family:var(--mono);font-size:10px;text-align:right}
+.feas-note-inline{font-size:8px;color:var(--txt3);margin-left:5px}
+.feas-sec{font-size:7px;letter-spacing:1.2px;color:var(--blue);text-transform:uppercase;margin:9px 0 4px}
+.feas-total{display:flex;justify-content:space-between;padding:5px 0 3px;border-top:1px solid var(--brd2);margin-top:3px;font-weight:600;font-size:11px}
+.feas-grade{display:inline-flex;align-items:center;justify-content:center;width:36px;height:36px;border-radius:8px;font-size:19px;font-weight:800;flex-shrink:0}
+.grade-A{background:rgba(34,224,138,.12);color:var(--green)}
+.grade-B{background:rgba(61,139,255,.12);color:var(--blue)}
+.grade-C{background:rgba(245,200,66,.12);color:var(--amber)}
+.grade-D{background:rgba(255,101,85,.12);color:var(--coral)}
+.feas-score{display:flex;align-items:center;gap:10px;margin-top:9px;padding:8px 10px;background:var(--ink2);border-radius:6px;border:1px solid var(--brd)}
+.feas-score-desc{font-size:10px;color:var(--txt2);line-height:1.5}
+.feas-caveat{font-size:8px;color:var(--txt3);margin-top:8px;padding:6px 8px;background:var(--ink2);border:1px dashed var(--brd);border-radius:4px;line-height:1.6}
 .opt-icon{font-size:22px;line-height:1}
 .opt-name{font-size:12.5px;font-weight:500;color:var(--txt);line-height:1.2}
 .opt-type{font-size:8.5px;color:var(--txt3)}
@@ -658,6 +673,7 @@ html,body{width:100%;height:100%;overflow:hidden;background:var(--ink);color:var
 <script src="data/middle-housing.js"></script>
 <script src="data/wa-statewide.js"></script>
 <script src="data/cost-index.js"></script>
+<script src="data/feasibility-costs.js"></script>
 <script src="data/permit-registry.js"></script>
 <script src="data/overlay-registry.js"></script>
 <!-- P0-1 hosted-key auth (additive; legacy BYOK path remains the default) -->
@@ -750,6 +766,7 @@ const PHASES=[
   {id:'comp',  lbl:'Competitor Research'},
   {id:'plan',  lbl:'Floor Plan — Expert Design'},
   {id:'chk',   lbl:'Permit Checklist'},
+  {id:'feas',  lbl:'Feasibility Study'},
 ];
 const phaseRunners={};
 
@@ -1405,6 +1422,8 @@ async function startAnalysis(){
     await runPhase_plan(); await delay(400);
     // Phase 7: Permit Checklist
     await runPhase_chk();
+    // Phase 8: Feasibility Study
+    await runPhase_feasibility();
     L.info('=== ANALYSIS COMPLETE ===');
   }catch(e){_failure=e;L.error('Pipeline stopped:',e.message);console.error('Pipeline:',e);
     // P0-1: surface paywall when an AI call rejected for quota
@@ -2428,6 +2447,160 @@ async function runPhase_chk(){
   if(adv.rdpRequired){addFind('advisor','\uD83D\uDCCB Expert Sign-Off Before Submittal',`<strong>This set is a draft. A Registered Design Professional must review, revise as needed, and seal the drawings</strong> before permit submittal.<br>Scope triggers: ${adv.triggeredBy.join(' \u00B7 ')}<br>Required seals: <strong>${adv.sealsRequired.join(', ')}</strong><br><span style="color:var(--txt3);font-size:10px">${adv.statuteCitation}${adv.jurisdictionNote?' \u00B7 '+adv.jurisdictionNote:''}</span>`)}
   // Re-render the current sheet so disclosure + footer appear immediately
   if(S.view==='plan'&&S.activeSheet)renderSheet(S.activeSheet);
+}
+
+// ─── Phase 8: Feasibility Study ───
+async function runPhase_feasibility(){
+  L.info('--- Phase 8: Feasibility Study ---');phSet('feas','active');const t=Date.now();
+  const z=S._z;const opt=S.selectedOption;const plan=S.plan;
+  if(!z||!opt||!plan){phSet('feas','error',`${((Date.now()-t)/1000).toFixed(1)}s`);addFind('feas','📊 Feasibility Study','<div class="ebox">Complete pipeline phases first.</div>');return}
+  const C=window.ADI_FEAS_COSTS;
+  if(!C){phSet('feas','error',`${((Date.now()-t)/1000).toFixed(1)}s`);addFind('feas','📊 Feasibility Study','<div class="ebox">feasibility-costs.js not loaded.</div>');return}
+
+  // ── Inputs ──
+  const homes=plan.meta.units||opt.units||2;
+  const totalSF=plan.meta.totalSqFt||opt.sf||2000;
+  const lotSF=adiLotSF(z);
+  const city=z.jurisdiction||z.city||'';
+  const zip5=(z.zip||'').substring(0,5);
+  const isWA=(z.state||'').toUpperCase()==='WA';
+
+  // ── Parse "$800K–$950K" or "$1.1M–$1.3M" to numbers ──
+  function parseMoney(s){
+    const hits=String(s||'').match(/\$([0-9.]+)([KMB]?)/g);
+    if(!hits)return[0,0];
+    return hits.map(x=>{const m=x.match(/\$([0-9.]+)([KMB]?)/);let v=parseFloat(m[1]);if(m[2]==='K')v*=1000;else if(m[2]==='M')v*=1000000;return Math.round(v)});
+  }
+
+  // ── Hard costs ──
+  const hardRate=C.CRITERIA.hard_cost_hired_sf;
+  const hardBase=Math.round(hardRate*totalSF);
+  const hardCont=Math.round(hardBase*C.COSTS.hard_contingency);
+  const totalHard=hardBase+hardCont;
+
+  // ── Soft costs ──
+  const cityCfg=C.COSTS.city[city]||C.COSTS.city_default;
+  const design=C.COSTS.design_per_home*homes;
+  const misc=C.COSTS.misc_per_home*homes;
+  const studies=C.COSTS.studies;
+  const legal=C.COSTS.legal;
+  const permit=cityCfg.permit;
+  const utility=cityCfg.utility;
+  const bRisk=Math.round(hardBase*C.COSTS.builders_risk);
+  const softSub=design+misc+studies+legal+permit+utility+bRisk;
+  const softCont=Math.round(softSub*C.COSTS.soft_contingency);
+  const totalSoft=softSub+softCont;
+
+  // ── Site prep ──
+  const totalSite=C.COSTS.site+C.COSTS.demolition+(C.COSTS.site_per_home*homes);
+
+  // ── Total construction ──
+  const totalConst=totalHard+totalSoft+totalSite;
+
+  // ── Finished value from option estimate ──
+  const valRange=parseMoney(opt.value);
+  const finValLow=valRange[0]||0;
+  const finValHigh=valRange[1]||Math.round(finValLow*1.1);
+  const finValMid=Math.round((finValLow+finValHigh)/2)||1;
+
+  // ── WA REET (graduated) + 0.5% local ──
+  function waReet(price){
+    if(!isWA)return Math.round(price*0.015);
+    let tax=0;
+    if(price<=500000)tax=price*0.011;
+    else if(price<=1500000)tax=5500+(price-500000)*0.0128;
+    else if(price<=3000000)tax=18300+(price-1500000)*0.0275;
+    else tax=59550+(price-3000000)*0.03;
+    return Math.round(tax+price*0.005);
+  }
+
+  // ── Selling costs ──
+  const ppu=Math.round(finValMid/homes);
+  const totalSell=homes*(waReet(ppu)+Math.round(ppu*C.COSTS.sale_commission)+Math.round(ppu*C.COSTS.sale_closing));
+
+  // ── Proforma ──
+  const netProfit=finValMid-totalConst-totalSell;
+  const roc=totalConst>0?netProfit/totalConst:0;
+  const rule70=finValMid>0?totalConst/finValMid:1;
+  const rule70pass=rule70<=C.CRITERIA.rule70_high;
+
+  // ── HUD FMR NOI ──
+  const hudR=C.HUD_SAFMR[zip5];
+  let noi=0,rentDesc='';
+  if(hudR){
+    const sfpu=totalSF/homes;
+    const beds=sfpu<700?1:sfpu<1100?2:3;
+    const rmo=hudR[beds]||hudR[2];
+    const gross=rmo*homes*12;
+    noi=Math.round(gross*(1-C.COSTS.vacancy-C.COSTS.upkeep-C.COSTS.management));
+    rentDesc=`HUD FY2027 SAFMR ${zip5} ${beds}BR $${rmo.toLocaleString()}/mo/unit`;
+  }else{rentDesc='HUD SAFMR not in target area — verify rents manually';}
+
+  // ── Grade ──
+  const minROC=C.CRITERIA.profit_min_roc;
+  let grade='D',gradeTitle='',gradeDesc='';
+  if(netProfit>0&&roc>=minROC&&rule70pass){
+    if(roc>=0.40&&rule70<=0.65){grade='A';gradeTitle='Strong deal';gradeDesc='High margin, low basis. Clears all bars with room to spare.';}
+    else if(roc>=0.25){grade='B';gradeTitle='Likely dealable';gradeDesc='Clears all bars. Land price must stay within ceiling.';}
+    else{grade='C';gradeTitle='Marginal';gradeDesc='Passes ROC threshold but tight basis. Sensitive to cost overruns.';}
+  }else{
+    grade='D';gradeTitle='Below threshold';
+    if(roc<minROC)gradeDesc=`ROC ${(roc*100).toFixed(1)}% is below the ${(minROC*100).toFixed(0)}% minimum.`;
+    else if(!rule70pass)gradeDesc=`Basis is ${(rule70*100).toFixed(1)}% of finished value — exceeds the 70% rule.`;
+    else gradeDesc='Net profit is negative at current estimates.';
+  }
+
+  // ── Timeline ──
+  const permitMo=cityCfg.permit_months||10;
+  const totalMo=C.COSTS.months.design+permitMo+C.COSTS.months.build+C.COSTS.months.sale;
+
+  // ── Helpers ──
+  const f$=n=>n>=1000000?`$${(n/1000000).toFixed(2)}M`:`$${Math.round(n/1000)}K`;
+  const row=(lbl,val,note)=>`<div class="feas-row"><span class="feas-label">${adiEscapeHtml(lbl)}</span><span class="feas-val">${adiEscapeHtml(val)}${note?`<span class="feas-note-inline">${adiEscapeHtml(note)}</span>`:''}</span></div>`;
+
+  const html=`<div style="font-family:var(--serif)">
+<div class="feas-sec">Site Inputs</div>
+${row('Lot area',`${lotSF.toLocaleString()} SF`,z._lotConfidence==='verified'?'verified polygon':'AI/OSM estimate')}
+${row('Selected option',adiEscapeHtml(opt.name),`${homes} units · ${totalSF.toLocaleString()} SF built`)}
+${row('Zone / jurisdiction',`${adiEscapeHtml(z.zoningDistrict||z.zone||'—')}`,`${adiEscapeHtml(z.jurisdiction||z.city||'—')}, ${adiEscapeHtml(z.state||'—')}`)}
+<div class="feas-sec">Construction Cost Breakdown</div>
+${row('Hard costs (hired)',''+f$(hardBase),`$${hardRate}/SF \xd7 ${totalSF.toLocaleString()} SF`)}
+${row('Hard contingency 7%',''+f$(hardCont),'')}
+${row('Site prep + demolition',''+f$(totalSite),'site / demo / per-home allowance')}
+${row('Design + misc',''+f$(design+misc),`$${C.COSTS.design_per_home+C.COSTS.misc_per_home}/unit \xd7 ${homes} units`)}
+${row('Studies + legal',''+f$(studies+legal),'geotech, survey, arborist, legal')}
+${row(`${adiEscapeHtml(city||'City')} permit + utility`,''+f$(permit+utility),`${permitMo}-month permit timeline`)}
+${row("Builder's risk 0.4%",''+f$(bRisk),'of hard cost')}
+${row('Soft contingency 10%',''+f$(softCont),'')}
+<div class="feas-total"><span>Total construction cost</span><span>${f$(totalConst)}</span></div>
+<div class="feas-sec">Finished Value (AI estimate — Phase 2 adds Zillow)</div>
+${row('Option estimate range',''+adiEscapeHtml(opt.value),'from development options')}
+${row('Mid-point used for proforma',''+f$(finValMid),'')}
+${row('Selling costs (comm + close + '+(isWA?'WA REET':'transfer tax')+')',''+f$(totalSell),'')}
+<div class="feas-sec">Build-to-Sell Proforma</div>
+${row('Net profit',''+f$(netProfit),netProfit>=C.CRITERIA.profit_min_net?'✓ exceeds $250K target':netProfit<0?'✗ negative':'⚠ below $250K target')}
+${row('Return on cost',`${(roc*100).toFixed(1)}%`,roc>=minROC?`✓ ≥${(minROC*100).toFixed(0)}% threshold`:`✗ below ${(minROC*100).toFixed(0)}% threshold`)}
+${row('70% rule check',`${(rule70*100).toFixed(1)}%`,rule70pass?'✓ passes (≤70%)':'✗ fails (>70%)')}
+${row('Timeline',`~${totalMo} months`,`design ${C.COSTS.months.design}mo + permit ${permitMo}mo + build ${C.COSTS.months.build}mo + sale ${C.COSTS.months.sale}mo`)}
+${noi>0?`<div class="feas-sec">Hold / Rental NOI</div>
+${row('Gross annual rent',''+f$(Math.round(noi/(1-C.COSTS.vacancy-C.COSTS.upkeep-C.COSTS.management))),rentDesc)}
+${row('Net operating income',''+f$(noi),'after vacancy 5%, upkeep 7%, mgmt 8%')}
+${row('Gross yield',`${finValMid>0?(noi/finValMid*100).toFixed(1):'—'}%`,'NOI / finished value')}` :''}
+<div class="feas-score">
+  <div class="feas-grade grade-${grade}">${grade}</div>
+  <div class="feas-score-desc"><strong style="color:var(--txt)">${adiEscapeHtml(gradeTitle)}</strong><br>${adiEscapeHtml(gradeDesc)}</div>
+</div>
+<div class="feas-caveat">
+  ⚠ <strong>Phase 1 — Cost Engine.</strong> Finished value is the AI option estimate, not verified comps.
+  Phase 2 adds a live Zillow Zestimate for a real market value. Phase 3 connects the Trade-Intel API for
+  full King County comps + 8-strategy underwriting. Hard costs anchored to Oct 2026 KC studies ($${hardRate}/SF hired).
+  Verify with builder quotes before making an offer.
+</div>
+</div>`;
+
+  phSet('feas','done',`${((Date.now()-t)/1000).toFixed(1)}s`);
+  addFind('feas','📊 Feasibility Study',html);
+  phaseRunners.feas=runPhase_feasibility;
 }
 
 // ─── CHK-3: Export checklist to CSV ───
