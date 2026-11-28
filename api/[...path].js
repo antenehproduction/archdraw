@@ -27,7 +27,7 @@
 //   GET /api/permits/<city>?... → Socrata permit search
 // (/api/ai/* is served by api/ai/[...path].js. /api/diag removed in P1-B.)
 
-const PROXY_VERSION = '9-vercel'; // v9 — P1-B/C: anchored SSRF allowlist, origin-locked CORS, /diag removed, AI dedup
+const PROXY_VERSION = '10-vercel'; // v10 — Phase 3: /api/comps relay to Trade-Intel FastAPI service
 
 // P1-B: CORS restricted to the app's own origins (github.io + the app's
 // *.vercel.app deployments + localhost). A disallowed origin gets the canonical
@@ -290,6 +290,52 @@ async function handleRegrid(params, origin) {
   }
 }
 
+// ═══ Trade-Intel comps relay (TRADE_INTEL_URL) ═══════════
+// Relays POST /api/comps to the hosted Trade-Intel FastAPI service.
+// Body: {address: string, price?: number}
+// Response: {pin, address, city, zip, zone, likely_price, hard_stops, flags,
+//            comps, underwriting, grade, grade_why}
+// Set TRADE_INTEL_URL in Vercel env vars, e.g. https://trade-intel.fly.dev
+// (no trailing slash). Returns 503 when the env var is absent.
+async function handleComps(request, origin) {
+  const serviceUrl = process.env.TRADE_INTEL_URL;
+  if (!serviceUrl) {
+    return jsonResponse({
+      error: 'trade_intel_not_configured',
+      hint: 'Set TRADE_INTEL_URL in the Vercel project env vars (e.g. https://trade-intel.fly.dev).',
+    }, origin, 503);
+  }
+  if (request.method !== 'POST') {
+    return jsonResponse({ error: 'POST required' }, origin, 405);
+  }
+  let body;
+  try { body = await request.json(); } catch (_) {
+    return jsonResponse({ error: 'invalid_json' }, origin, 400);
+  }
+  if (!body || typeof body.address !== 'string' || !body.address.trim()) {
+    return jsonResponse({ error: 'address required' }, origin, 400);
+  }
+  // Forward only known fields — never relay arbitrary keys upstream
+  const payload = { address: body.address.trim() };
+  if (body.price != null) {
+    const p = Number(body.price);
+    if (isFinite(p) && p > 0) payload.price = p;
+  }
+  try {
+    const upstream = await fetch(`${serviceUrl.replace(/\/$/, '')}/analyze`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'User-Agent': 'ArchDrawIntel-Proxy/1.0' },
+      body: JSON.stringify(payload),
+    });
+    return jsonPassthrough(upstream, origin, 'comps');
+  } catch (e) {
+    return jsonResponse({
+      error: 'comps_fetch_threw',
+      message: String(e?.message || e).substring(0, 240),
+    }, origin, 502);
+  }
+}
+
 // ═══ Hosted-AI proxy ═══════════════════════════════════
 // The hosted-AI endpoints (/api/ai/messages, /api/ai/whoami) live in
 // api/ai/[...path].js — the streaming implementation that takes Vercel
@@ -317,11 +363,12 @@ export default async function handler(request) {
         ok: true,
         version: PROXY_VERSION,
         platform: 'vercel-edge',
-        routes: ['/api/fema?lat=&lon=', '/api/arcgis?url=', '/api/overpass?data=', '/api/municode?url=', '/api/permits/:city', '/api/nrel?lat=&lon=', '/api/regrid?lat=&lon=', '/api/ai/messages', '/api/ai/whoami'],
+        routes: ['/api/fema?lat=&lon=', '/api/arcgis?url=', '/api/overpass?data=', '/api/municode?url=', '/api/permits/:city', '/api/nrel?lat=&lon=', '/api/regrid?lat=&lon=', '/api/comps (POST)', '/api/ai/messages', '/api/ai/whoami'],
         permitCities: Object.keys(PERMIT_ENDPOINTS),
         aiHosted: !!process.env.ANTHROPIC_KEY && !!process.env.SUPABASE_URL,
         solarHosted: !!process.env.NREL_API_KEY,
         parcelHosted: !!(process.env.REGRID_TOKEN || process.env.REGRID_API_TOKEN || process.env.REGRID_KEY),
+        tradeIntelHosted: !!process.env.TRADE_INTEL_URL,
       }, origin);
     }
     if (route === 'fema') return await handleFema(u.searchParams, origin);
@@ -331,6 +378,7 @@ export default async function handler(request) {
     if (route === 'nrel') return await handleNREL(u.searchParams, origin);
     if (route === 'regrid') return await handleRegrid(u.searchParams, origin);
     if (route === 'permits' && segments[1]) return await handlePermits(segments[1], u.searchParams, origin);
+    if (route === 'comps') return await handleComps(request, origin);
     // /api/ai/* is served by api/ai/[...path].js (P1-C: single source of truth).
     // /diag was removed (P1-B: it was an unauthenticated open-fetch SSRF surface).
     if (route === 'ai') return jsonResponse({ error: 'route_moved', detail: 'served by api/ai/[...path].js' }, origin, 404);
