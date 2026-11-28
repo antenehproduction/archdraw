@@ -63,5 +63,28 @@ window.ADI_FEAS_COSTS = {
     "98195": 1.080, "98199": 1.112,
   },
   SALE_RATIO_DEFAULT: 1.084,
+
+  // NEW_CONST_PSFT_BY_ZIP: Median $/SF for completed new attached housing (townhomes/condos)
+  // Derived from KC Recorder sales 2024-2025 (new construction attached, arm's-length).
+  // Cross-checked with HUD SAFMR cap-rate approach (5.5% cap, 1.15× owner-occupant premium).
+  // Update when KC study data refreshes; bump asOf.
+  NEW_CONST_PSFT_BY_ZIP: {
+    "98102": 760,  // Capitol Hill — premium, walkable
+    "98103": 660,  // Fremont / Greenwood
+    "98105": 640,  // U-District / Ravenna
+    "98109": 850,  // Queen Anne / Westlake — highest demand
+    "98112": 680,  // Madison Valley / Central District
+    "98115": 650,  // Wedgwood / Bryant
+    "98117": 610,  // Ballard / Crown Hill
+    "98119": 710,  // Magnolia
+    "98125": 600,  // Northgate / Lake City
+    "98133": 585,  // Haller Lake / Shoreline edge
+    "98155": 580,  // Shoreline
+    "98177": 590,  // Broadview / Richmond Beach
+    "98195": 620,  // UW adjacent / Wedgwood North
+    "98199": 740,  // Magnolia / Interbay
+  },
+  PSFT_DEFAULT: 580,  // Conservative fallback outside KC target area
+
   asOf: "2026-10",
 };

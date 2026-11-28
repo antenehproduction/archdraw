@@ -2497,11 +2497,18 @@ async function runPhase_feasibility(){
   // ── Total construction ──
   const totalConst=totalHard+totalSoft+totalSite;
 
-  // ── Finished value from option estimate ──
+  // ── Finished value: AI option estimate (fallback) ──
   const valRange=parseMoney(opt.value);
   const finValLow=valRange[0]||0;
   const finValHigh=valRange[1]||Math.round(finValLow*1.1);
   const finValMid=Math.round((finValLow+finValHigh)/2)||1;
+
+  // ── Phase 2: Market $/SF estimate (overrides AI estimate when in KC target area) ──
+  const _psftMap=C.NEW_CONST_PSFT_BY_ZIP;
+  const _psft=_psftMap?(_psftMap[zip5]||C.PSFT_DEFAULT||null):null;
+  const finValMarket=_psft?Math.round(_psft*totalSF):0;
+  const valSrc=finValMarket>0?'market $/SF':'AI option estimate';
+  const finValPrimary=finValMarket>0?finValMarket:finValMid;
 
   // ── WA REET (graduated) + 0.5% local ──
   function waReet(price){
@@ -2515,13 +2522,13 @@ async function runPhase_feasibility(){
   }
 
   // ── Selling costs ──
-  const ppu=Math.round(finValMid/homes);
+  const ppu=Math.round(finValPrimary/homes);
   const totalSell=homes*(waReet(ppu)+Math.round(ppu*C.COSTS.sale_commission)+Math.round(ppu*C.COSTS.sale_closing));
 
   // ── Proforma ──
-  const netProfit=finValMid-totalConst-totalSell;
+  const netProfit=finValPrimary-totalConst-totalSell;
   const roc=totalConst>0?netProfit/totalConst:0;
-  const rule70=finValMid>0?totalConst/finValMid:1;
+  const rule70=finValPrimary>0?totalConst/finValPrimary:1;
   const rule70pass=rule70<=C.CRITERIA.rule70_high;
 
   // ── HUD FMR NOI ──
@@ -2573,9 +2580,10 @@ ${row(`${adiEscapeHtml(city||'City')} permit + utility`,''+f$(permit+utility),`$
 ${row("Builder's risk 0.4%",''+f$(bRisk),'of hard cost')}
 ${row('Soft contingency 10%',''+f$(softCont),'')}
 <div class="feas-total"><span>Total construction cost</span><span>${f$(totalConst)}</span></div>
-<div class="feas-sec">Finished Value (AI estimate — Phase 2 adds Zillow)</div>
-${row('Option estimate range',''+adiEscapeHtml(opt.value),'from development options')}
-${row('Mid-point used for proforma',''+f$(finValMid),'')}
+<div class="feas-sec">Finished Value (${adiEscapeHtml(valSrc)}${finValMarket>0?` — $${_psft}/SF \xd7 ${totalSF.toLocaleString()} SF`:''})</div>
+${finValMarket>0?row('Market estimate (new const $/SF)',''+f$(finValMarket),`$${_psft}/SF \xd7 ${totalSF.toLocaleString()} SF  •  ZIP ${zip5}`):''}
+${row('AI option range',''+adiEscapeHtml(opt.value),'from development options')}
+${row('Proforma uses',''+f$(finValPrimary),finValMarket>0?'market estimate':'AI mid-point')}
 ${row('Selling costs (comm + close + '+(isWA?'WA REET':'transfer tax')+')',''+f$(totalSell),'')}
 <div class="feas-sec">Build-to-Sell Proforma</div>
 ${row('Net profit',''+f$(netProfit),netProfit>=C.CRITERIA.profit_min_net?'✓ exceeds $250K target':netProfit<0?'✗ negative':'⚠ below $250K target')}
@@ -2585,16 +2593,15 @@ ${row('Timeline',`~${totalMo} months`,`design ${C.COSTS.months.design}mo + permi
 ${noi>0?`<div class="feas-sec">Hold / Rental NOI</div>
 ${row('Gross annual rent',''+f$(Math.round(noi/(1-C.COSTS.vacancy-C.COSTS.upkeep-C.COSTS.management))),rentDesc)}
 ${row('Net operating income',''+f$(noi),'after vacancy 5%, upkeep 7%, mgmt 8%')}
-${row('Gross yield',`${finValMid>0?(noi/finValMid*100).toFixed(1):'—'}%`,'NOI / finished value')}` :''}
+${row('Gross yield',`${finValPrimary>0?(noi/finValPrimary*100).toFixed(1):'—'}%`,'NOI / finished value')}` :''}
 <div class="feas-score">
   <div class="feas-grade grade-${grade}">${grade}</div>
   <div class="feas-score-desc"><strong style="color:var(--txt)">${adiEscapeHtml(gradeTitle)}</strong><br>${adiEscapeHtml(gradeDesc)}</div>
 </div>
 <div class="feas-caveat">
-  ⚠ <strong>Phase 1 — Cost Engine.</strong> Finished value is the AI option estimate, not verified comps.
-  Phase 2 adds a live Zillow Zestimate for a real market value. Phase 3 connects the Trade-Intel API for
-  full King County comps + 8-strategy underwriting. Hard costs anchored to Oct 2026 KC studies ($${hardRate}/SF hired).
-  Verify with builder quotes before making an offer.
+  ⚠ ${finValMarket>0?`<strong>Phase 2 — Market $/SF.</strong> Finished value uses KC new construction comps ($${_psft}/SF, ZIP ${zip5}, 2024-2025 sales). AI option range shown for reference.`:`<strong>Phase 1 — Cost Engine.</strong> ZIP ${zip5} not in KC target area; finished value is the AI option estimate.`}
+  Phase 3 connects the Trade-Intel API for full KC comps + 8-strategy underwriting. Land / acquisition cost not included — actual ROC depends on purchase price.
+  Hard costs anchored to Oct 2026 KC studies ($${hardRate}/SF hired). Verify with builder quotes before making an offer.
 </div>
 </div>`;
 
